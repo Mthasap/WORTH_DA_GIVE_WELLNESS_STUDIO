@@ -1,624 +1,354 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout — WorthDaGive Wellness Studio</title>
-    <link rel="stylesheet" href="styles.css">
-    <style>
-        /* ── Payment method icons ── */
-        .pm-logo { height: 22px; width: auto; display: block; margin: 0 auto 4px; }
-        .pm-card-icons { display:flex; justify-content:center; gap:4px; margin-bottom:4px; }
-        .pm-card-icons svg { width:32px; height:22px; }
+/* ═══════════════════════════════════════════════════════════
+   WORTHDAGIVE — auth.js
+   Shared authentication state + modal UI used by
+   index.html, products.html, checkout.html
+   Requires: supabase.js loaded first
+   ═══════════════════════════════════════════════════════════ */
 
-        /* Delivery option radio pills */
-        .co-delivery-option {
-            display: flex; align-items: center; gap: 8px;
-            padding: 11px 18px; border: 2px solid #ddd;
-            border-radius: 8px; cursor: pointer;
-            font-weight: 600; font-size: 0.9rem; color: #555;
-            transition: border-color 0.2s, background 0.2s;
-            user-select: none;
+/* ── SVG Icons (professional, no emoji) ── */
+const ICONS = {
+    user:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+    logout:  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`,
+    orders:  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>`,
+    check:   `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+    eye:     `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`,
+    eyeOff:  `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`,
+    mail:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`,
+    lock:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
+    warn:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`
+};
+
+/* ── Current session state ── */
+let _currentSession  = null;
+let _currentProfile  = null;
+let _authReady       = false;
+let _authCallbacks   = [];
+
+async function initAuth() {
+    try {
+        _currentSession = await WDG.authGetSession();
+        if (_currentSession) {
+            _currentProfile = await WDG.authGetProfile();
         }
-        .co-delivery-option input { accent-color: #4CAF50; }
-        .co-delivery-option:has(input:checked) { border-color: #4CAF50; background: #f0fff0; color: #2c5530; }
+    } catch (e) { /* offline / not configured */ }
+    _authReady = true;
+    _authCallbacks.forEach(cb => cb(_currentSession, _currentProfile));
 
-        /* Auth gate overlay */
-        .checkout-auth-gate {
-            text-align: center; padding: 3rem 1.5rem;
-            background: white; border-radius: 12px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-            max-width: 480px; margin: 3rem auto;
-        }
-        .checkout-auth-gate svg { margin-bottom: 1rem; display: block; margin-left: auto; margin-right: auto; }
-        .checkout-auth-gate h2 { color: #2c5530; margin-bottom: 0.6rem; }
-        .checkout-auth-gate p  { color: #666; margin-bottom: 1.4rem; font-size: 0.95rem; }
-        .checkout-auth-gate .auth-gate-btns { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
-
-        .payment-detail-panel { margin-top: 12px; }
-
-        /* Zone delivery fee notice */
-        .zone-fee-badge {
-            display: inline-block; background: #e8f5e9; color: #2c5530;
-            font-size: 0.8rem; font-weight: 700; padding: 3px 10px;
-            border-radius: 20px; margin-left: 8px; vertical-align: middle;
-        }
-    </style>
-</head>
-<body>
-
-    <!-- HEADER -->
-    <header>
-        <div class="container">
-            <div class="logo">
-                <a href="index.html">
-                    <img src="media/main_logo.png" alt="WorthDaGive Wellness Studio" class="logo-img" loading="lazy">
-                    <div class="logo-text"><h1>WorthDaGive</h1><span class="tagline">Wellness Studio</span></div>
-                </a>
-            </div>
-            <nav class="main-nav" id="mainNav" style="display:flex;">
-                <ul>
-                    <li><a href="index.html">Home</a></li>
-                    <li><a href="products.html">Products</a></li>
-                    <li><a href="track.html">Track Order</a></li>
-                    <li><a href="#" id="loginBtn" class="nav-icon-link">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Account
-                    </a></li>
-                </ul>
-            </nav>
-        </div>
-    </header>
-
-    <!-- PAGE BANNER -->
-    <section class="page-banner" style="min-height:130px;height:130px;">
-        <div class="container"><h2>Checkout</h2><p>Complete your order securely</p></div>
-    </section>
-
-    <section class="checkout-section">
-        <div class="container">
-
-            <!-- AUTH GATE (shown if not logged in) -->
-            <div id="coAuthGate" class="checkout-auth-gate hidden">
-                <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#2c5530" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                <h2>Sign In to Continue</h2>
-                <p>You need to be signed in to complete your purchase. You can add items to your cart as a guest, but checkout requires an account.</p>
-                <div class="auth-gate-btns">
-                    <button class="btn-primary" onclick="openAuthModal('login', afterAuthProceed)">Sign In</button>
-                    <button class="btn-secondary" onclick="openAuthModal('register', afterAuthProceed)">Create Account</button>
-                </div>
-                <p style="margin-top:1rem;font-size:0.82rem;color:#aaa;"><a href="products.html">Continue shopping</a></p>
-            </div>
-
-            <!-- SUCCESS SCREEN -->
-            <div id="coSuccessScreen" class="checkout-panel co-success hidden">
-                <div style="width:64px;height:64px;background:#e8f5e9;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                </div>
-                <h2>Order Placed Successfully</h2>
-                <p>Thank you for your order. A confirmation will be sent to your email address.</p>
-                <p id="coOrderRef" style="font-weight:700;color:#2c5530;font-size:1.1rem;margin:0.5rem 0;"></p>
-                <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:1.4rem;">
-                    <a href="track.html" class="cta-button">Track My Order</a>
-                    <a href="products.html" class="btn-secondary" style="display:inline-flex;align-items:center;justify-content:center;padding:12px 24px;border-radius:5px;text-decoration:none;font-size:1rem;">Continue Shopping</a>
-                </div>
-            </div>
-
-            <!-- CHECKOUT GRID -->
-            <div class="checkout-grid" id="coGrid">
-
-                <!-- LEFT: DETAILS -->
-                <div>
-
-                    <!-- Step 1: Contact (pre-filled from profile) -->
-                    <div class="checkout-panel" style="margin-bottom:1.2rem;">
-                        <h2>1. Contact Details</h2>
-                        <div class="co-form-row">
-                            <div class="co-field"><label for="coFirstName">First Name *</label><input type="text" id="coFirstName" placeholder="Thabo" autocomplete="given-name"></div>
-                            <div class="co-field"><label for="coLastName">Last Name *</label><input type="text" id="coLastName" placeholder="Khumalo" autocomplete="family-name"></div>
-                        </div>
-                        <div class="co-form-row">
-                            <div class="co-field"><label for="coEmail">Email Address *</label><input type="email" id="coEmail" placeholder="thabo@example.com" autocomplete="email"></div>
-                            <div class="co-field"><label for="coPhone">Phone Number *</label><input type="tel" id="coPhone" placeholder="+27 71 000 0000" autocomplete="tel"></div>
-                        </div>
-                    </div>
-
-                    <!-- Step 2: Delivery -->
-                    <div class="checkout-panel" style="margin-bottom:1.2rem;">
-                        <h2>2. Delivery Details</h2>
-
-                        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:1.2rem;">
-                            <label class="co-delivery-option">
-                                <input type="radio" name="deliveryType" value="delivery" checked onchange="toggleDelivery(this)">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-                                Home Delivery
-                            </label>
-                            <label class="co-delivery-option">
-                                <input type="radio" name="deliveryType" value="pickup" onchange="toggleDelivery(this)">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                                Collection / Pick-up
-                            </label>
-                        </div>
-
-                        <div id="deliveryFields">
-                            <div class="co-form-row full">
-                                <div class="co-field"><label for="coAddress">Street Address *</label><input type="text" id="coAddress" placeholder="12 Jacaranda Street" autocomplete="street-address"></div>
-                            </div>
-                            <div class="co-form-row">
-                                <div class="co-field"><label for="coCity">City / Town *</label><input type="text" id="coCity" placeholder="Johannesburg" autocomplete="address-level2"></div>
-                                <div class="co-field">
-                                    <label for="coProvince">Province *<span id="zoneFeeLabel" class="zone-fee-badge" style="display:none;"></span></label>
-                                    <select id="coProvince" autocomplete="address-level1" onchange="onProvinceChange()">
-                                        <option value="">Select Province</option>
-                                        <option value="Gauteng">Gauteng</option>
-                                        <option value="Western Cape">Western Cape</option>
-                                        <option value="KwaZulu-Natal">KwaZulu-Natal</option>
-                                        <option value="Eastern Cape">Eastern Cape</option>
-                                        <option value="Limpopo">Limpopo</option>
-                                        <option value="Mpumalanga">Mpumalanga</option>
-                                        <option value="North West">North West</option>
-                                        <option value="Northern Cape">Northern Cape</option>
-                                        <option value="Free State">Free State</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="co-form-row">
-                                <div class="co-field"><label for="coPostal">Postal Code</label><input type="text" id="coPostal" placeholder="2001" maxlength="4" autocomplete="postal-code"></div>
-                                <div class="co-field"><label for="coDeliveryNote">Delivery Note (optional)</label><input type="text" id="coDeliveryNote" placeholder="e.g. Gate code 1234"></div>
-                            </div>
-                        </div>
-
-                        <div id="pickupInfo" class="hidden" style="background:#f0f7f0;border-radius:8px;padding:1rem;border:1px solid #c8e6c9;">
-                            <p style="font-weight:700;color:#2c5530;margin-bottom:6px;display:flex;align-items:center;gap:6px;">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2c5530" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                                Collection Address
-                            </p>
-                            <p style="color:#555;font-size:0.9rem;line-height:1.7;">WorthDaGive Wellness Studio<br>[Your Address Here]<br>Mon–Fri: 09:00–18:00 &nbsp;|&nbsp; Sat: 09:00–14:00</p>
-                            <p style="color:#888;font-size:0.8rem;margin-top:8px;">You will be notified when your order is ready for collection.</p>
-                        </div>
-                    </div>
-
-                    <!-- Step 3: Payment -->
-                    <div class="checkout-panel" style="margin-bottom:1.2rem;">
-                        <h2>3. Payment Method</h2>
-                        <div class="payment-methods">
-
-                            <!-- Card Payment -->
-                            <button class="payment-method-btn active" data-method="card" onclick="selectPayment(this)">
-                                <div class="pm-card-icons">
-                                    <!-- Visa -->
-                                    <svg viewBox="0 0 32 22" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="32" height="22" rx="3" fill="#1A1F71"/><path d="M13.5 15.5H11.3L12.7 7H14.9L13.5 15.5Z" fill="white"/><path d="M20.8 7.2C20.3 7 19.5 6.8 18.5 6.8C16.3 6.8 14.8 8 14.8 9.6C14.8 10.8 15.9 11.5 16.7 11.9C17.5 12.3 17.8 12.6 17.8 13C17.8 13.6 17.1 13.9 16.4 13.9C15.4 13.9 14.9 13.7 14.1 13.4L13.8 13.3L13.5 15.1C14.1 15.4 15.1 15.6 16.2 15.6C18.5 15.6 20 14.4 20 12.7C20 11.8 19.4 11.1 18.2 10.5C17.5 10.1 17.1 9.9 17.1 9.4C17.1 8.9 17.6 8.5 18.5 8.5C19.3 8.5 19.8 8.7 20.2 8.8L20.4 8.9L20.8 7.2Z" fill="white"/><path d="M23.3 12.8L24.1 10.7C24.1 10.7 24.3 10.2 24.4 9.9L24.6 10.6L25.3 12.8H23.3ZM25.8 7H24C23.4 7 23 7.2 22.7 7.8L19.7 15.5H22L22.5 14H25.2L25.5 15.5H27.5L25.8 7Z" fill="white"/><path d="M10.8 7L8.6 12.6L8.4 11.6C8 10.3 6.8 8.9 5.5 8.1L7.5 15.5H9.8L13.2 7H10.8Z" fill="white"/><path d="M6.7 7H3.1L3 7.2C5.8 7.9 7.7 9.6 8.4 11.6L7.6 7.8C7.5 7.2 7.1 7 6.7 7Z" fill="#F9A51A"/></svg>
-                                    <!-- Mastercard -->
-                                    <svg viewBox="0 0 32 22" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="32" height="22" rx="3" fill="#252525"/><circle cx="12" cy="11" r="6" fill="#EB001B"/><circle cx="20" cy="11" r="6" fill="#F79E1B"/><path d="M16 6.8C17.2 7.8 18 9.3 18 11C18 12.7 17.2 14.2 16 15.2C14.8 14.2 14 12.7 14 11C14 9.3 14.8 7.8 16 6.8Z" fill="#FF5F00"/></svg>
-                                </div>
-                                <span style="font-size:0.78rem;font-weight:700;color:#333;">Card Payment</span>
-                            </button>
-
-                            <!-- Apple Pay -->
-                            <button class="payment-method-btn" data-method="applepay" onclick="selectPayment(this)">
-                                <svg class="pm-logo" viewBox="0 0 60 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M11.4 4.4C10.8 5.1 9.8 5.6 8.9 5.5C8.8 4.6 9.2 3.6 9.8 3C10.4 2.3 11.4 1.8 12.3 1.8C12.4 2.7 12 3.7 11.4 4.4ZM12.2 5.8C10.8 5.7 9.6 6.6 8.9 6.6C8.2 6.6 7.1 5.8 6 5.8C4.5 5.8 3.1 6.7 2.3 8.2C0.8 11.1 1.9 15.5 3.4 17.9C4.1 19.1 5 20.4 6.2 20.4C7.3 20.4 7.8 19.7 9.1 19.7C10.4 19.7 10.9 20.4 12 20.4C13.2 20.4 14 19.2 14.7 18C15.5 16.6 15.8 15.3 15.8 15.2C15.8 15.2 13.2 14.2 13.2 11.3C13.2 8.8 15.3 7.6 15.4 7.5C14.2 5.8 12.5 5.8 12.2 5.8Z" fill="black"/>
-                                    <text x="20" y="17" font-family="system-ui" font-size="12" font-weight="600" fill="black">Pay</text>
-                                </svg>
-                                <span style="font-size:0.78rem;font-weight:700;color:#333;">Apple Pay</span>
-                            </button>
-
-                            <!-- Google Pay -->
-                            <button class="payment-method-btn" data-method="androidpay" onclick="selectPayment(this)">
-                                <svg class="pm-logo" viewBox="0 0 62 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M29.5 10.7v3.8h-1.2V5.2h3.2c.8 0 1.5.3 2 .8.6.5.8 1.2.8 1.9s-.3 1.4-.8 1.9c-.5.5-1.2.8-2 .8l-2-.1zm0-4.4v3.3h2c.5 0 .9-.2 1.2-.5.3-.3.5-.7.5-1.2 0-.4-.2-.8-.5-1.1-.3-.3-.7-.5-1.2-.5H29.5z" fill="#5F6368"/>
-                                    <path d="M36.6 8c.9 0 1.6.2 2.1.7.5.5.8 1.2.8 2v4.1h-1.1v-.9h-.1c-.5.8-1.2 1.1-2 1.1-.7 0-1.3-.2-1.8-.6-.5-.4-.7-.9-.7-1.5 0-.7.3-1.2.8-1.6.5-.4 1.2-.5 2.1-.5.7 0 1.3.1 1.8.4v-.3c0-.5-.2-.9-.5-1.2-.3-.3-.8-.5-1.3-.5-.7 0-1.3.3-1.7.9l-1-.7c.6-.8 1.5-1.4 2.6-1.4zm-1.6 4.8c0 .3.1.5.4.7.3.2.6.3.9.3.5 0 .9-.2 1.3-.6.4-.4.6-.8.6-1.3-.4-.3-.9-.5-1.6-.5-.5 0-.9.1-1.2.3-.3.3-.4.6-.4 1.1z" fill="#5F6368"/>
-                                    <path d="M44.4 8.1l-3.9 9H39.3l1.4-3.2-2.5-5.8h1.3l1.8 4.4 1.8-4.4h1.3z" fill="#5F6368"/>
-                                    <path d="M22.4 11.1c0-.4 0-.7-.1-1H17v2h3c-.1.7-.5 1.3-1 1.7v1.4h1.7c1-.9 1.7-2.3 1.7-4.1z" fill="#4285F4"/>
-                                    <path d="M17 16c1.5 0 2.8-.5 3.7-1.4l-1.8-1.4c-.5.3-1.1.5-1.9.5-1.5 0-2.7-1-3.1-2.3H12v1.4c1 1.9 2.9 3.2 5 3.2z" fill="#34A853"/>
-                                    <path d="M13.9 11.4c-.1-.4-.2-.7-.2-1.1s.1-.7.2-1.1V7.8H12c-.4.8-.6 1.6-.6 2.5s.2 1.8.6 2.5l1.9-1.4z" fill="#FBBC04"/>
-                                    <path d="M17 7c.8 0 1.6.3 2.1.9l1.6-1.6C19.7 5.3 18.4 4.8 17 4.8c-2.1 0-4 1.3-5 3.2l1.9 1.4C14.3 8 15.5 7 17 7z" fill="#EA4335"/>
-                                </svg>
-                                <span style="font-size:0.78rem;font-weight:700;color:#333;">Google Pay</span>
-                            </button>
-
-                            <!-- Cash on Delivery -->
-                            <button class="payment-method-btn" data-method="cod" onclick="selectPayment(this)">
-                                <div style="width:40px;height:22px;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;">
-                                    <svg width="28" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
-                                </div>
-                                <span style="font-size:0.78rem;font-weight:700;color:#333;">Cash on Delivery</span>
-                            </button>
-                        </div>
-
-                        <!-- Card details panel -->
-                        <div id="payCard" class="payment-detail-panel">
-                            <div style="background:#f8f9fa;border-radius:8px;padding:1rem;border:1px solid #e0e0e0;">
-                                <p style="font-size:0.85rem;color:#555;margin-bottom:0.8rem;font-weight:600;">Enter Card Details</p>
-                                <div class="co-form-row full"><div class="co-field"><label>Card Number</label><input type="text" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19" inputmode="numeric" oninput="formatCardNumber(this)"></div></div>
-                                <div class="co-form-row">
-                                    <div class="co-field"><label>Expiry Date</label><input type="text" id="cardExpiry" placeholder="MM / YY" maxlength="7" oninput="formatExpiry(this)"></div>
-                                    <div class="co-field"><label>CVV</label><input type="text" id="cardCvv" placeholder="123" maxlength="4" inputmode="numeric"></div>
-                                </div>
-                                <div class="co-form-row full"><div class="co-field"><label>Name on Card</label><input type="text" id="cardName" placeholder="THABO KHUMALO" autocomplete="cc-name" style="text-transform:uppercase;"></div></div>
-                                <p style="font-size:0.75rem;color:#aaa;margin-top:8px;display:flex;align-items:center;gap:4px;">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                                    Your card details are encrypted and secure. We do not store card numbers.
-                                </p>
-                            </div>
-                        </div>
-
-                        <!-- Apple Pay panel -->
-                        <div id="payApplepay" class="payment-detail-panel hidden">
-                            <div style="background:#f8f9fa;border-radius:8px;padding:1rem;border:1px solid #e0e0e0;text-align:center;">
-                                <p style="font-size:0.9rem;color:#555;">After placing your order, you will be prompted to authenticate with Apple Pay on your device.</p>
-                            </div>
-                        </div>
-
-                        <!-- Google Pay panel -->
-                        <div id="payAndroidpay" class="payment-detail-panel hidden">
-                            <div style="background:#f8f9fa;border-radius:8px;padding:1rem;border:1px solid #e0e0e0;text-align:center;">
-                                <p style="font-size:0.9rem;color:#555;">After placing your order, you will be redirected to complete payment via Google Pay.</p>
-                            </div>
-                        </div>
-
-                        <!-- COD panel -->
-                        <div id="payCod" class="payment-detail-panel hidden">
-                            <div style="background:#fff8e1;border-radius:8px;padding:1rem;border-left:4px solid #f9a825;">
-                                <p style="font-weight:600;color:#f57f17;margin-bottom:4px;">Cash on Delivery</p>
-                                <p style="font-size:0.88rem;color:#555;">Please have the exact amount ready. COD is available in selected areas. Our driver will contact you prior to arrival. A R20 COD handling fee applies.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Step 4: Legal Confirm -->
-                    <div class="checkout-panel" style="margin-bottom:1.2rem;">
-                        <h2>4. Confirm &amp; Legal</h2>
-                        <p style="font-size:0.85rem;color:#666;margin-bottom:1rem;">Both confirmations below are required before your order can be placed.</p>
-                        <div class="reg-checkbox-group" id="checkAge18Wrapper">
-                            <input type="checkbox" id="coAge18" onchange="validateLegalBoxes()">
-                            <label for="coAge18">I confirm I am <strong>18 years of age or older</strong> and am legally permitted to purchase cannabis products in my area under the <em>Cannabis for Private Purposes Act 7 of 2024</em>.</label>
-                        </div>
-                        <div class="reg-checkbox-group" style="margin-top:10px;" id="checkTermsWrapper">
-                            <input type="checkbox" id="coTerms" onchange="validateLegalBoxes()">
-                            <label for="coTerms">I have read and accept the <a href="index.html#legal-full" target="_blank">Legal Notice</a> and confirm these products are for my own private use in a lawful jurisdiction.</label>
-                        </div>
-                        <div id="legalBoxWarning" class="hidden" style="margin-top:10px;padding:10px 14px;background:#fce4e4;border-radius:8px;font-size:0.85rem;color:#c62828;font-weight:600;">
-                            Both confirmations above must be ticked before you can place your order.
-                        </div>
-                    </div>
-
-                </div><!-- /left -->
-
-                <!-- RIGHT: ORDER SUMMARY -->
-                <div>
-                    <div class="checkout-panel" style="position:sticky;top:80px;">
-                        <h2>Order Summary</h2>
-                        <div id="coSummaryItems"></div>
-                        <div class="co-totals">
-                            <div class="co-total-row"><span>Subtotal</span><span id="coSubtotal">R0.00</span></div>
-                            <div class="co-total-row"><span>Delivery <span id="coDeliveryZone" style="font-size:0.78rem;color:#999;"></span></span><span id="coDeliveryFee">R0.00</span></div>
-                            <div class="co-total-row" id="coCodRow" style="display:none;"><span>COD Handling Fee</span><span>R20.00</span></div>
-                            <div class="co-total-row grand"><span>Total</span><span id="coGrandTotal">R0.00</span></div>
-                        </div>
-                        <div id="coMsg" class="form-message hidden" style="margin-top:10px;"></div>
-                        <button class="btn-place-order" id="placeOrderBtn" onclick="placeOrder()">Place Order</button>
-                        <p class="co-secure-note" style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:8px;font-size:0.78rem;color:#aaa;">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                            Secured &amp; encrypted
-                        </p>
-                        <p class="co-secure-note" style="font-size:0.75rem;color:#aaa;margin-top:4px;">Cannabis for Private Purposes Act 7 of 2024 — 18+ only</p>
-                    </div>
-                </div>
-
-            </div><!-- /checkout-grid -->
-        </div>
-    </section>
-
-    <!-- FOOTER -->
-    <footer>
-        <div class="container">
-            <div class="footer-legal">
-                <p>All products are cannabis-infused and intended for adults 18+ only.</p>
-                <p>Sold in compliance with the Cannabis for Private Purposes Act 7 of 2024 (South Africa).</p>
-                <p>&copy; 2026 WorthDaGive Wellness Studio. All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
-
-    <script src="supabase.js"></script>
-    <script src="auth.js"></script>
-    <script>
-    /* ── Guard ── */
-    if (localStorage.getItem('ageVerified') !== 'true') window.location.replace('index.html');
-
-    /* ── Zone-based delivery fees (R) ── */
-    const DELIVERY_ZONES = {
-        'Gauteng':       65,
-        'Western Cape':  110,
-        'KwaZulu-Natal': 95,
-        'Eastern Cape':  120,
-        'Limpopo':       130,
-        'Mpumalanga':    120,
-        'North West':    120,
-        'Northern Cape': 150,
-        'Free State':    115
-    };
-    const COD_FEE = 20;
-
-    const BASE_PRODUCTS = [
-        { id:1, name:'Premium Indica Strain', price:45.00, image:'media/PIS.png', thc:'22%', cbd:'1%', category:'Flower', description:'' },
-        { id:2, name:'Sativa Blend',          price:50.00, image:'media/sat.blend.png', thc:'20%', cbd:'2%', category:'Flower', description:'' },
-        { id:3, name:'CBD Oil Tincture',       price:75.00, image:'media/cbd.png', thc:'<0.3%', cbd:'1000mg', category:'Tincture', description:'' },
-        { id:4, name:'Hybrid Edibles',         price:35.00, image:'', thc:'5mg', cbd:'5mg', category:'Edibles', description:'' },
-        { id:5, name:'Crusher',                price:350.00, image:'', thc:'N/A', cbd:'N/A', category:'Accessories', description:'' }
-    ];
-
-    function getAllProducts() {
-        const admin  = JSON.parse(localStorage.getItem('adminProducts')) || [];
-        const merged = JSON.parse(JSON.stringify(BASE_PRODUCTS));
-        admin.forEach(ap => { const i = merged.findIndex(p => p.id === ap.id); if (i >= 0) merged[i] = ap; else merged.push(ap); });
-        return merged;
-    }
-    function getCart()   { return JSON.parse(localStorage.getItem('cart')) || []; }
-    function saveCart(c) { localStorage.setItem('cart', JSON.stringify(c)); }
-    function getProductById(id) { return getAllProducts().find(p => p.id === id); }
-
-    let isDelivery     = true;
-    let selectedPayment = 'card';
-    let currentDeliveryFee = 0;
-
-    /* ── Province change → zone fee ── */
-    function onProvinceChange() {
-        const prov = document.getElementById('coProvince').value;
-        currentDeliveryFee = prov ? (DELIVERY_ZONES[prov] || 80) : 0;
-        const badge = document.getElementById('zoneFeeLabel');
-        const zoneEl = document.getElementById('coDeliveryZone');
-        if (prov) {
-            badge.textContent = 'R' + currentDeliveryFee;
-            badge.style.display = 'inline-block';
-            if (zoneEl) zoneEl.textContent = '(' + prov + ')';
-        } else {
-            badge.style.display = 'none';
-            if (zoneEl) zoneEl.textContent = '';
-        }
-        renderSummary();
-    }
-
-    /* ── Delivery toggle ── */
-    function toggleDelivery(radio) {
-        isDelivery = radio.value === 'delivery';
-        document.getElementById('deliveryFields').classList.toggle('hidden', !isDelivery);
-        document.getElementById('pickupInfo').classList.toggle('hidden', isDelivery);
-        if (!isDelivery) {
-            currentDeliveryFee = 0;
-            document.getElementById('zoneFeeLabel').style.display = 'none';
-        }
-        renderSummary();
-    }
-
-    /* ── Payment selection ── */
-    function selectPayment(btn) {
-        document.querySelectorAll('.payment-method-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        selectedPayment = btn.dataset.method;
-        ['card','applepay','androidpay','cod'].forEach(m => {
-            const el = document.getElementById('pay' + m.charAt(0).toUpperCase() + m.slice(1));
-            if (el) el.classList.toggle('hidden', m !== selectedPayment);
+    try {
+        WDG.authOnChange(async (session) => {
+            _currentSession = session;
+            _currentProfile = session ? await WDG.authGetProfile() : null;
+            updateNavAuth();
+            _authCallbacks.forEach(cb => cb(session, _currentProfile));
         });
-        const codRow = document.getElementById('coCodRow');
-        if (codRow) codRow.style.display = selectedPayment === 'cod' ? 'flex' : 'none';
-        renderSummary();
+    } catch(e) {}
+
+    updateNavAuth();
+    injectAuthModal();
+}
+
+/** Register a callback that fires when auth state changes */
+function onAuthReady(cb) {
+    if (_authReady) cb(_currentSession, _currentProfile);
+    else _authCallbacks.push(cb);
+}
+
+function isLoggedIn()   { return !!_currentSession; }
+function currentUser()  { return _currentProfile; }
+function currentSession() { return _currentSession; }
+
+/* ── Update nav Login/Account link ── */
+function updateNavAuth() {
+    const loginBtn = document.getElementById('loginBtn');
+    if (!loginBtn) return;
+    if (_currentSession && _currentProfile) {
+        loginBtn.innerHTML = ICONS.user + ' ' + (_currentProfile.full_name.split(' ')[0] || 'Account');
+        loginBtn.href = 'orders.html';
+        loginBtn.onclick = null;
+    } else {
+        loginBtn.innerHTML = ICONS.user + ' Login';
+        loginBtn.href = '#';
+        loginBtn.onclick = (e) => { e.preventDefault(); openAuthModal('login'); };
     }
+}
 
-    /* ── Legal checkbox validation ── */
-    function validateLegalBoxes() {
-        const age18 = document.getElementById('coAge18').checked;
-        const terms = document.getElementById('coTerms').checked;
-        document.getElementById('legalBoxWarning').classList.toggle('hidden', age18 && terms);
-        document.getElementById('checkAge18Wrapper').style.outline = age18 ? '' : '';
-    }
+/* ════════════════════════════════════════
+   AUTH MODAL  (Login + Register)
+════════════════════════════════════════ */
+function injectAuthModal() {
+    if (document.getElementById('authModal')) return;
 
-    /* ── Card number formatter ── */
-    function formatCardNumber(input) {
-        let v = input.value.replace(/\D/g,'').slice(0,16);
-        input.value = v.replace(/(.{4})/g,'$1 ').trim();
-    }
-    function formatExpiry(input) {
-        let v = input.value.replace(/\D/g,'').slice(0,4);
-        if (v.length >= 3) v = v.slice(0,2) + ' / ' + v.slice(2);
-        input.value = v;
-    }
+    const modal = document.createElement('div');
+    modal.id = 'authModal';
+    modal.className = 'modal hidden';
+    modal.innerHTML = `
+        <div class="modal-content auth-modal-content">
+            <button class="auth-modal-close" id="authModalClose" aria-label="Close">&times;</button>
 
-    /* ── Render order summary ── */
-    function renderSummary() {
-        const cart = getCart();
-        const itemsEl    = document.getElementById('coSummaryItems');
-        const subtotalEl = document.getElementById('coSubtotal');
-        const deliveryEl = document.getElementById('coDeliveryFee');
-        const grandEl    = document.getElementById('coGrandTotal');
+            <div class="auth-tab-bar" id="authTabBar">
+                <button class="auth-tab active" data-tab="login" onclick="switchAuthTab('login')">Sign In</button>
+                <button class="auth-tab" data-tab="register" onclick="switchAuthTab('register')">Register</button>
+            </div>
 
-        if (!cart.length) {
-            itemsEl.innerHTML = '<p style="color:#999;text-align:center;padding:1rem 0;font-size:0.9rem;">Your cart is empty. <a href="products.html">Browse products</a></p>';
-            subtotalEl.textContent = deliveryEl.textContent = grandEl.textContent = 'R0.00';
-            return;
-        }
+            <!-- ── LOGIN ── -->
+            <div id="authLoginPanel" class="auth-panel">
+                <p class="auth-panel-subtitle">Welcome back. Sign in to continue.</p>
+                <form id="authLoginForm" novalidate>
+                    <div class="auth-field">
+                        <label for="authEmail">${ICONS.mail} Email Address</label>
+                        <input type="email" id="authEmail" placeholder="you@example.com" autocomplete="email" required>
+                    </div>
+                    <div class="auth-field">
+                        <label for="authPassword">${ICONS.lock} Password</label>
+                        <div class="auth-pw-wrap">
+                            <input type="password" id="authPassword" placeholder="Your password" autocomplete="current-password" required>
+                            <button type="button" class="auth-pw-toggle" onclick="togglePw('authPassword',this)" tabindex="-1">${ICONS.eye}</button>
+                        </div>
+                    </div>
+                    <div id="authLoginMsg" class="auth-msg hidden"></div>
+                    <button type="submit" class="btn-primary auth-submit" id="authLoginBtn">
+                        <span class="auth-btn-text">Sign In</span>
+                        <span class="auth-btn-spinner hidden"></span>
+                    </button>
+                </form>
+                <p class="auth-switch-link"><a href="#" onclick="switchAuthTab('register');return false;">Don't have an account? Register here</a></p>
+            </div>
 
-        let subtotal = 0;
-        itemsEl.innerHTML = cart.map(item => {
-            const p = getProductById(item.id);
-            if (!p) return '';
-            const line  = p.price * item.quantity;
-            subtotal   += line;
-            const thumb = (p.images && p.images[0]) || p.image || '';
-            return '<div class="co-summary-item">' +
-                (thumb ? '<img src="' + thumb + '" style="width:44px;height:44px;object-fit:cover;border-radius:6px;flex-shrink:0;" alt="' + p.name + '" loading="lazy">' : '') +
-                '<div style="flex:1;min-width:0;"><span class="co-item-name">' + p.name + '</span><span class="co-item-qty" style="display:block;">Qty: ' + item.quantity + '</span></div>' +
-                '<span class="co-item-price">R' + line.toFixed(2) + '</span></div>';
-        }).join('');
+            <!-- ── REGISTER ── -->
+            <div id="authRegisterPanel" class="auth-panel hidden">
+                <p class="auth-panel-subtitle">Create your account. Takes less than a minute.</p>
+                <form id="authRegisterForm" novalidate>
+                    <div class="auth-field">
+                        <label>${ICONS.user} Full Name</label>
+                        <input type="text" id="regFullName" placeholder="e.g. Thabo Khumalo" maxlength="80" autocomplete="name" required>
+                    </div>
+                    <div class="auth-field">
+                        <label>${ICONS.mail} Email Address</label>
+                        <input type="email" id="regEmail" placeholder="you@example.com" autocomplete="email" required>
+                    </div>
+                    <div class="auth-field">
+                        <label>${ICONS.lock} Password</label>
+                        <div class="auth-pw-wrap">
+                            <input type="password" id="regPassword" placeholder="Minimum 8 characters" autocomplete="new-password" required>
+                            <button type="button" class="auth-pw-toggle" onclick="togglePw('regPassword',this)" tabindex="-1">${ICONS.eye}</button>
+                        </div>
+                    </div>
+                    <div class="auth-field">
+                        <label>${ICONS.lock} Confirm Password</label>
+                        <div class="auth-pw-wrap">
+                            <input type="password" id="regPassword2" placeholder="Repeat password" autocomplete="new-password" required>
+                            <button type="button" class="auth-pw-toggle" onclick="togglePw('regPassword2',this)" tabindex="-1">${ICONS.eye}</button>
+                        </div>
+                    </div>
 
-        const deliveryFee = isDelivery ? currentDeliveryFee : 0;
-        const codFee      = selectedPayment === 'cod' ? COD_FEE : 0;
-        const grand       = subtotal + deliveryFee + codFee;
+                    <!-- Date of birth -->
+                    <div class="auth-field reg-age-block">
+                        <label class="reg-age-label">Date of Birth <span class="reg-required">*</span></label>
+                        <input type="date" id="regDob" class="reg-dob-input" required>
+                        <p class="reg-age-hint">You must be 18 or older. Required by South African law.</p>
+                    </div>
 
-        subtotalEl.textContent = 'R' + subtotal.toFixed(2);
-        deliveryEl.textContent = isDelivery ? (currentDeliveryFee > 0 ? 'R' + deliveryFee.toFixed(2) : 'Select province') : 'Free (Collection)';
-        grandEl.textContent    = 'R' + grand.toFixed(2);
-    }
+                    <!-- Age confirm -->
+                    <div class="reg-checkbox-group">
+                        <input type="checkbox" id="regAge18">
+                        <label for="regAge18">I confirm I am <strong>18 years of age or older</strong> and my date of birth above is accurate and truthful.</label>
+                    </div>
 
-    /* ── Validation ── */
-    function validate() {
-        const req = [
-            { id:'coFirstName', label:'First Name' },
-            { id:'coLastName',  label:'Last Name'  },
-            { id:'coEmail',     label:'Email'      },
-            { id:'coPhone',     label:'Phone'      }
-        ];
-        for (const f of req) {
-            if (!document.getElementById(f.id).value.trim()) return f.label + ' is required.';
-        }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(document.getElementById('coEmail').value.trim()))
-            return 'Please enter a valid email address.';
+                    <!-- Legal warning -->
+                    <div class="reg-consequences-box">
+                        <div class="reg-warn-head">${ICONS.warn} Warning — False Information</div>
+                        <p>Providing false or misleading information about your age when registering may constitute a criminal offence under the <em>Electronic Communications and Transactions Act 25 of 2002</em>, the <em>Drugs and Drug Trafficking Act 140 of 1992</em>, and the <em>Cannabis for Private Purposes Act 7 of 2024</em>. WorthDaGive reserves the right to verify your age and report fraudulent registrations to the SAPS.</p>
+                    </div>
 
-        if (isDelivery) {
-            if (!document.getElementById('coAddress').value.trim()) return 'Street address is required.';
-            if (!document.getElementById('coCity').value.trim())    return 'City is required.';
-            if (!document.getElementById('coProvince').value)       return 'Province is required.';
-        }
+                    <!-- Terms -->
+                    <div class="reg-checkbox-group">
+                        <input type="checkbox" id="regTerms">
+                        <label for="regTerms">I accept the <a href="index.html#legal-full" target="_blank">Legal Notice</a> and confirm I am purchasing for private use in a lawful jurisdiction.</label>
+                    </div>
 
-        if (selectedPayment === 'card') {
-            const num  = document.getElementById('cardNumber').value.replace(/\s/g,'');
-            const exp  = document.getElementById('cardExpiry').value.replace(/\s/g,'');
-            const cvv  = document.getElementById('cardCvv').value.trim();
-            const name = document.getElementById('cardName').value.trim();
-            if (num.length < 15)  return 'Please enter a valid card number.';
-            if (exp.replace('/','').length < 4) return 'Please enter a valid expiry date.';
-            if (cvv.length < 3)   return 'Please enter your CVV.';
-            if (!name)            return 'Please enter the name on your card.';
-        }
+                    <div id="authRegMsg" class="auth-msg hidden"></div>
+                    <button type="submit" class="btn-primary auth-submit" id="authRegBtn">
+                        <span class="auth-btn-text">Create Account</span>
+                        <span class="auth-btn-spinner hidden"></span>
+                    </button>
+                </form>
+                <p class="auth-switch-link"><a href="#" onclick="switchAuthTab('login');return false;">Already have an account? Sign in</a></p>
+            </div>
 
-        if (!document.getElementById('coAge18').checked || !document.getElementById('coTerms').checked) {
-            document.getElementById('legalBoxWarning').classList.remove('hidden');
-            document.getElementById('legalBoxWarning').scrollIntoView({ behavior:'smooth', block:'center' });
-            return 'Please tick both confirmations in the legal section.';
-        }
+            <!-- ── VERIFY EMAIL ── -->
+            <div id="authVerifyPanel" class="auth-panel hidden">
+                <div class="auth-verify-icon">${ICONS.mail}</div>
+                <h3>Check your email</h3>
+                <p>We've sent a verification link to <strong id="authVerifyEmail"></strong>. Click the link in the email to activate your account, then return here and sign in.</p>
+                <button class="btn-primary" style="width:100%;margin-top:1rem;" onclick="switchAuthTab('login')">Go to Sign In</button>
+            </div>
+        </div>`;
 
-        if (!getCart().length) return 'Your cart is empty.';
-        return null;
-    }
+    document.body.appendChild(modal);
 
-    /* ── Place order ── */
-    async function placeOrder() {
-        const msgEl = document.getElementById('coMsg');
-        const error = validate();
-        if (error) {
-            msgEl.textContent = error;
-            msgEl.className   = 'form-message error';
-            msgEl.classList.remove('hidden');
-            msgEl.scrollIntoView({ behavior:'smooth', block:'center' });
-            return;
-        }
+    document.getElementById('authModalClose').addEventListener('click', closeAuthModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeAuthModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAuthModal(); });
 
-        const btn = document.getElementById('placeOrderBtn');
-        btn.disabled     = true;
-        btn.textContent  = 'Placing order...';
+    document.getElementById('authLoginForm').addEventListener('submit', handleLogin);
+    document.getElementById('authRegisterForm').addEventListener('submit', handleRegister);
+}
 
-        const cart       = getCart();
-        const session    = currentSession ? currentSession() : null;
-        const deliveryFee = isDelivery ? currentDeliveryFee : 0;
-        const codFee      = selectedPayment === 'cod' ? COD_FEE : 0;
-        const subtotal    = cart.reduce((s, item) => {
-            const p = getProductById(item.id);
-            return p ? s + p.price * item.quantity : s;
-        }, 0);
-        const total = subtotal + deliveryFee + codFee;
-        const ref   = 'WDG-' + Date.now().toString(36).toUpperCase();
+function openAuthModal(tab, onSuccess) {
+    _authSuccessCallback = onSuccess || null;
+    const modal = document.getElementById('authModal');
+    if (!modal) { injectAuthModal(); }
+    switchAuthTab(tab || 'login');
+    document.getElementById('authModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
 
-        const orderPayload = {
-            ref,
-            user_id:        session ? session.user.id : null,
-            first_name:     document.getElementById('coFirstName').value.trim(),
-            last_name:      document.getElementById('coLastName').value.trim(),
-            email:          document.getElementById('coEmail').value.trim(),
-            phone:          document.getElementById('coPhone').value.trim(),
-            delivery_type:  isDelivery ? 'delivery' : 'pickup',
-            address:        isDelivery ? document.getElementById('coAddress').value.trim() : null,
-            city:           isDelivery ? document.getElementById('coCity').value.trim() : null,
-            province:       isDelivery ? document.getElementById('coProvince').value : null,
-            postal_code:    isDelivery ? document.getElementById('coPostal').value.trim() : null,
-            delivery_note:  isDelivery ? document.getElementById('coDeliveryNote').value.trim() : null,
-            payment_method: selectedPayment,
-            payment_status: selectedPayment === 'cod' ? 'unpaid' : 'pending',
-            subtotal,
-            delivery_fee:   deliveryFee + codFee,
-            total
-        };
+function closeAuthModal() {
+    const modal = document.getElementById('authModal');
+    if (modal) modal.classList.add('hidden');
+    document.body.style.overflow = '';
+    _authSuccessCallback = null;
+}
 
-        const items = cart.map(item => {
-            const p = getProductById(item.id);
-            return { product_id: item.id, name: p ? p.name : 'Unknown', price: p ? p.price : 0, quantity: item.quantity, image: p ? ((p.images && p.images[0]) || p.image || '') : '' };
-        });
+let _authSuccessCallback = null;
 
-        try {
-            /* Submit to Supabase */
-            const client = await loadSupabaseSDK();
-            const { data: order, error: orderErr } = await client.from('orders').insert(orderPayload).select().single();
-            if (orderErr) throw orderErr;
-
-            /* Insert order items */
-            const itemsWithOrderId = items.map(i => ({ ...i, order_id: order.id }));
-            await client.from('order_items').insert(itemsWithOrderId);
-
-            saveCart([]);
-            document.getElementById('coGrid').classList.add('hidden');
-            document.getElementById('coOrderRef').textContent = 'Order Reference: ' + ref;
-            document.getElementById('coSuccessScreen').classList.remove('hidden');
-            document.getElementById('coSuccessScreen').scrollIntoView({ behavior:'smooth' });
-
-        } catch (err) {
-            console.error('Order error:', err);
-            /* Fallback: save locally if Supabase not yet configured */
-            const orders = JSON.parse(localStorage.getItem('orders')) || [];
-            orders.push({ ...orderPayload, items });
-            localStorage.setItem('orders', JSON.stringify(orders));
-            saveCart([]);
-            document.getElementById('coGrid').classList.add('hidden');
-            document.getElementById('coOrderRef').textContent = 'Order Reference: ' + ref;
-            document.getElementById('coSuccessScreen').classList.remove('hidden');
-        } finally {
-            btn.disabled    = false;
-            btn.textContent = 'Place Order';
-        }
-    }
-
-    function afterAuthProceed() {
-        document.getElementById('coAuthGate').classList.add('hidden');
-        document.getElementById('coGrid').classList.remove('hidden');
-        prefillFromProfile();
-    }
-
-    function prefillFromProfile() {
-        const profile = currentUser ? currentUser() : null;
-        if (!profile) return;
-        const names = (profile.full_name || '').split(' ');
-        const first = document.getElementById('coFirstName');
-        const last  = document.getElementById('coLastName');
-        const email = document.getElementById('coEmail');
-        const phone = document.getElementById('coPhone');
-        if (first && !first.value && names[0])   first.value = names[0];
-        if (last  && !last.value  && names[1])   last.value  = names.slice(1).join(' ');
-        if (email && !email.value && profile.email) email.value = profile.email;
-        if (phone && !phone.value && profile.phone) phone.value = profile.phone;
-    }
-
-    /* ── Init ── */
-    initAuth().catch(()=>{}).finally(() => {
-        onAuthReady((session) => {
-            if (!session) {
-                document.getElementById('coAuthGate').classList.remove('hidden');
-                document.getElementById('coGrid').classList.add('hidden');
-            } else {
-                document.getElementById('coAuthGate').classList.add('hidden');
-                document.getElementById('coGrid').classList.remove('hidden');
-                prefillFromProfile();
-            }
-        });
-        renderSummary();
+function switchAuthTab(tab) {
+    ['login','register','verify'].forEach(t => {
+        const panel = document.getElementById('authLoginPanel') ||
+                      document.getElementById('auth' + t.charAt(0).toUpperCase() + t.slice(1) + 'Panel');
+        // use explicit ids
     });
-    </script>
-</body>
-</html>
+    document.getElementById('authLoginPanel').classList.toggle('hidden',    tab !== 'login');
+    document.getElementById('authRegisterPanel').classList.toggle('hidden', tab !== 'register');
+    document.getElementById('authVerifyPanel').classList.toggle('hidden',   tab !== 'verify');
+    document.querySelectorAll('#authTabBar .auth-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+}
+
+function togglePw(inputId, btn) {
+    const inp = document.getElementById(inputId);
+    if (!inp) return;
+    const show = inp.type === 'password';
+    inp.type = show ? 'text' : 'password';
+    btn.innerHTML = show ? ICONS.eyeOff : ICONS.eye;
+}
+
+function setSubmitting(btnId, submitting) {
+    const btn     = document.getElementById(btnId);
+    if (!btn) return;
+    const text    = btn.querySelector('.auth-btn-text');
+    const spinner = btn.querySelector('.auth-btn-spinner');
+    btn.disabled  = submitting;
+    if (text)    text.classList.toggle('hidden', submitting);
+    if (spinner) spinner.classList.toggle('hidden', !submitting);
+}
+
+function showAuthMsg(elId, text, type) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.textContent = text;
+    el.className   = 'auth-msg ' + type;
+    el.classList.remove('hidden');
+}
+
+/* ── Login handler ── */
+async function handleLogin(e) {
+    e.preventDefault();
+    const email    = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPassword').value;
+    const msgEl    = 'authLoginMsg';
+
+    if (!email || !password) { showAuthMsg(msgEl, 'Please enter your email and password.', 'error'); return; }
+
+    setSubmitting('authLoginBtn', true);
+    try {
+        await WDG.authLogin({ email, password });
+        _currentSession = await WDG.authGetSession();
+        _currentProfile = await WDG.authGetProfile();
+        updateNavAuth();
+        closeAuthModal();
+        if (_authSuccessCallback) _authSuccessCallback();
+        else showToastGlobal('Welcome back, ' + (_currentProfile?.full_name?.split(' ')[0] || 'there') + '!', 'success');
+    } catch (err) {
+        const msg = err.message || 'Login failed.';
+        showAuthMsg(msgEl, msg.includes('Invalid') ? 'Incorrect email or password.' : msg, 'error');
+    } finally {
+        setSubmitting('authLoginBtn', false);
+    }
+}
+
+/* ── Register handler ── */
+async function handleRegister(e) {
+    e.preventDefault();
+    const fullName  = document.getElementById('regFullName').value.trim();
+    const email     = document.getElementById('regEmail').value.trim();
+    const password  = document.getElementById('regPassword').value;
+    const password2 = document.getElementById('regPassword2').value;
+    const dob       = document.getElementById('regDob').value;
+    const age18     = document.getElementById('regAge18').checked;
+    const terms     = document.getElementById('regTerms').checked;
+    const msgEl     = 'authRegMsg';
+
+    if (!fullName)  { showAuthMsg(msgEl, 'Full name is required.', 'error'); return; }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showAuthMsg(msgEl, 'Please enter a valid email address.', 'error'); return; }
+    if (!password || password.length < 8) { showAuthMsg(msgEl, 'Password must be at least 8 characters.', 'error'); return; }
+    if (password !== password2) { showAuthMsg(msgEl, 'Passwords do not match.', 'error'); return; }
+    if (!dob) { showAuthMsg(msgEl, 'Please enter your date of birth.', 'error'); return; }
+
+    /* Age check */
+    const birth = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    if (age < 18) { showAuthMsg(msgEl, 'You must be 18 or older to register. This is required by South African law.', 'error'); return; }
+
+    if (!age18) { showAuthMsg(msgEl, 'Please confirm you are 18 years of age or older.', 'error'); return; }
+    if (!terms)  { showAuthMsg(msgEl, 'You must accept the legal notice to register.', 'error'); return; }
+
+    setSubmitting('authRegBtn', true);
+    try {
+        await WDG.authRegister({ email, password, fullName, dob });
+        document.getElementById('authVerifyEmail').textContent = email;
+        switchAuthTab('verify');
+    } catch (err) {
+        const msg = err.message || 'Registration failed.';
+        showAuthMsg(msgEl, msg.includes('already registered') ? 'This email is already registered. Please sign in.' : msg, 'error');
+    } finally {
+        setSubmitting('authRegBtn', false);
+    }
+}
+
+/* ── Global toast (used across pages) ── */
+function showToastGlobal(msg, type) {
+    const old = document.querySelector('.toast');
+    if (old) old.remove();
+    const t = document.createElement('div');
+    t.className = 'toast' + (type === 'success' ? ' toast-success' : '');
+    t.textContent = msg;
+    document.body.appendChild(t);
+    requestAnimationFrame(() => t.classList.add('toast-show'));
+    setTimeout(() => {
+        t.classList.remove('toast-show');
+        setTimeout(() => t.remove(), 300);
+    }, 3000);
+}
+
+/* Expose globally */
+window.openAuthModal   = openAuthModal;
+window.closeAuthModal  = closeAuthModal;
+window.switchAuthTab   = switchAuthTab;
+window.togglePw        = togglePw;
+window.isLoggedIn      = isLoggedIn;
+window.currentUser     = currentUser;
+window.currentSession  = currentSession;
+window.onAuthReady     = onAuthReady;
+window.authLogout      = async function() {
+    await WDG.authLogout();
+    _currentSession = null;
+    _currentProfile = null;
+    updateNavAuth();
+    window.location.href = 'index.html';
+};
+window.showToastGlobal = showToastGlobal;
