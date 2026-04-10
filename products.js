@@ -89,9 +89,9 @@ var PRODUCTS = [
         category: "Pre-Rolls",
         subCategory: "Indica",
         isCannabis: true,
-        image: "https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_200/v1775810915/New_pre-roll_j_s_mdhiq0.png",
+        image: "https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_400/v1775810915/New_pre-roll_j_s_mdhiq0.png",
         images: [
-            "https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_200/v1775810915/New_pre-roll_j_s_mdhiq0.png"
+            "https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_400/v1775810915/New_pre-roll_j_s_mdhiq0.png"
         ]
     }
     // Copy the block above, paste it here, change id to 2, 3, 4 ...
