@@ -23,7 +23,8 @@ var DEFAULT_CATEGORIES = [
     { name: "Accessories",            subs: [] },
     { name: "WorthDaGive Merchandise",subs: [] },
     { name: "Beverages",              subs: [] },
-    { name: "Hair & Beauty",          subs: [] }
+    { name: "Hair & Beauty",          subs: [] }, 
+    { name: "Pre-Rolls",              subs: ["Indica"] }
 ];
 
 function getCategories() {
@@ -75,6 +76,22 @@ var PRODUCTS = [
         image: "https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775680930/THC_Concentrated_Sundae_driver_Disposable_Vape_grtkfz.png",
         images: [
             "https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775680930/THC_Concentrated_Sundae_driver_Disposable_Vape_grtkfz.png"
+        ]
+    }
+
+    ,{
+        id: 3,
+        name: "Purple Skittles Indoor Pre-Roll",
+        price: 100.00,
+        description: "Premium indoor flower pre-roll Purple Skittles flavour",
+        thc: "Available on request",
+        cbd: "Available on request",
+        category: "Pre-Rolls",
+        subCategory: "Indica",
+        isCannabis: true,
+        image: "https://https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775810915/New_pre-roll_j_s_mdhiq0.png",
+        images: [
+            "https://https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775810915/New_pre-roll_j_s_mdhiq0.png"
         ]
     }
     // Copy the block above, paste it here, change id to 2, 3, 4 ...
