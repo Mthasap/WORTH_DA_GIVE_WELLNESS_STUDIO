@@ -89,7 +89,7 @@ var PRODUCTS = [
         category: "Pre-Rolls",
         subCategory: "Indica",
         isCannabis: true,
-        image: "https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775810915/New_pre-roll_j_s_mdhiq0.png",
+        image: "https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_400/v1775810915/New_pre-roll_j_s_mdhiq0.png",
         images: [
             "https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775810915/New_pre-roll_j_s_mdhiq0.png"
         ]
