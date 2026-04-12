@@ -3,786 +3,173 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Panel — WorthDaGive</title>
+<title>Products &mdash; WorthDaGive Wellness Studio</title>
+<link rel="stylesheet" href="styles.css">
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,sans-serif;background:#f0f2f5;color:#333}
-.hidden{display:none!important}
-
-/* ── Login gate ── */
-.login-gate{max-width:400px;margin:80px auto;background:#fff;border-radius:12px;padding:2.5rem;box-shadow:0 6px 24px rgba(0,0,0,0.1);text-align:center}
-.login-gate h2{color:#2c5530;margin-bottom:0.5rem}
-.login-gate p{color:#888;font-size:0.88rem;margin-bottom:1.5rem}
-.login-gate input{width:100%;padding:12px;margin-bottom:10px;border:2px solid #ddd;border-radius:8px;font-size:1rem}
-.login-gate input:focus{border-color:#4CAF50;outline:none}
-.login-error{color:#c62828;font-size:0.85rem;margin-top:6px;min-height:20px}
-
-/* ── Admin header ── */
-.admin-header{background:#1a3a1e;color:#fff;padding:1rem 0;position:sticky;top:0;z-index:500;box-shadow:0 2px 10px rgba(0,0,0,0.3)}
-.admin-header .container{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;justify-content:space-between;align-items:center}
-.admin-header h1{font-size:1.3rem}
-.admin-header a{color:#4CAF50;text-decoration:none;font-size:0.88rem;margin-left:16px}
-.admin-header a:hover{text-decoration:underline}
-
-.panel-wrap{max-width:1200px;margin:0 auto;padding:0 20px 3rem}
-
-/* ── Tabs ── */
-.admin-tabs{display:flex;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.07);margin:24px 0 0}
-.tab-btn{flex:1;padding:14px 8px;background:none;border:none;font-size:0.88rem;font-weight:700;color:#888;cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s}
-.tab-btn.active{background:#f0fff0;color:#2c5530;border-bottom-color:#4CAF50}
-.tab-btn:hover:not(.active){background:#f8f8f8}
-
-.tab-section{background:#fff;border-radius:0 0 10px 10px;padding:2rem;box-shadow:0 4px 16px rgba(0,0,0,0.07);margin-bottom:2rem}
-.tab-section h2{color:#2c5530;font-size:1.3rem;margin-bottom:0.4rem}
-.tab-section p.sub{color:#888;font-size:0.85rem;margin-bottom:1.5rem}
-
-/* ── Forms ── */
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
-.form-grid.triple{grid-template-columns:1fr 1fr 1fr}
-.form-group{display:flex;flex-direction:column;gap:5px}
-.form-group.full{grid-column:1/-1}
-.form-group label{font-size:0.82rem;font-weight:700;color:#555}
-.form-group label .req{color:#f44336}
-.form-group input,.form-group select,.form-group textarea{padding:10px 12px;border:2px solid #ddd;border-radius:8px;font-size:0.9rem;font-family:Arial,sans-serif;transition:border-color 0.2s}
-.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#4CAF50;outline:none}
-.form-group textarea{resize:vertical;min-height:80px}
-
-/* ── Cloudinary URL input ── */
-.url-row{display:flex;gap:8px;margin-top:6px}
-.url-row input{flex:1;padding:10px 12px;border:2px solid #ddd;border-radius:8px;font-size:0.88rem}
-.url-row input:focus{border-color:#4CAF50;outline:none}
-.url-row button{padding:10px 16px;background:#4CAF50;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;white-space:nowrap;font-size:0.85rem}
-.url-row button:hover{background:#45a049}
-
-.img-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.img-thumb{position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;border:2px solid #ddd;background:#f5f5f5}
-.img-thumb img{width:100%;height:100%;object-fit:cover;display:block}
-.img-thumb.primary{border-color:#4CAF50}
-.img-thumb .del{position:absolute;top:2px;right:2px;background:rgba(244,67,54,0.9);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:0.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.img-thumb .primary-badge{position:absolute;bottom:0;left:0;right:0;background:rgba(76,175,80,0.85);color:#fff;font-size:0.6rem;font-weight:700;text-align:center;padding:2px}
-.img-hint{font-size:0.75rem;color:#888;margin-top:6px;line-height:1.5}
-.img-hint a{color:#4CAF50}
-
-/* ── Cannabis toggle ── */
-.type-pills{display:flex;gap:8px;flex-wrap:wrap}
-.type-pill{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border:2px solid #ddd;border-radius:8px;cursor:pointer;font-size:0.85rem;font-weight:600;color:#555;transition:all 0.2s;user-select:none}
-.type-pill input[type=radio]{accent-color:#4CAF50}
-.type-pill:has(input:checked){border-color:#4CAF50;background:#f0fff0;color:#2c5530}
-
-/* ── Fit buttons ── */
-.fit-row{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
-.fit-btn{padding:6px 14px;border:2px solid #ddd;border-radius:20px;background:#fff;font-size:0.78rem;font-weight:700;color:#555;cursor:pointer;transition:all 0.2s}
-.fit-btn.active,.fit-btn:hover{border-color:#4CAF50;background:#e8f5e9;color:#2c5530}
-
-/* ── Buttons ── */
-.btn-save{background:#4CAF50;color:#fff;padding:11px 22px;border:none;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;min-height:44px;transition:background 0.2s}
-.btn-save:hover{background:#45a049}
-.btn-clear{background:#f5f5f5;color:#555;padding:11px 22px;border:2px solid #ddd;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;min-height:44px;transition:all 0.2s}
-.btn-clear:hover{border-color:#f44336;color:#f44336}
-.btn-del{background:#fce4e4;color:#c62828;border:1px solid #f44336;border-radius:6px;padding:5px 12px;font-size:0.78rem;font-weight:700;cursor:pointer}
-.btn-edit{background:#fff3e0;color:#e65100;border:1px solid #ffcc02;border-radius:6px;padding:5px 12px;font-size:0.78rem;font-weight:700;cursor:pointer}
-.btn-actions{display:flex;gap:10px;margin-top:1.5rem;flex-wrap:wrap}
-
-/* ── Messages ── */
-.admin-msg{padding:10px 14px;border-radius:8px;font-size:0.88rem;font-weight:700;margin-top:12px;display:none}
-.admin-msg.ok{background:#d4edda;color:#155724;display:block}
-.admin-msg.err{background:#f8d7da;color:#721c24;display:block}
-
-/* ── Product list ── */
-.product-list-item{display:flex;align-items:center;gap:12px;padding:10px;border:1px solid #eee;border-radius:8px;margin-bottom:8px;background:#fafafa}
-.product-list-thumb{width:56px;height:56px;object-fit:cover;border-radius:6px;flex-shrink:0;background:#e9ecef}
-.product-list-info{flex:1;min-width:0}
-.product-list-info strong{display:block;color:#2c5530;font-size:0.9rem}
-.product-list-info span{font-size:0.76rem;color:#888;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.product-count{color:#2c5530;font-weight:700}
-
-/* ── Categories ── */
-.cat-list{display:flex;flex-direction:column;gap:8px;margin-bottom:1.5rem}
-.cat-row{background:#fafafa;border:1px solid #eee;border-radius:8px;overflow:hidden}
-.cat-main-row{display:flex;align-items:center;gap:10px;padding:10px 12px}
-.cat-name{flex:1;font-weight:700;color:#2c5530;font-size:0.92rem}
-.cat-toggle-btn{background:none;border:1px solid #ddd;border-radius:5px;padding:4px 10px;font-size:0.78rem;cursor:pointer;color:#555}
-.cat-toggle-btn:hover{border-color:#4CAF50;color:#2c5530}
-.cat-subs{padding:0 12px 10px 32px;display:flex;flex-wrap:wrap;gap:6px}
-.sub-pill{display:inline-flex;align-items:center;gap:6px;background:#e8f5e9;color:#2c5530;border-radius:20px;padding:4px 10px;font-size:0.78rem;font-weight:700}
-.sub-pill button{background:none;border:none;color:#c62828;cursor:pointer;font-size:0.9rem;line-height:1;padding:0 2px}
-.add-sub-row{display:flex;gap:6px;padding:4px 12px 10px 32px}
-.add-sub-row input{flex:1;padding:6px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:0.82rem}
-.add-sub-row input:focus{border-color:#4CAF50;outline:none}
-.add-sub-row button{padding:6px 12px;background:#4CAF50;color:#fff;border:none;border-radius:6px;font-size:0.78rem;font-weight:700;cursor:pointer}
-.new-cat-row{display:flex;gap:8px;margin-top:4px}
-.new-cat-row input{flex:1;padding:10px 12px;border:2px solid #ddd;border-radius:8px;font-size:0.9rem}
-.new-cat-row input:focus{border-color:#4CAF50;outline:none}
-
-/* ── Banner ── */
-.banner-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid #e0e0e0;border-radius:8px;margin-bottom:8px;background:#fafafa;flex-wrap:wrap}
-.banner-item.active{border-color:#4CAF50;background:#f0fff0}
-.banner-text{flex:1;font-size:0.88rem;color:#333}
-.banner-type{font-size:0.7rem;font-weight:700;padding:2px 10px;border-radius:20px}
-.t-announcement{background:#e3f2fd;color:#1565c0}
-.t-promo{background:#fff3e0;color:#e65100}
-.t-sale{background:#fce4e4;color:#c62828}
-.btn-activate{background:#4CAF50;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:0.78rem;font-weight:700;cursor:pointer}
-
-/* ── Responsive ── */
-@media(max-width:640px){
-    .form-grid,.form-grid.triple{grid-template-columns:1fr}
-    .admin-tabs{flex-wrap:wrap}
-    .tab-btn{font-size:0.78rem;padding:10px 6px}
-    .btn-actions{flex-direction:column}
-    .btn-save,.btn-clear{width:100%}
-}
+.product-category-label{font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#4CAF50;margin-bottom:0.3rem}
+.product-desc-short{font-size:0.84rem;color:#666;margin-bottom:0.6rem;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.product-sub-cat{font-weight:400;color:#888;font-size:0.7rem;letter-spacing:0.5px;margin-left:4px}
 </style>
 </head>
 <body>
 
-<!-- LOGIN GATE -->
-<div id="loginGate">
-    <div class="login-gate">
-        <h2>Admin Panel</h2>
-        <p>WorthDaGive Wellness Studio</p>
-        <input type="password" id="adminPw" placeholder="Admin password" onkeydown="if(event.key==='Enter')doLogin()">
-        <button class="btn-save" style="width:100%" onclick="doLogin()">Enter Admin Panel</button>
-        <div class="login-error" id="loginErr"></div>
-        <p style="margin-top:1.2rem;font-size:0.75rem;color:#bbb">Default password: <code>admin123</code></p>
+<div id="mainContent">
+
+    <!-- PROMOTIONAL BANNER -->
+    <div id="promoBanner" class="promo-banner">
+        <div class="promo-banner-inner">
+            <span id="promoBannerText">Browse our premium product range &mdash; Lab-Tested &amp; Legally Compliant</span>
+            <button class="promo-banner-close" id="promoBannerClose" aria-label="Close">&times;</button>
+        </div>
     </div>
-</div>
 
-<!-- ADMIN PANEL -->
-<div id="adminPanel" class="hidden">
-
-    <div class="admin-header">
+    <!-- HEADER -->
+    <header>
         <div class="container">
-            <h1>WorthDaGive Admin</h1>
-            <div>
-                <a href="index.html" target="_blank">View Site</a>
-                <a href="products.html" target="_blank">Products Page</a>
-                <a href="#" onclick="doLogout();return false" style="color:#f88">Logout</a>
-            </div>
-        </div>
-    </div>
-
-    <div class="panel-wrap">
-        <div class="admin-tabs">
-            <button class="tab-btn active" onclick="showTab('products')">Products</button>
-            <button class="tab-btn" onclick="showTab('categories')">Categories</button>
-            <button class="tab-btn" onclick="showTab('banners')">Banners</button>
-        </div>
-
-        <!-- ══ TAB: PRODUCTS ══ -->
-        <div id="tab-products" class="tab-section">
-            <h2>Manage Products</h2>
-            <p class="sub">All images must be hosted on Cloudinary. Paste the full Cloudinary URL below.</p>
-
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Product Name <span class="req">*</span></label>
-                    <input type="text" id="pName" placeholder="e.g. Jack The Ripper Sativa">
-                </div>
-                <div class="form-group">
-                    <label>Price (R) <span class="req">*</span></label>
-                    <input type="number" id="pPrice" placeholder="650.00" min="0" step="0.01">
-                </div>
-                <div class="form-group">
-                    <label>Category <span class="req">*</span></label>
-                    <select id="pCategory" onchange="populateSubCatSelect()">
-                        <option value="">Select category</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Sub-Category <span style="color:#888;font-weight:400">(optional)</span></label>
-                    <select id="pSubCategory">
-                        <option value="">None</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>THC Content</label>
-                    <input type="text" id="pThc" placeholder="e.g. 22% or Available on request">
-                </div>
-                <div class="form-group">
-                    <label>CBD Content</label>
-                    <input type="text" id="pCbd" placeholder="e.g. 1% or Available on request">
-                </div>
-                <div class="form-group full">
-                    <label>Description</label>
-                    <textarea id="pDescription" placeholder="Describe the product..."></textarea>
-                </div>
-
-                <!-- Cannabis / Non-cannabis toggle -->
-                <div class="form-group full">
-                    <label>Product Classification <span class="req">*</span></label>
-                    <div class="type-pills">
-                        <label class="type-pill">
-                            <input type="radio" name="pType" id="ptCannabis" value="cannabis" checked>
-                            Cannabis-Infused (18+ only label shown)
-                        </label>
-                        <label class="type-pill">
-                            <input type="radio" name="pType" id="ptNonCannabis" value="non-cannabis">
-                            Non-Cannabis / Accessory (no 18+ label)
-                        </label>
+            <div class="logo">
+                <a href="index.html">
+                    <img src="https://res.cloudinary.com/dbcfzmxzt/image/upload/v1775733144/main_logo_hm6s6w.png" alt="WorthDaGive Wellness Studio" class="logo-img" loading="lazy">
+                    <div class="logo-text">
+                        <h1>WorthDaGive</h1>
+                        <span class="tagline">Wellness Studio</span>
                     </div>
-                </div>
-
-                <!-- Cloudinary image URLs -->
-                <div class="form-group full">
-                    <label>Product Images (Cloudinary URLs) <span class="req">*</span></label>
-                    <div class="url-row">
-                        <input type="text" id="pImageUrl" placeholder="Paste Cloudinary URL here, e.g. https://res.cloudinary.com/...">
-                        <button onclick="addImageUrl()">+ Add Image</button>
-                    </div>
-                    <div class="img-list" id="imgList"></div>
-                    <p class="img-hint">
-                        First image = primary (green border). Add multiple for a gallery.<br>
-                        Optimise URL: add <code>f_auto,q_auto,w_600/</code> after <code>upload/</code> for faster loading.<br>
-                        Example: <code>https://res.cloudinary.com/YOUR_CLOUD/image/upload/f_auto,q_auto,w_600/v123/photo.jpg</code><br>
-                        No account yet? Sign up free at <a href="https://cloudinary.com" target="_blank">cloudinary.com</a>
-                    </p>
-                    <!-- Image fit -->
-                    <div class="fit-row">
-                        <span style="font-size:0.78rem;font-weight:700;color:#555">Image display:</span>
-                        <button class="fit-btn active" onclick="setFit('cover',this)">Cover (crop to fill)</button>
-                        <button class="fit-btn" onclick="setFit('contain',this)">Contain (show full)</button>
-                        <button class="fit-btn" onclick="setFit('fill',this)">Stretch</button>
-                    </div>
-                    <input type="hidden" id="pFit" value="cover">
-                </div>
-
-                <input type="hidden" id="pEditId" value="">
+                </a>
             </div>
-
-            <div class="btn-actions">
-                <button class="btn-save" onclick="saveProduct()">Save Product</button>
-                <button class="btn-clear" onclick="clearProductForm()">Clear Form</button>
-            </div>
-            <div class="admin-msg" id="productMsg"></div>
-
-            <hr style="margin:2rem 0;border:none;border-top:1px solid #eee">
-            <h3 style="color:#2c5530;margin-bottom:1rem">Current Products (<span id="productCount">0</span>)</h3>
-            <div id="productListEl"></div>
+            <button class="hamburger" id="hamburgerBtn" aria-label="Toggle navigation">
+                <span></span><span></span><span></span>
+            </button>
+            <nav class="main-nav" id="mainNav">
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="products.html" class="active">Products</a></li>
+                    <li><a href="index.html#about">About</a></li>
+                    <li><a href="index.html#contact">Contact</a></li>
+                    <li><a href="track.html">Track Order</a></li>
+                    <li>
+                        <a href="#" id="loginBtn" class="nav-icon-link">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            Login
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" id="cartBtn" class="nav-icon-link">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                            Cart (<span id="cartCount">0</span>)
+                        </a>
+                    </li>
+                </ul>
+            </nav>
         </div>
+    </header>
 
-        <!-- ══ TAB: CATEGORIES ══ -->
-        <div id="tab-categories" class="tab-section hidden">
-            <h2>Manage Categories</h2>
-            <p class="sub">Add or remove main categories and their sub-categories. Changes apply immediately to the products page and admin form.</p>
-
-            <div class="cat-list" id="catListEl"></div>
-
-            <div class="new-cat-row">
-                <input type="text" id="newCatInput" placeholder="New category name, e.g. Concentrates">
-                <button class="btn-save" onclick="addCategory()">Add Category</button>
-            </div>
-            <div class="admin-msg" id="catMsg"></div>
+    <!-- PAGE BANNER -->
+    <section class="page-banner">
+        <div class="container">
+            <h2>Our Products</h2>
+            <p>Premium cannabis-infused products &mdash; Lab-tested &amp; legally compliant</p>
         </div>
+    </section>
 
-        <!-- ══ TAB: BANNERS ══ -->
-        <div id="tab-banners" class="tab-section hidden">
-            <h2>Promotions &amp; Announcements</h2>
-            <p class="sub">The active banner shows at the top of every page. Only one banner can be active at a time.</p>
-
-            <div class="form-grid triple">
-                <div class="form-group full">
-                    <label>Banner Message <span class="req">*</span></label>
-                    <input type="text" id="bannerText" placeholder="e.g. Weekend Sale — 20% off all Disposables this Saturday!">
+    <!-- LEGAL NOTICE -->
+    <section class="cannabis-legal-banner">
+        <div class="container">
+            <div class="clb-inner">
+                <svg class="clb-svg-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <div class="clb-text">
+                    <strong>Cannabis Products &mdash; 18+ Only (South Africa)</strong> &mdash;
+                    Products on this page may contain or relate to cannabis. Sale to persons under 18 is a criminal offence under the
+                    <em>Cannabis for Private Purposes Act 7 of 2024</em> and the <em>Drugs and Drug Trafficking Act 140 of 1992</em>.
+                    <a href="index.html#legal-full" class="clb-link">Full legal notice</a>
                 </div>
-                <div class="form-group">
-                    <label>Type</label>
-                    <select id="bannerType">
-                        <option value="announcement">Announcement</option>
-                        <option value="promo">Promotion</option>
-                        <option value="sale">Sale</option>
+            </div>
+        </div>
+    </section>
+
+    <!-- SEARCH & FILTER — categories populated by JS from wdg_categories -->
+    <section class="search-filter-section">
+        <div class="container">
+            <div class="search-filter-bar">
+                <div class="search-input-wrapper">
+                    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" id="searchInput" placeholder="Search products..." autocomplete="off">
+                </div>
+                <div class="filter-group">
+                    <!-- Options injected by products.js populateCategoryFilter() -->
+                    <select id="categoryFilter" class="filter-pill">
+                        <option value="all">All Categories</option>
+                    </select>
+                    <select id="sortFilter" class="filter-pill">
+                        <option value="default">Sort By</option>
+                        <option value="price-asc">Price: Low to High</option>
+                        <option value="price-desc">Price: High to Low</option>
+                        <option value="name-asc">Name: A to Z</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Colour</label>
-                    <select id="bannerColor">
-                        <option value="green">Green (default)</option>
-                        <option value="red">Red (sale)</option>
-                        <option value="orange">Orange (promo)</option>
-                        <option value="blue">Blue (info)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Expires (optional)</label>
-                    <input type="date" id="bannerExpiry">
-                </div>
             </div>
-            <div class="btn-actions">
-                <button class="btn-save" onclick="addBanner()">Activate Banner</button>
-            </div>
-            <div class="admin-msg" id="bannerMsg"></div>
+            <p id="resultsCount" class="results-count"></p>
+        </div>
+    </section>
 
-            <hr style="margin:2rem 0;border:none;border-top:1px solid #eee">
-            <h3 style="color:#2c5530;margin-bottom:1rem">Saved Banners</h3>
-            <div id="bannerListEl"></div>
+    <!-- PRODUCTS GRID -->
+    <section class="products-section">
+        <div class="container">
+            <div class="product-grid" id="productGrid"></div>
+            <div id="noResults" class="no-results hidden">
+                <p>No products found matching your search.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container">
+            <div class="social-links">
+                <h3>Follow Us</h3>
+                <div class="social-buttons">
+                    <a href="#" class="social-btn-facebook">Facebook</a>
+                    <a href="https://www.instagram.com/worthdagive?igsh=NjhmaWQ4eXlmeHJu" class="social-btn-instagram">Instagram</a>
+                    <a href="#" class="social-btn-twitter">X / Twitter</a>
+                    <a href="#" class="social-btn-tiktok">TikTok</a>
+                </div>
+            </div>
+            <div class="footer-legal">
+                <p>All applicable products are cannabis-infused and intended for adults 18+ only.</p>
+                <p>Sold in compliance with the Cannabis for Private Purposes Act 7 of 2024 (South Africa).</p>
+                <p>&copy; 2026 WorthDaGive Wellness Studio. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</div>
+
+<!-- CART MODAL -->
+<div id="cartModal" class="modal hidden">
+    <div class="modal-content">
+        <button class="close" data-modal="cartModal" aria-label="Close">&times;</button>
+        <h2>Shopping Cart</h2>
+        <div id="cartItems"></div>
+        <div class="cart-total">
+            <p>Total: R<span id="cartTotal">0.00</span></p>
+            <button id="checkoutBtn" class="btn-primary">Proceed to Checkout</button>
         </div>
     </div>
 </div>
 
+<!-- WHATSAPP -->
+<a href="https://wa.me/27000000000" target="_blank" rel="noopener noreferrer" class="whatsapp-float" aria-label="Chat on WhatsApp">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+    <span class="whatsapp-label">Chat with us</span>
+</a>
+
+<script src="supabase.js"></script>
+<script src="auth.js"></script>
+<script src="products.js"></script>
 <script>
-/* ══════════════════════════════════════════════════
-   WORTHDAGIVE ADMIN — admin.html JavaScript
-   All data stored in localStorage.
-   Connect Supabase (supabase.js) for multi-device persistence.
-══════════════════════════════════════════════════ */
-
-var ADMIN_PW = 'admin123'; // CHANGE THIS before going live
-
-/* ── Category defaults (mirrors products.js) ── */
-var DEFAULT_CATEGORIES = [
-    { name: 'Disposables',             subs: ['Sativa','Indica','Hybrid'] },
-    { name: 'Edibles',                 subs: [] },
-    { name: 'Accessories',             subs: [] },
-    { name: 'WorthDaGive Merchandise', subs: [] },
-    { name: 'Beverages',               subs: [] },
-    { name: 'Hair & Beauty',           subs: [] }
-];
-
-/* ── Image list state ── */
-var adminImages = [];
-var currentFit  = 'cover';
-
-/* ══════════ LOGIN ══════════ */
-function doLogin() {
-    var pw = document.getElementById('adminPw').value;
-    if (pw === ADMIN_PW) {
-        sessionStorage.setItem('adminIn','1');
-        document.getElementById('loginGate').classList.add('hidden');
-        document.getElementById('adminPanel').classList.remove('hidden');
-        initAdmin();
-    } else {
-        document.getElementById('loginErr').textContent = 'Incorrect password.';
-    }
-}
-function doLogout() {
-    sessionStorage.removeItem('adminIn');
-    document.getElementById('adminPanel').classList.add('hidden');
-    document.getElementById('loginGate').classList.remove('hidden');
-    document.getElementById('adminPw').value = '';
-}
-document.getElementById('adminPw').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') doLogin();
-});
-if (sessionStorage.getItem('adminIn') === '1') {
-    document.getElementById('loginGate').classList.add('hidden');
-    document.getElementById('adminPanel').classList.remove('hidden');
-    window.addEventListener('load', initAdmin);
-}
-
-function initAdmin() {
-    populateCategoryDropdowns();
-    renderProductList();
-    renderCategoryList();
-    renderBannerList();
-}
-
-/* ══════════ TABS ══════════ */
-function showTab(name) {
-    ['products','categories','banners'].forEach(function(t) {
-        document.getElementById('tab-' + t).classList.toggle('hidden', t !== name);
-    });
-    document.querySelectorAll('.tab-btn').forEach(function(btn, i) {
-        btn.classList.toggle('active', ['products','categories','banners'][i] === name);
-    });
-}
-
-/* ══════════ CATEGORIES ══════════ */
-function getCategories() {
-    try {
-        var s = localStorage.getItem('wdg_categories');
-        if (s) return JSON.parse(s);
-    } catch(e) {}
-    return JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
-}
-function saveCategories(cats) {
-    localStorage.setItem('wdg_categories', JSON.stringify(cats));
-}
-
-function addCategory() {
-    var input = document.getElementById('newCatInput');
-    var name  = input.value.trim();
-    if (!name) return;
-    var cats = getCategories();
-    if (cats.some(function(c) { return c.name.toLowerCase() === name.toLowerCase(); })) {
-        showMsg('catMsg', 'That category already exists.', 'err'); return;
-    }
-    cats.push({ name: name, subs: [] });
-    saveCategories(cats);
-    input.value = '';
-    renderCategoryList();
-    populateCategoryDropdowns();
-    showMsg('catMsg', '"' + name + '" added.', 'ok');
-}
-
-function removeCategory(name) {
-    if (!confirm('Remove category "' + name + '"? Products in this category will not be deleted.')) return;
-    var cats = getCategories().filter(function(c) { return c.name !== name; });
-    saveCategories(cats);
-    renderCategoryList();
-    populateCategoryDropdowns();
-}
-
-function addSubCategory(catName) {
-    var inputId = 'subinput_' + catName.replace(/\s+/g,'_');
-    var input   = document.getElementById(inputId);
-    if (!input) return;
-    var sub = input.value.trim();
-    if (!sub) return;
-    var cats = getCategories();
-    var cat  = cats.find(function(c) { return c.name === catName; });
-    if (!cat) return;
-    if (!cat.subs.includes(sub)) cat.subs.push(sub);
-    saveCategories(cats);
-    input.value = '';
-    renderCategoryList();
-    populateCategoryDropdowns();
-}
-
-function removeSubCategory(catName, sub) {
-    var cats = getCategories();
-    var cat  = cats.find(function(c) { return c.name === catName; });
-    if (cat) cat.subs = cat.subs.filter(function(s) { return s !== sub; });
-    saveCategories(cats);
-    renderCategoryList();
-    populateCategoryDropdowns();
-}
-
-function renderCategoryList() {
-    var el   = document.getElementById('catListEl');
-    var cats = getCategories();
-    if (!cats.length) { el.innerHTML = '<p style="color:#999;font-size:0.88rem">No categories yet.</p>'; return; }
-
-    el.innerHTML = cats.map(function(cat) {
-        var safeName = cat.name.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
-        var subPills = cat.subs.map(function(sub) {
-            return '<span class="sub-pill">' + sub +
-                '<button onclick="removeSubCategory(\'' + escQ(cat.name) + '\',\'' + escQ(sub) + '\')" title="Remove">&times;</button>' +
-                '</span>';
-        }).join('');
-        return '<div class="cat-row">' +
-            '<div class="cat-main-row">' +
-                '<span class="cat-name">' + cat.name + '</span>' +
-                '<button class="btn-del" onclick="removeCategory(\'' + escQ(cat.name) + '\')">Remove</button>' +
-            '</div>' +
-            (subPills ? '<div class="cat-subs">' + subPills + '</div>' : '') +
-            '<div class="add-sub-row">' +
-                '<input type="text" id="subinput_' + safeName + '" placeholder="Add sub-category, e.g. Indica" onkeydown="if(event.key===\'Enter\')addSubCategory(\'' + escQ(cat.name) + '\')">' +
-                '<button onclick="addSubCategory(\'' + escQ(cat.name) + '\')">+ Sub</button>' +
-            '</div>' +
-        '</div>';
-    }).join('');
-}
-
-function populateCategoryDropdowns() {
-    /* Main category select in product form */
-    var sel = document.getElementById('pCategory');
-    if (!sel) return;
-    var current = sel.value;
-    sel.innerHTML = '<option value="">Select category</option>';
-    getCategories().forEach(function(cat) {
-        var opt = document.createElement('option');
-        opt.value = cat.name; opt.textContent = cat.name;
-        if (cat.name === current) opt.selected = true;
-        sel.appendChild(opt);
-    });
-    populateSubCatSelect();
-}
-
-function populateSubCatSelect() {
-    var mainSel = document.getElementById('pCategory');
-    var subSel  = document.getElementById('pSubCategory');
-    if (!subSel) return;
-    var catName = mainSel ? mainSel.value : '';
-    var cats    = getCategories();
-    var cat     = cats.find(function(c) { return c.name === catName; });
-    var current = subSel.value;
-    subSel.innerHTML = '<option value="">None</option>';
-    if (cat && cat.subs.length) {
-        cat.subs.forEach(function(sub) {
-            var opt = document.createElement('option');
-            opt.value = sub; opt.textContent = sub;
-            if (sub === current) opt.selected = true;
-            subSel.appendChild(opt);
-        });
-    }
-}
-
-/* ══════════ IMAGES ══════════ */
-function addImageUrl() {
-    var url = document.getElementById('pImageUrl').value.trim();
-    if (!url) { showMsg('productMsg','Please paste a Cloudinary URL.','err'); return; }
-    if (!url.startsWith('http')) { showMsg('productMsg','URL must start with https://','err'); return; }
-    if (adminImages.length >= 8) { showMsg('productMsg','Maximum 8 images per product.','err'); return; }
-    adminImages.push(url);
-    document.getElementById('pImageUrl').value = '';
-    renderImgList();
-}
-
-function removeAdminImage(idx) {
-    adminImages.splice(idx, 1);
-    renderImgList();
-}
-
-function renderImgList() {
-    var el = document.getElementById('imgList');
-    if (!adminImages.length) { el.innerHTML = ''; return; }
-    el.innerHTML = adminImages.map(function(src, i) {
-        return '<div class="img-thumb' + (i === 0 ? ' primary' : '') + '">' +
-            '<img src="' + src + '" loading="lazy" alt="Image ' + (i+1) + '" onerror="this.style.opacity=0.3">' +
-            (i === 0 ? '<div class="primary-badge">PRIMARY</div>' : '') +
-            '<button class="del" onclick="removeAdminImage(' + i + ')" title="Remove">&times;</button>' +
-            '</div>';
-    }).join('');
-}
-
-function setFit(val, btn) {
-    currentFit = val;
-    document.getElementById('pFit').value = val;
-    document.querySelectorAll('.fit-btn').forEach(function(b) { b.classList.remove('active'); });
-    btn.classList.add('active');
-}
-
-/* ══════════ PRODUCTS ══════════ */
-var BASE_PRODUCTS = [
-    {
-        id: 1,
-        name: 'Jack The Ripper Sativa',
-        price: 650.00,
-        category: 'Disposables',
-        subCategory: 'Vapes',
-        isCannabis: true,
-        description: 'Jack The Ripper Sativa disposable vape. A premium sativa-dominant experience in a sleek, ready-to-use device.',
-        thc: 'Available on request',
-        cbd: 'Available on request',
-        image: 'https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775678961/JACK_THE_RIPPER_SATIVA_disposable_vape_cfv9yc.png',
-        images: ['https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775678961/JACK_THE_RIPPER_SATIVA_disposable_vape_cfv9yc.png'],
-        imageFit: 'cover'
-    },
-    {
-        id: 2,
-        name: 'THC Concentrated Sundae Driver Disposable Vape',
-        price: 650.00,
-        category: 'Disposables',
-        subCategory: 'Vapes',
-        isCannabis: true,
-        description: 'Liquid Gold THC Concentrated Sundae Driver Disposable Vape.',
-        thc: 'Available on request',
-        cbd: 'Available on request',
-        image: 'https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775680930/THC_Concentrated_Sundae_driver_Disposable_Vape_grtkfz.png',
-        images: ['https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775680930/THC_Concentrated_Sundae_driver_Disposable_Vape_grtkfz.png'],
-        imageFit: 'cover'
-    },
-    {
-        id: 3,
-        name: 'Purple Skittles Indoor Pre-Roll',
-        price: 100.00,
-        category: 'Pre-Rolls',
-        subCategory: 'Indica',
-        isCannabis: true,
-        description: 'Premium indoor flower pre-roll, Purple Skittles flavour.',
-        thc: 'Available on request',
-        cbd: 'Available on request',
-        image: 'https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,dpr_auto,c_fit,w_400,h_400/v1775810915/New_pre-roll_j_s_mdhiq0.png',
-        images: ['https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,dpr_auto,c_fit,w_400,h_400/v1775810915/New_pre-roll_j_s_mdhiq0.png'],
-        imageFit: 'cover'
-    }
-];
-
-function getAdminProducts() {
-    try { return JSON.parse(localStorage.getItem('adminProducts')) || []; } catch(e) { return []; }
-}
-function saveAdminProducts(list) { localStorage.setItem('adminProducts', JSON.stringify(list)); }
-
-function getAllProducts() {
-    var admin  = getAdminProducts();
-    var merged = JSON.parse(JSON.stringify(BASE_PRODUCTS));
-    admin.forEach(function(ap) {
-        var idx = merged.findIndex(function(p) { return p.id === ap.id; });
-        if (idx >= 0) { merged[idx] = ap; } else { merged.push(ap); }
-    });
-    return merged;
-}
-
-function saveProduct() {
-    var name    = document.getElementById('pName').value.trim();
-    var price   = parseFloat(document.getElementById('pPrice').value);
-    var cat     = document.getElementById('pCategory').value;
-    var sub     = document.getElementById('pSubCategory').value;
-    var thc     = document.getElementById('pThc').value.trim() || 'N/A';
-    var cbd     = document.getElementById('pCbd').value.trim() || 'N/A';
-    var desc    = document.getElementById('pDescription').value.trim();
-    var editId  = document.getElementById('pEditId').value;
-    var fit     = document.getElementById('pFit').value || 'cover';
-    var isCan   = document.getElementById('ptCannabis').checked;
-
-    if (!name || !cat || isNaN(price) || price <= 0) {
-        showMsg('productMsg', 'Name, category and a valid price are required.', 'err'); return;
-    }
-    if (!adminImages.length) {
-        showMsg('productMsg', 'Please add at least one Cloudinary image URL.', 'err'); return;
-    }
-
-    var images = adminImages.slice();
-    var image  = images[0];
-    var list   = getAdminProducts();
-
-    if (editId) {
-        var idx = list.findIndex(function(p) { return String(p.id) === editId; });
-        if (idx >= 0) {
-            list[idx] = Object.assign(list[idx], { name:name, price:price, category:cat, subCategory:sub,
-                thc:thc, cbd:cbd, description:desc, image:image, images:images, imageFit:fit, isCannabis:isCan });
-        }
-    } else {
-        var allIds = getAllProducts().map(function(p) { return p.id; });
-        var newId  = allIds.length ? Math.max.apply(null, allIds) + 1 : 100;
-        list.push({ id:newId, name:name, price:price, category:cat, subCategory:sub,
-            thc:thc, cbd:cbd, description:desc, image:image, images:images, imageFit:fit, isCannabis:isCan });
-    }
-
-    saveAdminProducts(list);
-    clearProductForm();
-    renderProductList();
-    showMsg('productMsg', editId ? 'Product updated. Re-deploy Netlify to publish changes.' : 'Product saved. To make it visible to ALL visitors: copy the generated code block below and add it to products.js and script.js, then re-deploy to Netlify.', 'ok');
-}
-
-function clearProductForm() {
-    ['pName','pPrice','pDescription','pThc','pCbd','pImageUrl','pEditId'].forEach(function(id) {
-        document.getElementById(id).value = '';
-    });
-    document.getElementById('pCategory').value    = '';
-    document.getElementById('pSubCategory').innerHTML = '<option value="">None</option>';
-    document.getElementById('ptCannabis').checked = true;
-    document.getElementById('pFit').value         = 'cover';
-    document.querySelectorAll('.fit-btn').forEach(function(b, i) { b.classList.toggle('active', i === 0); });
-    adminImages = [];
-    renderImgList();
-}
-
-function editProduct(id) {
-    var p = getAllProducts().find(function(p) { return p.id === id; });
-    if (!p) return;
-    document.getElementById('pName').value        = p.name;
-    document.getElementById('pPrice').value       = p.price;
-    document.getElementById('pDescription').value = p.description || '';
-    document.getElementById('pThc').value         = p.thc !== 'N/A' ? p.thc : '';
-    document.getElementById('pCbd').value         = p.cbd !== 'N/A' ? p.cbd : '';
-    document.getElementById('pEditId').value      = String(p.id);
-    document.getElementById('pCategory').value    = p.category || '';
-    populateSubCatSelect();
-    if (p.subCategory) document.getElementById('pSubCategory').value = p.subCategory;
-    document.getElementById('ptCannabis').checked    = p.isCannabis !== false;
-    document.getElementById('ptNonCannabis').checked = p.isCannabis === false;
-    adminImages = p.images ? p.images.slice() : (p.image ? [p.image] : []);
-    renderImgList();
-    showTab('products');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function deleteProduct(id) {
-    if (!confirm('Delete this product? This cannot be undone.')) return;
-    var base = BASE_PRODUCTS.find(function(p) { return p.id === id; });
-    if (base) {
-        /* Mark base product as deleted in admin list */
-        var list = getAdminProducts();
-        var idx  = list.findIndex(function(p) { return p.id === id; });
-        if (idx >= 0) { list.splice(idx, 1); } else { list.push(Object.assign({}, base, { _deleted: true })); }
-        /* Filter out deletions */
-        list = list.filter(function(p) { return !p._deleted; });
-        saveAdminProducts(list);
-    } else {
-        saveAdminProducts(getAdminProducts().filter(function(p) { return p.id !== id; }));
-    }
-    renderProductList();
-    showMsg('productMsg', 'Product removed.', 'ok');
-}
-
-function renderProductList() {
-    var all = getAllProducts();
-    document.getElementById('productCount').textContent = all.length;
-    var el  = document.getElementById('productListEl');
-    if (!all.length) { el.innerHTML = '<p style="color:#999;font-size:0.88rem">No products.</p>'; return; }
-    el.innerHTML = all.map(function(p) {
-        var thumb = (p.images && p.images[0]) || p.image || '';
-        var imgCount = p.images ? p.images.length : (p.image ? 1 : 0);
-        return '<div class="product-list-item">' +
-            (thumb ? '<img src="' + thumb + '" class="product-list-thumb" loading="lazy" alt="' + p.name + '" onerror="this.style.display=\'none\'">' :
-                     '<div class="product-list-thumb" style="display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:#aaa">No img</div>') +
-            '<div class="product-list-info">' +
-                '<strong>' + p.name + '</strong>' +
-                '<span>R' + Number(p.price).toFixed(2) + ' &bull; ' + p.category +
-                (p.subCategory ? ' &rsaquo; ' + p.subCategory : '') +
-                (imgCount > 1 ? ' &bull; <span style="color:#4CAF50;font-weight:700">' + imgCount + ' photos</span>' : '') + '</span>' +
-            '</div>' +
-            '<button class="btn-edit" onclick="editProduct(' + p.id + ')">Edit</button>' +
-            '<button class="btn-del"  onclick="deleteProduct(' + p.id + ')">Delete</button>' +
-            '</div>';
-    }).join('');
-}
-
-/* ══════════ BANNERS ══════════ */
-function getBanners()      { try { return JSON.parse(localStorage.getItem('adminBanners')) || []; } catch(e) { return []; } }
-function saveBanners(list) { localStorage.setItem('adminBanners', JSON.stringify(list)); }
-
-function addBanner() {
-    var text   = document.getElementById('bannerText').value.trim();
-    var type   = document.getElementById('bannerType').value;
-    var color  = document.getElementById('bannerColor').value;
-    var expiry = document.getElementById('bannerExpiry').value;
-    if (!text) { showMsg('bannerMsg','Please enter a banner message.','err'); return; }
-    var list = getBanners();
-    list.forEach(function(b) { b.active = false; });
-    list.push({ id: Date.now(), text:text, type:type, color:color, expiry:expiry, active:true });
-    saveBanners(list);
-    localStorage.setItem('activeBanner', JSON.stringify({ text:text, color:color }));
-    document.getElementById('bannerText').value  = '';
-    document.getElementById('bannerExpiry').value = '';
-    renderBannerList();
-    showMsg('bannerMsg','Banner activated. Reload the main site to see it.','ok');
-}
-
-function activateBanner(id) {
-    var list = getBanners();
-    list.forEach(function(b) { b.active = b.id === id; });
-    saveBanners(list);
-    var active = list.find(function(b) { return b.id === id; });
-    if (active) localStorage.setItem('activeBanner', JSON.stringify({ text:active.text, color:active.color }));
-    renderBannerList();
-    showMsg('bannerMsg','Banner activated.','ok');
-}
-
-function deleteBanner(id) {
-    if (!confirm('Delete this banner?')) return;
-    saveBanners(getBanners().filter(function(b) { return b.id !== id; }));
-    renderBannerList();
-}
-
-function renderBannerList() {
-    var list = getBanners();
-    var el   = document.getElementById('bannerListEl');
-    if (!list.length) { el.innerHTML = '<p style="color:#999;font-size:0.88rem">No banners saved.</p>'; return; }
-    el.innerHTML = list.map(function(b) {
-        return '<div class="banner-item' + (b.active ? ' active' : '') + '">' +
-            '<span class="banner-type t-' + b.type + '">' + b.type.toUpperCase() + '</span>' +
-            '<span class="banner-text">' + b.text +
-                (b.expiry ? ' <em style="color:#999;font-size:0.75rem">(expires ' + b.expiry + ')</em>' : '') + '</span>' +
-            (b.active ? '<span style="color:#4CAF50;font-size:0.78rem;font-weight:700">ACTIVE</span>' :
-                '<button class="btn-activate" onclick="activateBanner(' + b.id + ')">Activate</button>') +
-            '<button class="btn-del" onclick="deleteBanner(' + b.id + ')">Delete</button>' +
-            '</div>';
-    }).join('');
-}
-
-/* ══════════ HELPERS ══════════ */
-function showMsg(id, text, type) {
-    var el = document.getElementById(id);
-    el.textContent = text;
-    el.className   = 'admin-msg ' + type;
-    setTimeout(function() { el.className = 'admin-msg'; }, 4000);
-}
-
-function escQ(str) {
-    return String(str).replace(/'/g, "\\'");
-}
+if (localStorage.getItem('ageVerified') !== 'true') window.location.replace('index.html');
+if (typeof initAuth === 'function') initAuth().catch(function(){});
 </script>
 </body>
 </html>
