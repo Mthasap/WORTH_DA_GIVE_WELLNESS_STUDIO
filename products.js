@@ -1,30 +1,22 @@
 /* ═══════════════════════════════════════════════════
-   WORTHDAGIVE — products.js
-   All products are Cloudinary-hosted images.
-   The PRODUCTS array is the single source of truth
-   for base products. Admin-added products are stored
-   in localStorage key 'adminProducts' and merged in.
+   WORTHDAGIVE — products.js   (products page)
+   Products are hardcoded in PRODUCTS array below.
+   ALL visitors see the same products regardless of device.
+   Admin can add new products via admin.html — new entries
+   get appended to PRODUCTS here and the file re-deployed.
 ═══════════════════════════════════════════════════ */
 
 // ─────────────────────────────────────────────────
-//  CATEGORY SYSTEM
-//  Main categories + optional sub-categories.
-//  Admin can add/remove these via admin.html.
-//  Format stored in localStorage: 'wdg_categories'
-//  [
-//    { name: "Disposables", subs: ["Sativa","Indica","Hybrid"] },
-//    { name: "Edibles",     subs: [] },
-//    ...
-//  ]
+//  CATEGORIES  (mirrors admin.html DEFAULT_CATEGORIES)
 // ─────────────────────────────────────────────────
 var DEFAULT_CATEGORIES = [
-    { name: "Disposables",            subs: ["Vapes", "Refills", "Hybrid"] },
-    { name: "Edibles",                subs: [] },
-    { name: "Accessories",            subs: [] },
-    { name: "WorthDaGive Merchandise",subs: [] },
-    { name: "Beverages",              subs: [] },
-    { name: "Hair & Beauty",          subs: [] }, 
-    { name: "Pre-Rolls",              subs: ["Indica"] }
+    { name: "Disposables",             subs: ["Vapes", "Refills", "Hybrid"] },
+    { name: "Edibles",                 subs: [] },
+    { name: "Accessories",             subs: [] },
+    { name: "WorthDaGive Merchandise", subs: [] },
+    { name: "Beverages",               subs: [] },
+    { name: "Hair & Beauty",           subs: [] },
+    { name: "Pre-Rolls",               subs: ["Indica"] }
 ];
 
 function getCategories() {
@@ -35,14 +27,10 @@ function getCategories() {
     return JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
 }
 
-function getCategoryNames() {
-    return getCategories().map(function(c) { return c.name; });
-}
-
 // ─────────────────────────────────────────────────
-//  BASE PRODUCT CATALOGUE
-//  Only Cloudinary-hosted images.
-//  To add more: copy a block, increment id, fill details.
+//  PRODUCTS  — hardcoded so ALL visitors see them.
+//  To add a product: copy a block, increment id,
+//  fill in details, re-deploy to Netlify.
 // ─────────────────────────────────────────────────
 var PRODUCTS = [
     {
@@ -56,58 +44,61 @@ var PRODUCTS = [
         subCategory: "Vapes",
         isCannabis: true,
         image: "https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775678961/JACK_THE_RIPPER_SATIVA_disposable_vape_cfv9yc.png",
-        images: [
-            "https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775678961/JACK_THE_RIPPER_SATIVA_disposable_vape_cfv9yc.png"
-        ]
-    }
-    
-    // ── ADD NEW PRODUCTS BELOW THIS LINE ─────────────────────────
-
-    ,{
+        images: ["https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775678961/JACK_THE_RIPPER_SATIVA_disposable_vape_cfv9yc.png"]
+    },
+    {
         id: 2,
-        name: "THC Concentrated Sundae driver Disposable Vape",
+        name: "THC Concentrated Sundae Driver Disposable Vape",
         price: 650.00,
-        description: "Liquid Gold THC Concentrated Sundae driver Disposable Vape",
+        description: "Liquid Gold THC Concentrated Sundae Driver Disposable Vape.",
         thc: "Available on request",
         cbd: "Available on request",
         category: "Disposables",
         subCategory: "Vapes",
         isCannabis: true,
         image: "https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775680930/THC_Concentrated_Sundae_driver_Disposable_Vape_grtkfz.png",
-        images: [
-            "https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775680930/THC_Concentrated_Sundae_driver_Disposable_Vape_grtkfz.png"
-        ]
-    }
-
-    ,{
+        images: ["https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775680930/THC_Concentrated_Sundae_driver_Disposable_Vape_grtkfz.png"]
+    },
+    {
         id: 3,
         name: "Purple Skittles Indoor Pre-Roll",
         price: 100.00,
-        description: "Premium indoor flower pre-roll Purple Skittles flavour",
+        description: "Premium indoor flower pre-roll, Purple Skittles flavour.",
         thc: "Available on request",
         cbd: "Available on request",
         category: "Pre-Rolls",
         subCategory: "Indica",
         isCannabis: true,
         image: "https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,dpr_auto,c_fit,w_400,h_400/v1775810915/New_pre-roll_j_s_mdhiq0.png",
-        images: [
-            "https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,dpr_auto,c_fit,w_400,h_400/v1775810915/New_pre-roll_j_s_mdhiq0.png"
-        ]
+        images: ["https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,dpr_auto,c_fit,w_400,h_400/v1775810915/New_pre-roll_j_s_mdhiq0.png"]
     }
-    // Copy the block above, paste it here, change id to 2, 3, 4 ...
-    // Use Cloudinary URLs only — no media/ paths.
-    // ─────────────────────────────────────────────────────────────
+    /* ── ADD NEW PRODUCTS ABOVE THIS LINE ──────────────────────
+       Format:
+       ,{
+           id: 4,
+           name: "Product Name",
+           price: 0.00,
+           description: "Description here.",
+           thc: "Available on request",
+           cbd: "Available on request",
+           category: "Category",
+           subCategory: "Sub",
+           isCannabis: true,
+           image: "https://res.cloudinary.com/...",
+           images: ["https://res.cloudinary.com/..."]
+       }
+    ─────────────────────────────────────────────────────────── */
 ];
 
 // ─────────────────────────────────────────────────
-//  MERGE BASE + ADMIN PRODUCTS
+//  PRODUCT HELPERS
 // ─────────────────────────────────────────────────
-async function getAllProducts() {
-    return await WDG.getProducts();
+function getAllProducts() {
+    return PRODUCTS;
 }
 
 function getProductById(id) {
-    return getAllProducts().find(function(p) { return p.id === id; });
+    return PRODUCTS.find(function(p) { return p.id === id; });
 }
 
 function getPrimaryImage(product) {
@@ -163,10 +154,11 @@ function displayCart() {
     cart.forEach(function(item) {
         var p = getProductById(item.id);
         if (!p) return;
-        var line = p.price * item.quantity;
-        total += line;
+        var line  = p.price * item.quantity;
+        total    += line;
         var thumb = getPrimaryImage(p);
-        html += '<div class="cart-item">' +
+        html +=
+            '<div class="cart-item">' +
             (thumb ? '<img src="' + thumb + '" style="width:48px;height:48px;object-fit:cover;border-radius:6px;flex-shrink:0;" loading="lazy" alt="' + p.name + '">' : '') +
             '<div class="cart-item-info"><p>' + p.name + '</p>' +
             '<span>Qty: ' + item.quantity + ' &times; R' + p.price.toFixed(2) + '</span></div>' +
@@ -201,7 +193,9 @@ function showToast(msg) {
 function buildSkeletonCard() {
     var el = document.createElement('div');
     el.className = 'product-skeleton';
-    el.innerHTML = '<div class="skeleton-img"></div><div class="skeleton-body">' +
+    el.innerHTML =
+        '<div class="skeleton-img"></div>' +
+        '<div class="skeleton-body">' +
         '<div class="skeleton-line medium"></div>' +
         '<div class="skeleton-line price"></div>' +
         '<div class="skeleton-line long"></div>' +
@@ -211,10 +205,10 @@ function buildSkeletonCard() {
 }
 
 // ─────────────────────────────────────────────────
-//  PRODUCT CARD (with multi-image + isCannabis)
+//  PRODUCT CARD
 // ─────────────────────────────────────────────────
 function createProductCard(product) {
-    var card = document.createElement('div');
+    var card       = document.createElement('div');
     card.className = 'product-card';
     card.dataset.id = product.id;
 
@@ -223,7 +217,6 @@ function createProductCard(product) {
     var showTag    = product.isCannabis !== false;
     var subLabel   = product.subCategory ? ' <span class="product-sub-cat">' + product.subCategory + '</span>' : '';
 
-    // Thumbnail strip (only when >1 image)
     var thumbsHtml = '';
     if (allImages.length > 1) {
         thumbsHtml = '<div class="product-thumbs">';
@@ -253,7 +246,6 @@ function createProductCard(product) {
             '</div>' +
         '</div>';
 
-    // Thumbnail switching
     card.querySelectorAll('.product-thumb').forEach(function(thumb) {
         thumb.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -281,7 +273,8 @@ function initQuickViewModal() {
     var modal = document.createElement('div');
     modal.id = 'quickViewModal';
     modal.className = 'modal hidden';
-    modal.innerHTML = '<div class="modal-content" id="qvContent">' +
+    modal.innerHTML =
+        '<div class="modal-content" id="qvContent">' +
         '<button class="close" id="qvClose" aria-label="Close">&times;</button>' +
         '<div class="qv-inner" id="qvInner"></div></div>';
     document.body.appendChild(modal);
@@ -314,9 +307,8 @@ function openQuickView(productId) {
     inner.innerHTML =
         '<div class="qv-gallery">' +
             '<div class="qv-main-img">' +
-                (primaryImg
-                    ? '<img src="' + primaryImg + '" alt="' + p.name + '" loading="lazy" id="qvMainImg">'
-                    : '<span class="no-image">No image available</span>') +
+                (primaryImg ? '<img src="' + primaryImg + '" alt="' + p.name + '" loading="lazy" id="qvMainImg">'
+                            : '<span class="no-image">No image available</span>') +
             '</div>' + thumbStrip +
         '</div>' +
         '<div class="qv-details">' +
@@ -401,9 +393,7 @@ function updateStickyCartBar() {
 }
 
 // ─────────────────────────────────────────────────
-//  POPULATE CATEGORY FILTER DROPDOWN
-//  Reads from getCategories() so admin additions
-//  appear immediately without code changes.
+//  CATEGORY FILTER
 // ─────────────────────────────────────────────────
 function populateCategoryFilter() {
     var sel = document.getElementById('categoryFilter');
@@ -416,7 +406,6 @@ function populateCategoryFilter() {
         opt.textContent = cat.name;
         if (cat.name === current) opt.selected = true;
         sel.appendChild(opt);
-        // Add sub-categories as indented options
         if (cat.subs && cat.subs.length) {
             cat.subs.forEach(function(sub) {
                 var sopt = document.createElement('option');
@@ -432,26 +421,26 @@ function populateCategoryFilter() {
 // ─────────────────────────────────────────────────
 //  RENDER PRODUCTS
 // ─────────────────────────────────────────────────
-async function renderProducts() {
+function renderProducts() {
     populateCategoryFilter();
-    var searchQuery    = (document.getElementById('searchInput').value || '').trim().toLowerCase();
-    var categoryFilter = document.getElementById('categoryFilter').value;
-    var sortOption     = document.getElementById('sortFilter').value;
+    var searchQuery    = (document.getElementById('searchInput') ? document.getElementById('searchInput').value : '').trim().toLowerCase();
+    var categoryFilter = document.getElementById('categoryFilter') ? document.getElementById('categoryFilter').value : 'all';
+    var sortOption     = document.getElementById('sortFilter') ? document.getElementById('sortFilter').value : 'default';
     var grid           = document.getElementById('productGrid');
     var noResults      = document.getElementById('noResults');
     var resultsCount   = document.getElementById('resultsCount');
-    var allProducts = await getAllProducts();
+    var allP           = getAllProducts();
 
+    if (!grid) return;
     grid.innerHTML = '';
-    var skCount = Math.min(Math.max(allProducts.length, 1), 6);
-    for (var s = 0; s < skCount; s++) grid.appendChild(buildSkeletonCard());
+    for (var s = 0; s < Math.min(Math.max(allP.length, 1), 6); s++) grid.appendChild(buildSkeletonCard());
 
-    var filtered = allProducts.filter(function(product) {
+    var filtered = allP.filter(function(product) {
         var search = !searchQuery ||
-            product.name.toLowerCase().includes(searchQuery) ||
-            (product.description || '').toLowerCase().includes(searchQuery) ||
-            product.category.toLowerCase().includes(searchQuery) ||
-            (product.subCategory || '').toLowerCase().includes(searchQuery);
+            product.name.toLowerCase().indexOf(searchQuery) >= 0 ||
+            (product.description || '').toLowerCase().indexOf(searchQuery) >= 0 ||
+            product.category.toLowerCase().indexOf(searchQuery) >= 0 ||
+            (product.subCategory || '').toLowerCase().indexOf(searchQuery) >= 0;
         var cat = categoryFilter === 'all' ||
             product.category === categoryFilter ||
             (product.category + ' > ' + (product.subCategory || '')) === categoryFilter;
@@ -465,11 +454,11 @@ async function renderProducts() {
     setTimeout(function() {
         grid.innerHTML = '';
         if (!filtered.length) {
-            noResults.classList.remove('hidden');
+            if (noResults) noResults.classList.remove('hidden');
             if (resultsCount) resultsCount.textContent = '';
         } else {
-            noResults.classList.add('hidden');
-            if (resultsCount) resultsCount.textContent = 'Showing ' + filtered.length + ' of ' + allProducts.length + ' product' + (allProducts.length !== 1 ? 's' : '');
+            if (noResults) noResults.classList.add('hidden');
+            if (resultsCount) resultsCount.textContent = 'Showing ' + filtered.length + ' of ' + allP.length + ' product' + (allP.length !== 1 ? 's' : '');
             filtered.forEach(function(product, idx) {
                 var card = createProductCard(product);
                 card.style.animationDelay = (idx * 80) + 'ms';
@@ -511,23 +500,27 @@ function setupHamburger() {
 }
 
 // ─────────────────────────────────────────────────
-//  MODALS
+//  MODALS  (cart + login via auth.js)
 // ─────────────────────────────────────────────────
 function setupModals() {
     var cartModal  = document.getElementById('cartModal');
     var loginBtn   = document.getElementById('loginBtn');
     var cartBtn    = document.getElementById('cartBtn');
 
-    if (loginBtn) loginBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        if (typeof openAuthModal === 'function') openAuthModal('login');
-    });
+    if (loginBtn) {
+        loginBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (typeof openAuthModal === 'function') openAuthModal('login');
+        });
+    }
 
-    if (cartBtn) cartBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        displayCart();
-        if (cartModal) cartModal.classList.remove('hidden');
-    });
+    if (cartBtn) {
+        cartBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            displayCart();
+            if (cartModal) cartModal.classList.remove('hidden');
+        });
+    }
 
     document.querySelectorAll('.close[data-modal]').forEach(function(btn) {
         btn.addEventListener('click', function() {
@@ -541,43 +534,37 @@ function setupModals() {
     });
 
     var checkoutBtn = document.getElementById('checkoutBtn');
-    if (checkoutBtn) checkoutBtn.addEventListener('click', function() {
-        var cart = getCart();
-        if (!cart.length) { showToast('Your cart is empty'); return; }
-        if (typeof isLoggedIn === 'function' && !isLoggedIn()) {
-            if (cartModal) cartModal.classList.add('hidden');
-            if (typeof openAuthModal === 'function') {
-                openAuthModal('login', function() { window.location.href = 'checkout.html'; });
+    if (checkoutBtn) {
+        checkoutBtn.addEventListener('click', function() {
+            var cart = getCart();
+            if (!cart.length) { showToast('Your cart is empty'); return; }
+            if (typeof isLoggedIn === 'function' && !isLoggedIn()) {
+                if (cartModal) cartModal.classList.add('hidden');
+                if (typeof openAuthModal === 'function') {
+                    openAuthModal('login', function() { window.location.href = 'checkout.html'; });
+                }
+                return;
             }
-            return;
-        }
-        window.location.href = 'checkout.html';
-    });
+            window.location.href = 'checkout.html';
+        });
+    }
 }
 
 // ─────────────────────────────────────────────────
-//  PROMO BANNER
-//  Reads active banner from localStorage (set by admin)
-//  and applies it to the #promoBanner element.
+//  PROMO BANNER  (reads from localStorage set by admin)
 // ─────────────────────────────────────────────────
 function initPromoBanner() {
-    var banner    = document.getElementById('promoBanner');
-    var textEl    = document.getElementById('promoBannerText');
-    var closeBtn  = document.getElementById('promoBannerClose');
+    var banner   = document.getElementById('promoBanner');
+    var textEl   = document.getElementById('promoBannerText');
+    var closeBtn = document.getElementById('promoBannerClose');
     if (!banner) return;
 
     try {
         var stored = JSON.parse(localStorage.getItem('activeBanner'));
         if (stored && stored.text && textEl) {
             textEl.textContent = stored.text;
-            var colorMap = {
-                green:  '#2c5530',
-                red:    '#c62828',
-                orange: '#e65100',
-                blue:   '#1565c0'
-            };
-            var bg = colorMap[stored.color] || '#2c5530';
-            banner.style.background = bg;
+            var colorMap = { green:'#2c5530', red:'#c62828', orange:'#e65100', blue:'#1565c0' };
+            banner.style.background = colorMap[stored.color] || '#2c5530';
         }
     } catch(e) {}
 
@@ -596,6 +583,7 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.replace('index.html');
         return;
     }
+    initPromoBanner();
     updateCartCount();
     renderProducts();
     setupModals();
@@ -604,5 +592,4 @@ document.addEventListener('DOMContentLoaded', function() {
     initQuickViewModal();
     initStickyCartBar();
     if (typeof initAuth === 'function') initAuth().catch(function() {});
-    if (typeof initPromoBanner === 'function') initPromoBanner();
 });
