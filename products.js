@@ -102,15 +102,8 @@ var PRODUCTS = [
 // ─────────────────────────────────────────────────
 //  MERGE BASE + ADMIN PRODUCTS
 // ─────────────────────────────────────────────────
-function getAllProducts() {
-    var adminList = [];
-    try { adminList = JSON.parse(localStorage.getItem('adminProducts')) || []; } catch(e) {}
-    var merged = JSON.parse(JSON.stringify(PRODUCTS));
-    adminList.forEach(function(ap) {
-        var idx = merged.findIndex(function(p) { return p.id === ap.id; });
-        if (idx >= 0) { merged[idx] = ap; } else { merged.push(ap); }
-    });
-    return merged;
+async function getAllProducts() {
+    return await WDG.getProducts();
 }
 
 function getProductById(id) {
