@@ -549,13 +549,41 @@ var BASE_PRODUCTS = [
         name: 'Jack The Ripper Sativa',
         price: 650.00,
         category: 'Disposables',
-        subCategory: 'Sativa',
+        subCategory: 'Vapes',
         isCannabis: true,
         description: 'Jack The Ripper Sativa disposable vape. A premium sativa-dominant experience in a sleek, ready-to-use device.',
         thc: 'Available on request',
         cbd: 'Available on request',
         image: 'https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775678961/JACK_THE_RIPPER_SATIVA_disposable_vape_cfv9yc.png',
         images: ['https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775678961/JACK_THE_RIPPER_SATIVA_disposable_vape_cfv9yc.png'],
+        imageFit: 'cover'
+    },
+    {
+        id: 2,
+        name: 'THC Concentrated Sundae Driver Disposable Vape',
+        price: 650.00,
+        category: 'Disposables',
+        subCategory: 'Vapes',
+        isCannabis: true,
+        description: 'Liquid Gold THC Concentrated Sundae Driver Disposable Vape.',
+        thc: 'Available on request',
+        cbd: 'Available on request',
+        image: 'https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775680930/THC_Concentrated_Sundae_driver_Disposable_Vape_grtkfz.png',
+        images: ['https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775680930/THC_Concentrated_Sundae_driver_Disposable_Vape_grtkfz.png'],
+        imageFit: 'cover'
+    },
+    {
+        id: 3,
+        name: 'Purple Skittles Indoor Pre-Roll',
+        price: 100.00,
+        category: 'Pre-Rolls',
+        subCategory: 'Indica',
+        isCannabis: true,
+        description: 'Premium indoor flower pre-roll, Purple Skittles flavour.',
+        thc: 'Available on request',
+        cbd: 'Available on request',
+        image: 'https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,dpr_auto,c_fit,w_400,h_400/v1775810915/New_pre-roll_j_s_mdhiq0.png',
+        images: ['https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,dpr_auto,c_fit,w_400,h_400/v1775810915/New_pre-roll_j_s_mdhiq0.png'],
         imageFit: 'cover'
     }
 ];
@@ -614,7 +642,7 @@ function saveProduct() {
     saveAdminProducts(list);
     clearProductForm();
     renderProductList();
-    showMsg('productMsg', editId ? 'Product updated.' : 'Product added. Reload the site to see it.', 'ok');
+    showMsg('productMsg', editId ? 'Product updated. Re-deploy Netlify to publish changes.' : 'Product saved. To make it visible to ALL visitors: copy the generated code block below and add it to products.js and script.js, then re-deploy to Netlify.', 'ok');
 }
 
 function clearProductForm() {
