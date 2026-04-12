@@ -432,7 +432,7 @@ function populateCategoryFilter() {
 // ─────────────────────────────────────────────────
 //  RENDER PRODUCTS
 // ─────────────────────────────────────────────────
-function renderProducts() {
+async function renderProducts() {
     populateCategoryFilter();
     var searchQuery    = (document.getElementById('searchInput').value || '').trim().toLowerCase();
     var categoryFilter = document.getElementById('categoryFilter').value;
@@ -440,7 +440,7 @@ function renderProducts() {
     var grid           = document.getElementById('productGrid');
     var noResults      = document.getElementById('noResults');
     var resultsCount   = document.getElementById('resultsCount');
-    var allProducts    = getAllProducts();
+    var allProducts = await getAllProducts();
 
     grid.innerHTML = '';
     var skCount = Math.min(Math.max(allProducts.length, 1), 6);
