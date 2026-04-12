@@ -45,6 +45,26 @@ async function db() {
     return loadSupabaseSDK();
 }
 
+async function getProducts() {
+    const client = await db();
+    const { data, error } = await client
+        .from('products')
+        .select('*')
+        .eq('active', true)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching products:', error);
+        return [];
+    }
+
+    return data;
+}
+
+// make it globally available
+window.WDG = window.WDG || {};
+window.WDG.getProducts = getProducts;
+
 /* ════════════════════════════════════════
    AUTH
 ════════════════════════════════════════ */
