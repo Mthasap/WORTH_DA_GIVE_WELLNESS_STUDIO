@@ -261,6 +261,22 @@ function initPromoBanner() {
     var textEl   = document.getElementById('promoBannerText');
     var closeBtn = document.getElementById('promoBannerClose');
     if (!banner) return;
+
+    // The banner HTML text is hardcoded in index.html / products.html
+    // and is the same for ALL visitors (it's deployed to Netlify).
+    // The banner is always visible — no localStorage gate.
+    // We simply make sure the close button works.
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+            banner.style.display = 'none';
+        });
+    }
+
+    // If the admin has saved a custom banner message via admin.html
+    // on THIS device (same browser), apply it as an override.
+    // To push a banner to ALL visitors: edit the text directly in
+    // index.html and products.html, then re-deploy to Netlify.
     try {
         var stored = JSON.parse(localStorage.getItem('activeBanner'));
         if (stored && stored.text && textEl) {
@@ -269,9 +285,6 @@ function initPromoBanner() {
             banner.style.background = colorMap[stored.color] || '#2c5530';
         }
     } catch(e) {}
-    if (closeBtn) {
-        closeBtn.addEventListener('click', function() { banner.style.display = 'none'; });
-    }
 }
 
 
@@ -551,19 +564,35 @@ function initModals() {
 //  HAMBURGER
 // ─────────────────────────────────────────
 function initHamburger() {
-    const btn = document.getElementById('hamburgerBtn');
-    const nav = document.getElementById('mainNav');
+    var btn = document.getElementById('hamburgerBtn');
+    var nav = document.getElementById('mainNav');
     if (!btn || !nav) return;
 
-    btn.addEventListener('click', function () {
+    btn.addEventListener('click', function() {
         btn.classList.toggle('open');
         nav.classList.toggle('open');
     });
 
-    nav.querySelectorAll('a').forEach(a => {
-        a.addEventListener('click', () => {
+    nav.querySelectorAll('a').forEach(function(a) {
+        a.addEventListener('click', function(e) {
+            var href = this.getAttribute('href');
+
+            // Close the hamburger menu
             btn.classList.remove('open');
             nav.classList.remove('open');
+
+            // If it's an anchor on the same page (#home, #about etc.)
+            // stop the default jump and do a smooth scroll after the
+            // nav has had time to close (150ms)
+            if (href && href.startsWith('#') && href.length > 1) {
+                e.preventDefault();
+                setTimeout(function() {
+                    var target = document.querySelector(href);
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }, 150);
+            }
         });
     });
 }
