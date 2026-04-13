@@ -69,8 +69,8 @@ var PRODUCTS = [
         category: "Pre-Rolls",
         subCategory: "Indica",
         isCannabis: true,
-        image: "https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775810915/New_pre-roll_j_s_mdhiq0.png",
-        images: ["https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775810915/New_pre-roll_j_s_mdhiq0.png"]
+        image: "https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,dpr_auto,c_fit,w_400,h_400/v1775810915/New_pre-roll_j_s_mdhiq0.png",
+        images: ["https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,dpr_auto,c_fit,w_400,h_400/v1775810915/New_pre-roll_j_s_mdhiq0.png"]
     }
     /* ── ADD NEW PRODUCTS ABOVE THIS LINE ──────────────────────
        Format:
@@ -559,6 +559,17 @@ function initPromoBanner() {
     var closeBtn = document.getElementById('promoBannerClose');
     if (!banner) return;
 
+    // Banner text is hardcoded in the HTML (same for all visitors via Netlify).
+    // Close button always works.
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+            banner.style.display = 'none';
+        });
+    }
+
+    // localStorage override: only applies on the same device as the admin.
+    // To change the banner for ALL visitors: edit promoBannerText in
+    // index.html and products.html directly, then re-deploy to Netlify.
     try {
         var stored = JSON.parse(localStorage.getItem('activeBanner'));
         if (stored && stored.text && textEl) {
@@ -567,12 +578,6 @@ function initPromoBanner() {
             banner.style.background = colorMap[stored.color] || '#2c5530';
         }
     } catch(e) {}
-
-    if (closeBtn) {
-        closeBtn.addEventListener('click', function() {
-            banner.style.display = 'none';
-        });
-    }
 }
 
 // ─────────────────────────────────────────────────
