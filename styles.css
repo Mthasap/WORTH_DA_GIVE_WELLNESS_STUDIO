@@ -925,7 +925,7 @@ footer { background:#2c5530; color:#fff; padding:3rem 0 2rem; text-align:center;
     .main-nav ul li:last-child a { border-bottom:none; }
     .hero { min-height:300px; height:auto; padding:4rem 1.5rem; }
     .hero-content h2 { font-size:2rem; }
-    .product-grid { grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:1.2rem; }
+    .product-grid { grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:1rem; }
     .qv-inner { grid-template-columns:1fr; }
     .search-filter-bar { flex-direction:column; gap:10px; }
     .search-input-wrapper { width:100%; }
@@ -959,12 +959,22 @@ footer { background:#2c5530; color:#fff; padding:3rem 0 2rem; text-align:center;
 }
 
 @media (max-width:480px) {
-    .container { padding:0 14px; }
+    .container { padding:0 10px; }
     .hero-content h2 { font-size:1.6rem; }
-    .product-grid { grid-template-columns:1fr; }
-    .product-image { height:180px; }
-    .product-card-actions { flex-direction:column; gap:8px; }
-    .add-to-cart,.quick-view-btn { width:100%; }
+    /* ── 2-column product grid on mobile ── */
+    .product-grid { grid-template-columns:repeat(2,1fr); gap:10px; }
+    .product-image { height:140px; }
+    /* Compact card info for small screens */
+    .product-info { padding:0.7rem 0.7rem 0.8rem; }
+    .product-info h3 { font-size:0.82rem; line-height:1.3; margin-bottom:0.2rem; }
+    .product-price { font-size:0.95rem; margin:0.2rem 0 0.4rem; }
+    .product-desc-short { display:none; }
+    .cannabis-product-tag { font-size:0.65rem; padding:2px 6px; }
+    .product-category-label { font-size:0.62rem; margin-bottom:0.15rem; }
+    /* Stack buttons vertically */
+    .product-card-actions { flex-direction:column; gap:6px; padding:0 0.7rem 0.7rem; }
+    .add-to-cart { padding:9px 8px; font-size:0.8rem; min-height:38px; }
+    .quick-view-btn { padding:7px 8px; font-size:0.75rem; min-height:34px; }
     .page-banner h2 { font-size:1.8rem; }
     .page-banner p  { font-size:0.9rem; }
     .social-btn-facebook,.social-btn-instagram,
@@ -972,8 +982,8 @@ footer { background:#2c5530; color:#fff; padding:3rem 0 2rem; text-align:center;
     footer { padding:2rem 0 1.5rem; }
     .whatsapp-float { bottom:16px; right:14px; padding:12px; border-radius:50%; max-width:52px; }
     .whatsapp-label { display:none; }
-    .promo-banner { font-size:0.75rem; padding:8px 0; }
-    .promo-banner-inner { padding:0 40px; }
+    .promo-banner { font-size:0.73rem; padding:7px 0; display:block !important; }
+    .promo-banner-inner { padding:0 38px; }
     .clb-text { font-size:0.78rem; }
 }
 
