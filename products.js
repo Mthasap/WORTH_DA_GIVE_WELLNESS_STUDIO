@@ -93,8 +93,8 @@ var PRODUCTS = [
 // ─────────────────────────────────────────────────
 //  PRODUCT HELPERS
 // ─────────────────────────────────────────────────
-function getAllProducts() {
-    return PRODUCTS;
+async function getAllProducts() {
+    return await WDG.getProducts();
 }
 
 function getProductById(id) {
@@ -429,7 +429,7 @@ function renderProducts() {
     var grid           = document.getElementById('productGrid');
     var noResults      = document.getElementById('noResults');
     var resultsCount   = document.getElementById('resultsCount');
-    var allP           = getAllProducts();
+    var allP           = [];
 
     if (!grid) return;
     grid.innerHTML = '';
@@ -590,7 +590,57 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     initPromoBanner();
     updateCartCount();
-    renderProducts();
+async function renderProducts() {
+    populateCategoryFilter();
+
+    var searchQuery    = (document.getElementById('searchInput') ? document.getElementById('searchInput').value : '').trim().toLowerCase();
+    var categoryFilter = document.getElementById('categoryFilter') ? document.getElementById('categoryFilter').value : 'all';
+    var sortOption     = document.getElementById('sortFilter') ? document.getElementById('sortFilter').value : 'default';
+    var grid           = document.getElementById('productGrid');
+    var noResults      = document.getElementById('noResults');
+    var resultsCount   = document.getElementById('resultsCount');
+
+    if (!grid) return;
+
+    grid.innerHTML = '';
+    for (var s = 0; s < 6; s++) grid.appendChild(buildSkeletonCard());
+
+    // ✅ FETCH FROM SUPABASE
+    var allP = await WDG.getProducts();
+
+    var filtered = allP.filter(function(product) {
+        var search = !searchQuery ||
+            product.name.toLowerCase().includes(searchQuery) ||
+            (product.description || '').toLowerCase().includes(searchQuery);
+
+        var cat = categoryFilter === 'all' ||
+            product.category === categoryFilter;
+
+        return search && cat;
+    });
+
+    if (sortOption === 'price-asc')  filtered.sort((a,b)=>a.price-b.price);
+    if (sortOption === 'price-desc') filtered.sort((a,b)=>b.price-a.price);
+    if (sortOption === 'name-asc')   filtered.sort((a,b)=>a.name.localeCompare(b.name));
+
+    setTimeout(function() {
+        grid.innerHTML = '';
+
+        if (!filtered.length) {
+            if (noResults) noResults.classList.remove('hidden');
+            if (resultsCount) resultsCount.textContent = '';
+        } else {
+            if (noResults) noResults.classList.add('hidden');
+            if (resultsCount) resultsCount.textContent = `Showing ${filtered.length} products`;
+
+            filtered.forEach(function(product, idx) {
+                var card = createProductCard(product);
+                card.style.animationDelay = (idx * 80) + 'ms';
+                grid.appendChild(card);
+            });
+        }
+    }, 400);
+}
     setupModals();
     setupSearchAndFilter();
     setupHamburger();
