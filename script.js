@@ -1,906 +1,1029 @@
 /* ════════════════════════════════════════
-   THE BUD SHOP — script.js (Homepage)
-   Features:
-   1. Swipe support on reviews carousel
-   2. Product quick-view modal (homepage featured)
-   3. Skeleton loading screens
-   4. Sticky cart bar (on products page)
-   5. WhatsApp label (handled in HTML/CSS)
+   WORTHDAGIVE WELLNESS STUDIO — styles.css
+   Complete stylesheet. No external dependencies.
 ════════════════════════════════════════ */
 
-// ─────────────────────────────────────────
-//  PRODUCT DATA  — MUST match products.js
-//  Hardcoded so all visitors see the same products.
-//  When you add a product via admin.html, also add it
-//  here and in products.js, then re-deploy to Netlify.
-// ─────────────────────────────────────────
-var PRODUCTS = [
-    {
-        id: 1,
-        name: 'Jack The Ripper Sativa',
-        price: 650.00,
-        description: 'Jack The Ripper Sativa disposable vape. A premium sativa-dominant experience in a sleek, ready-to-use device.',
-        thc: 'Available on request',
-        cbd: 'Available on request',
-        category: 'Disposables',
-        subCategory: 'Vapes',
-        isCannabis: true,
-        image: 'https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775678961/JACK_THE_RIPPER_SATIVA_disposable_vape_cfv9yc.png',
-        images: ['https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775678961/JACK_THE_RIPPER_SATIVA_disposable_vape_cfv9yc.png']
-    },
-    {
-        id: 2,
-        name: 'THC Concentrated Sundae Driver Disposable Vape',
-        price: 650.00,
-        description: 'Liquid Gold THC Concentrated Sundae Driver Disposable Vape.',
-        thc: 'Available on request',
-        cbd: 'Available on request',
-        category: 'Disposables',
-        subCategory: 'Vapes',
-        isCannabis: true,
-        image: 'https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775680930/THC_Concentrated_Sundae_driver_Disposable_Vape_grtkfz.png',
-        images: ['https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775680930/THC_Concentrated_Sundae_driver_Disposable_Vape_grtkfz.png']
-    },
-    {
-        id: 3,
-        name: 'Purple Skittles Indoor Pre-Roll',
-        price: 100.00,
-        description: 'Premium indoor flower pre-roll, Purple Skittles flavour.',
-        thc: 'Available on request',
-        cbd: 'Available on request',
-        category: 'Pre-Rolls',
-        subCategory: 'Indica',
-        isCannabis: true,
-        image: 'https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,dpr_auto,c_fit,w_400,h_400/v1775810915/New_pre-roll_j_s_mdhiq0.png',
-        images: ['https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,dpr_auto,c_fit,w_400,h_400/v1775810915/New_pre-roll_j_s_mdhiq0.png']
+/* ── Reset & Base ── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html { scroll-behavior:smooth; overflow-x:hidden; }
+body { font-family:Arial,sans-serif; line-height:1.6; color:#333; overflow-x:hidden; -webkit-font-smoothing:antialiased; -webkit-text-size-adjust:100%; }
+.container { max-width:1200px; margin:0 auto; padding:0 20px; }
+img { max-width:100%; display:block; }
+
+/* ── Hidden utility ── */
+.hidden { display:none !important; }
+
+/* ════════════════════════════════════════
+   AGE GATE — must display before everything
+   The #ageModal has class="modal" but NO
+   class="hidden", so it always shows until
+   JS adds 'hidden' after the user clicks.
+════════════════════════════════════════ */
+#ageModal {
+    display:flex;
+    position:fixed;
+    inset:0;
+    z-index:99999;
+    background:rgba(0,0,0,0.85);
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    pointer-events:auto;
+}
+#ageModal.hidden { display:none !important; }
+
+.age-modal-content {
+    background:#fff;
+    border-radius:12px;
+    padding:36px 30px;
+    max-width:480px;
+    width:100%;
+    text-align:center;
+    position:relative;
+    max-height:92vh;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    pointer-events:auto;
+}
+.age-modal-leaf {
+    width:80px; height:80px;
+    border-radius:50%;
+    background:#e8f5e9;
+    display:flex; align-items:center; justify-content:center;
+    margin:0 auto 1.2rem;
+}
+.age-modal-content h2 { font-size:1.6rem; color:#2c5530; margin-bottom:0.8rem; }
+.age-modal-subtitle   { color:#555; margin-bottom:0.5rem; font-size:0.95rem; }
+.age-modal-content > p { color:#333; margin-bottom:0.5rem; }
+.legal-disclaimer { margin-top:1.2rem; color:#888; font-style:italic; font-size:0.8rem; line-height:1.5; }
+
+/* ── Under-18 redirect screen ── */
+#under18Screen {
+    display:none;
+    position:fixed; inset:0; background:#fff;
+    align-items:center; justify-content:center;
+    flex-direction:column; gap:1rem;
+    z-index:99998; text-align:center; padding:2rem;
+}
+#under18Screen.show { display:flex; }
+#under18Screen h2 { color:#c62828; font-size:1.6rem; }
+#under18Screen p  { color:#666; max-width:360px; font-size:0.95rem; }
+
+/* ════════════════════════════════════════
+   BUTTONS
+════════════════════════════════════════ */
+.btn-primary {
+    background:#4CAF50; color:#fff;
+    padding:12px 24px; border:none;
+    border-radius:5px; cursor:pointer;
+    font-size:1rem; min-height:44px;
+    transition:background 0.2s;
+    display:inline-flex; align-items:center; justify-content:center;
+}
+.btn-primary:hover { background:#45a049; }
+
+.btn-secondary {
+    background:#f44336; color:#fff;
+    padding:12px 24px; border:none;
+    border-radius:5px; cursor:pointer;
+    font-size:1rem; min-height:44px;
+    transition:background 0.2s;
+    display:inline-flex; align-items:center; justify-content:center;
+}
+.btn-secondary:hover { background:#da190b; }
+
+.cta-button {
+    display:inline-flex; align-items:center; justify-content:center;
+    background:#4CAF50; color:#fff;
+    padding:14px 28px; border:none;
+    border-radius:5px; font-size:1rem;
+    cursor:pointer; text-decoration:none;
+    min-height:44px; transition:background 0.2s;
+}
+.cta-button:hover { background:#45a049; }
+
+/* ════════════════════════════════════════
+   GENERAL MODALS (cart, quick-view, auth)
+   These use class="modal hidden" so they
+   are hidden by default.
+════════════════════════════════════════ */
+.modal {
+    display:flex;
+    position:fixed; inset:0;
+    z-index:9000;
+    background:rgba(0,0,0,0.8);
+    align-items:center; justify-content:center;
+    padding:16px;
+    pointer-events:auto;
+}
+.modal.hidden { display:none !important; }
+
+.modal-content {
+    background:#fff; padding:30px;
+    border-radius:10px; text-align:center;
+    max-width:500px; width:100%;
+    position:relative; max-height:88vh;
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+}
+.modal-buttons {
+    margin:20px 0; display:flex;
+    flex-wrap:wrap; justify-content:center; gap:12px;
+}
+.modal-buttons .btn-primary,
+.modal-buttons .btn-secondary { margin:0; }
+
+.close {
+    position:absolute; top:12px; right:18px;
+    font-size:28px; cursor:pointer;
+    color:#555; background:none; border:none;
+    line-height:1; min-width:44px; min-height:44px;
+    display:flex; align-items:center; justify-content:flex-end;
+    transition:color 0.2s;
+}
+.close:hover { color:#f44336; }
+
+/* ════════════════════════════════════════
+   PROMO BANNER
+════════════════════════════════════════ */
+.promo-banner {
+    background:#2c5530; color:#fff;
+    padding:10px 0; text-align:center;
+    position:relative; z-index:400;
+    font-size:0.9rem; font-weight:600;
+}
+.promo-banner-inner {
+    display:flex; align-items:center;
+    justify-content:center; gap:12px;
+    padding:0 48px; position:relative;
+}
+.promo-banner-close {
+    position:absolute; right:14px; top:50%;
+    transform:translateY(-50%);
+    background:none; border:none;
+    color:#fff; font-size:1rem;
+    cursor:pointer; opacity:0.7;
+    transition:opacity 0.2s; padding:4px 8px;
+    min-width:32px; min-height:32px;
+}
+.promo-banner-close:hover { opacity:1; }
+
+/* ════════════════════════════════════════
+   HEADER
+════════════════════════════════════════ */
+header {
+    background:#2c5530; color:#fff;
+    padding:0.6rem 0;
+    position:sticky; top:0; z-index:500;
+    box-shadow:0 2px 10px rgba(0,0,0,0.2);
+}
+header .container {
+    display:flex; justify-content:space-between;
+    align-items:center; position:relative; gap:12px;
+}
+.logo a {
+    text-decoration:none; display:flex;
+    align-items:center; gap:12px; flex-shrink:0;
+}
+.logo-img { height:60px; width:auto; flex-shrink:0; }
+.logo-text { display:flex; flex-direction:column; justify-content:center; gap:2px; }
+.logo h1   { font-size:1.6rem; color:#fff; font-weight:700; line-height:1.1; margin:0; }
+.logo .tagline {
+    font-size:0.72rem; color:#fff; font-weight:700;
+    letter-spacing:1.4px; text-transform:uppercase;
+    display:block; white-space:nowrap; text-align:center;
+}
+.main-nav ul { display:flex; list-style:none; gap:1.6rem; align-items:center; }
+.main-nav a {
+    color:#fff; text-decoration:none;
+    font-weight:600; transition:color 0.2s;
+    min-height:44px; display:inline-flex; align-items:center; gap:5px;
+}
+.main-nav a:hover,
+.main-nav a.active { color:#4CAF50; }
+.nav-icon-link { display:inline-flex !important; align-items:center; gap:5px; }
+
+/* ── Hamburger ── */
+.hamburger {
+    display:none; flex-direction:column;
+    justify-content:center; align-items:center;
+    gap:5px; width:44px; height:44px;
+    background:none; border:none;
+    cursor:pointer; padding:0; z-index:600;
+    flex-shrink:0;
+}
+.hamburger span {
+    display:block; width:24px; height:3px;
+    background:#fff; border-radius:3px;
+    transition:transform 0.3s, opacity 0.3s;
+}
+.hamburger.open span:nth-child(1) { transform:translateY(8px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity:0; }
+.hamburger.open span:nth-child(3) { transform:translateY(-8px) rotate(-45deg); }
+
+/* ════════════════════════════════════════
+   CANNABIS LEGAL BANNER
+════════════════════════════════════════ */
+.cannabis-legal-banner {
+    background:#fff8e1;
+    border-top:3px solid #f9a825;
+    border-bottom:3px solid #f9a825;
+    padding:12px 0;
+}
+.clb-inner { display:flex; align-items:flex-start; gap:10px; }
+.clb-svg-icon { flex-shrink:0; margin-top:2px; }
+.clb-text { font-size:0.84rem; color:#5d4037; line-height:1.6; }
+.clb-link { color:#e65100; font-weight:700; text-decoration:none; }
+.clb-link:hover { text-decoration:underline; }
+
+/* ════════════════════════════════════════
+   HERO
+════════════════════════════════════════ */
+.hero {
+    background-image:linear-gradient(rgba(0,0,0,0.55),rgba(0,0,0,0.55)),
+                      url('https://res.cloudinary.com/dbcfzmxzt/image/upload/v1775733144/product.page.bg_ufs0xe.webp');
+    background-size:cover; background-position:center;
+    min-height:420px; height:60vh; max-height:600px;
+    display:flex; align-items:center; justify-content:center;
+    text-align:center; color:#fff; padding:2rem 1.5rem;
+}
+.hero-content { max-width:600px; }
+.hero-content h2 { font-size:2.8rem; margin-bottom:1rem; line-height:1.15; }
+.hero-content p  { font-size:1.1rem; margin-bottom:2rem; }
+
+/* ════════════════════════════════════════
+   PRODUCTS SECTION
+════════════════════════════════════════ */
+.products-section { padding:4rem 0; background:#f8f9fa; }
+.products-section.has-sticky-bar { padding-bottom:6rem; }
+.products-section h2 { text-align:center; margin-bottom:3rem; font-size:2.4rem; color:#2c5530; }
+.products-cannabis-note { text-align:center; color:#555; font-size:0.88rem; margin-top:-2rem; margin-bottom:2rem; }
+.view-all-wrapper { text-align:center; margin-top:2.5rem; }
+
+/* ── Product grid ── */
+.product-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+    gap:2rem;
+}
+.product-card {
+    background:#fff; border-radius:10px; padding:0;
+    box-shadow:0 4px 8px rgba(0,0,0,0.08);
+    display:flex; flex-direction:column;
+    transition:transform 0.3s,box-shadow 0.3s;
+    overflow:hidden; animation:fadeInUp 0.4s ease both;
+}
+.product-card:hover { transform:translateY(-4px); box-shadow:0 10px 24px rgba(0,0,0,0.13); }
+@keyframes fadeInUp {
+    from { opacity:0; transform:translateY(16px); }
+    to   { opacity:1; transform:translateY(0); }
+}
+.product-image {
+    width:100%; height:200px; overflow:hidden;
+    background:#e9ecef; display:flex;
+    align-items:center; justify-content:center;
+    cursor:pointer; position:relative;
+}
+.product-image img {
+    width:100%; height:100%;
+    object-fit:cover; transition:transform 0.4s;
+}
+.product-card:hover .product-image img { transform:scale(1.04); }
+.product-image::after {
+    content:'Quick View';
+    position:absolute; bottom:0; left:0; right:0;
+    background:rgba(44,85,48,0.88); color:#fff;
+    font-size:0.82rem; font-weight:700;
+    padding:8px; text-align:center;
+    transform:translateY(100%); transition:transform 0.25s;
+}
+.product-card:hover .product-image::after { transform:translateY(0); }
+.product-image .no-image { color:#aaa; font-size:0.9rem; }
+.product-info { flex:1; display:flex; flex-direction:column; padding:1.4rem; }
+.product-info h3 { color:#2c5530; margin-bottom:0.4rem; font-size:1.05rem; }
+
+/* ── New product card label & desc classes ── */
+.product-category-label {
+    font-size:0.72rem;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    color:#4CAF50;
+    margin-bottom:0.3rem;
+    line-height:1.3;
+}
+.product-sub-cat {
+    font-weight:400;
+    color:#888;
+    font-size:0.68rem;
+    letter-spacing:0.5px;
+    margin-left:4px;
+}
+.product-desc-short {
+    font-size:0.83rem;
+    color:#666;
+    margin-bottom:0.5rem;
+    line-height:1.5;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+}
+/* card-main-img — same as .product-image img but targetable by JS */
+.card-main-img {
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    transition:transform 0.4s;
+    display:block;
+}
+.product-card:hover .card-main-img { transform:scale(1.04); }
+.product-price { font-size:1.2rem; font-weight:700; color:#4CAF50; margin:0.4rem 0 0.8rem; }
+.product-details { font-size:0.85rem; color:#666; margin-bottom:1rem; flex:1; line-height:1.6; }
+.cannabis-product-tag {
+    display:inline-block; background:#e8f5e9;
+    color:#2c5530; font-size:0.76rem; font-weight:700;
+    padding:2px 8px; border-radius:4px; margin:4px 0;
+}
+.product-card-actions { display:flex; gap:8px; margin-top:auto; }
+.add-to-cart {
+    flex:1; padding:11px; background:#4CAF50;
+    color:#fff; border:none; border-radius:5px;
+    cursor:pointer; font-size:0.95rem; min-height:44px;
+    transition:background 0.2s;
+}
+.add-to-cart:hover { background:#45a049; }
+.quick-view-btn {
+    padding:11px 14px; background:#fff;
+    color:#2c5530; border:2px solid #2c5530;
+    border-radius:5px; cursor:pointer;
+    font-size:0.82rem; font-weight:700;
+    min-height:44px; transition:background 0.2s,color 0.2s;
+    white-space:nowrap;
+}
+.quick-view-btn:hover { background:#2c5530; color:#fff; }
+
+/* ── Product thumbnail strip (multi-image) ── */
+.product-thumbs {
+    display:flex; gap:5px;
+    padding:6px 8px; background:#f5f5f5;
+    overflow-x:auto; scrollbar-width:none;
+}
+.product-thumbs::-webkit-scrollbar { display:none; }
+.product-thumb {
+    width:44px; height:44px; flex-shrink:0;
+    border-radius:5px; overflow:hidden;
+    border:2px solid transparent; cursor:pointer;
+    transition:border-color 0.2s;
+}
+.product-thumb img { width:100%; height:100%; object-fit:cover; }
+.product-thumb.active { border-color:#4CAF50; }
+.product-thumb:hover  { border-color:#2c5530; }
+
+/* ── Skeleton loading ── */
+.product-skeleton {
+    background:#fff; border-radius:10px;
+    box-shadow:0 4px 8px rgba(0,0,0,0.08);
+    overflow:hidden; min-height:380px;
+}
+.skeleton-img {
+    width:100%; height:200px;
+    background:linear-gradient(90deg,#e8e8e8 25%,#f5f5f5 50%,#e8e8e8 75%);
+    background-size:200% 100%; animation:shimmer 1.5s infinite;
+}
+.skeleton-body { padding:1.4rem; }
+.skeleton-line {
+    height:14px; border-radius:7px; margin-bottom:12px;
+    background:linear-gradient(90deg,#e8e8e8 25%,#f5f5f5 50%,#e8e8e8 75%);
+    background-size:200% 100%; animation:shimmer 1.5s infinite;
+}
+.skeleton-line.short  { width:45%; }
+.skeleton-line.medium { width:70%; }
+.skeleton-line.long   { width:90%; }
+.skeleton-line.price  { width:30%; height:20px; margin-bottom:16px; }
+.skeleton-btn {
+    width:100%; height:42px; border-radius:5px;
+    margin-top:8px;
+    background:linear-gradient(90deg,#e8e8e8 25%,#f5f5f5 50%,#e8e8e8 75%);
+    background-size:200% 100%; animation:shimmer 1.5s infinite;
+}
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* ════════════════════════════════════════
+   QUICK-VIEW MODAL
+════════════════════════════════════════ */
+#quickViewModal .modal-content {
+    max-width:680px; text-align:left; padding:0; overflow:hidden;
+}
+.qv-inner { display:grid; grid-template-columns:1fr 1fr; }
+.qv-gallery { display:flex; flex-direction:column; background:#e9ecef; overflow:hidden; }
+.qv-main-img {
+    flex:1; display:flex; align-items:center; justify-content:center;
+    min-height:260px; overflow:hidden;
+}
+.qv-main-img img { width:100%; height:100%; object-fit:cover; }
+.qv-thumb-strip {
+    display:flex; gap:5px; padding:7px 8px;
+    background:rgba(0,0,0,0.06); overflow-x:auto; scrollbar-width:none;
+}
+.qv-thumb-strip::-webkit-scrollbar { display:none; }
+.qv-thumb {
+    width:46px; height:46px; flex-shrink:0;
+    border-radius:5px; overflow:hidden;
+    border:2px solid transparent; cursor:pointer; transition:border-color 0.2s;
+}
+.qv-thumb img { width:100%; height:100%; object-fit:cover; }
+.qv-thumb.active { border-color:#4CAF50; }
+.qv-details { padding:1.8rem; display:flex; flex-direction:column; }
+.qv-category { font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:1.2px; color:#4CAF50; margin-bottom:0.5rem; }
+.qv-name { font-size:1.4rem; font-weight:700; color:#2c5530; margin-bottom:0.5rem; line-height:1.2; }
+.qv-price { font-size:1.5rem; font-weight:700; color:#4CAF50; margin-bottom:0.8rem; }
+.qv-desc  { font-size:0.9rem; color:#555; line-height:1.7; margin-bottom:1rem; flex:1; }
+.qv-badges { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:1rem; }
+.qv-badge {
+    background:#e8f5e9; color:#2c5530;
+    font-size:0.78rem; font-weight:700;
+    padding:4px 12px; border-radius:20px; border:1px solid #c8e6c9;
+}
+.cannabis-badge { background:#e8f5e9 !important; color:#2c5530 !important; }
+.qv-lab-note { font-size:0.78rem; color:#999; font-style:italic; margin-bottom:1.2rem; }
+.qv-add-btn {
+    width:100%; padding:13px; background:#4CAF50;
+    color:#fff; border:none; border-radius:5px;
+    cursor:pointer; font-size:1rem; font-weight:700;
+    min-height:48px; transition:background 0.2s;
+}
+.qv-add-btn:hover { background:#45a049; }
+.no-image { color:#aaa; font-size:0.9rem; padding:1rem; }
+
+/* ════════════════════════════════════════
+   ABOUT / CONTACT
+════════════════════════════════════════ */
+.about-section,.contact-section { padding:3rem 0; text-align:center; }
+.about-section h2,.contact-section h2 { color:#2c5530; margin-bottom:1.2rem; font-size:2rem; }
+.about-section p,.contact-section p { max-width:700px; margin:0 auto 0.8rem; color:#555; font-size:0.95rem; }
+
+/* ════════════════════════════════════════
+   REVIEWS
+════════════════════════════════════════ */
+.reviews-section { padding:4rem 0; background:#f0f7f0; text-align:center; }
+.reviews-section h2 { font-size:2.3rem; color:#2c5530; margin-bottom:0.5rem; }
+.reviews-subtitle { color:#666; margin-bottom:2.5rem; }
+.carousel-wrapper {
+    display:flex; align-items:center;
+    gap:1rem; margin-bottom:1.2rem;
+    user-select:none; -webkit-user-select:none;
+}
+.carousel-track-wrapper {
+    flex:1; overflow:hidden;
+    border-radius:12px; touch-action:pan-y; cursor:grab;
+}
+.carousel-track-wrapper.dragging { cursor:grabbing; }
+.carousel-track { display:flex; transition:transform 0.4s ease; will-change:transform; }
+.carousel-track.no-transition { transition:none; }
+.review-card {
+    flex:0 0 100%; width:100%;
+    background:#fff; border-radius:12px;
+    padding:2rem; box-shadow:0 4px 12px rgba(0,0,0,0.08);
+    text-align:left; box-sizing:border-box;
+}
+.review-card-header {
+    display:flex; justify-content:space-between;
+    align-items:center; flex-wrap:wrap;
+    gap:0.4rem; margin-bottom:0.6rem;
+}
+.review-author { font-weight:700; color:#2c5530; }
+.review-date   { font-size:0.82rem; color:#999; }
+.review-stars  { font-size:1.4rem; color:#f4a800; letter-spacing:3px; margin-bottom:0.8rem; }
+.review-text   { color:#444; font-size:0.95rem; line-height:1.65; margin-bottom:1.2rem; }
+.review-response {
+    background:#e8f5e9; border-left:4px solid #4CAF50;
+    border-radius:0 8px 8px 0; padding:0.8rem 1rem;
+}
+.review-response-label { font-size:0.75rem; font-weight:700; color:#2c5530; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.3rem; }
+.review-response p { font-size:0.9rem; color:#444; line-height:1.5; }
+.carousel-arrow {
+    flex-shrink:0; width:46px; height:46px;
+    min-width:44px; min-height:44px;
+    border-radius:50%; border:none;
+    background:#2c5530; color:#fff;
+    font-size:1.8rem; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:background 0.2s,transform 0.2s;
+}
+.carousel-arrow:hover:not(:disabled) { background:#4CAF50; transform:scale(1.08); }
+.carousel-arrow:disabled { background:#ccc; cursor:default; }
+.carousel-dots { display:flex; justify-content:center; gap:8px; margin-bottom:3rem; }
+.carousel-dot {
+    width:11px; height:11px; border-radius:50%;
+    border:none; background:#ccc; cursor:pointer;
+    padding:0; transition:background 0.2s,transform 0.2s;
+}
+.carousel-dot.active { background:#4CAF50; transform:scale(1.3); }
+.swipe-hint { font-size:0.78rem; color:#999; margin-top:-1.8rem; margin-bottom:1.8rem; display:none; }
+
+/* ── Review form ── */
+.review-form-wrapper {
+    background:#fff; border-radius:12px; padding:2rem;
+    max-width:620px; margin:0 auto;
+    text-align:left; box-shadow:0 4px 14px rgba(0,0,0,0.08);
+}
+.review-form-wrapper h3 { color:#2c5530; font-size:1.3rem; margin-bottom:1.4rem; text-align:center; }
+.form-group { margin-bottom:1.2rem; }
+.form-group label { display:block; font-weight:600; color:#333; margin-bottom:0.4rem; font-size:0.9rem; }
+.form-group input[type="text"],
+.form-group textarea {
+    width:100%; padding:10px 14px;
+    border:2px solid #ddd; border-radius:8px;
+    font-size:1rem; font-family:inherit;
+    box-sizing:border-box; transition:border-color 0.2s; resize:vertical;
+}
+.form-group input:focus,.form-group textarea:focus { border-color:#4CAF50; outline:none; }
+.star-input { display:flex; gap:4px; cursor:pointer; margin-top:4px; }
+.star-input .star {
+    font-size:2.2rem; color:#ddd;
+    transition:color 0.15s,transform 0.15s;
+    user-select:none; min-width:44px; min-height:44px;
+    display:flex; align-items:center; justify-content:center;
+}
+.star-input .star.hovered,
+.star-input .star.selected { color:#f4a800; transform:scale(1.15); }
+.char-count { display:block; text-align:right; color:#999; font-size:0.8rem; margin-top:4px; }
+.review-submit { width:100%; margin-top:0.8rem; border-radius:8px; }
+.form-message { padding:10px 16px; border-radius:6px; font-weight:600; font-size:0.9rem; margin-bottom:0.8rem; text-align:center; }
+.form-message.success { background:#d4edda; color:#155724; }
+.form-message.error   { background:#f8d7da; color:#721c24; }
+
+/* ════════════════════════════════════════
+   NEWSLETTER
+════════════════════════════════════════ */
+.newsletter-section { background:#2c5530; color:#fff; padding:4rem 0; text-align:center; }
+.newsletter-section h2 { font-size:2rem; margin-bottom:0.6rem; }
+.newsletter-section > .container > p { opacity:0.85; margin-bottom:1.5rem; }
+.newsletter-form {
+    display:flex; justify-content:center;
+    gap:1rem; flex-wrap:wrap; margin-bottom:1rem;
+}
+.newsletter-form input[type="email"] {
+    padding:12px 20px; border:none;
+    border-radius:25px; font-size:1rem;
+    width:320px; max-width:100%; outline:none; min-height:44px;
+}
+.newsletter-form .btn-primary { border-radius:25px; }
+.newsletter-disclaimer { opacity:0.6; font-size:0.85rem; }
+
+/* ════════════════════════════════════════
+   CART MODAL
+════════════════════════════════════════ */
+.cart-item {
+    display:flex; align-items:center;
+    gap:1rem; padding:12px 0; border-bottom:1px solid #eee;
+}
+.cart-item-info { flex:1; text-align:left; }
+.cart-item-info p { font-weight:600; color:#2c5530; margin-bottom:2px; }
+.cart-item-info span { font-size:0.85rem; color:#666; }
+.cart-item-price { font-weight:700; color:#4CAF50; min-width:75px; text-align:right; }
+.cart-item-remove {
+    background:none; border:none; color:#f44336;
+    font-size:1.4rem; cursor:pointer;
+    min-width:44px; min-height:44px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:50%; transition:color 0.2s;
+}
+.cart-item-remove:hover { color:#c62828; }
+.cart-empty { text-align:center; color:#999; padding:2rem 0; }
+.cart-total { margin-top:1.5rem; text-align:right; }
+.cart-total p { font-size:1.1rem; font-weight:700; margin-bottom:1rem; }
+#checkoutBtn { width:100%; }
+
+/* ════════════════════════════════════════
+   AUTH MODAL
+════════════════════════════════════════ */
+.auth-modal-content { max-width:460px; padding:0; overflow:hidden; text-align:left; }
+.auth-modal-close {
+    position:absolute; top:12px; right:16px;
+    font-size:1.4rem; background:none; border:none;
+    cursor:pointer; color:#888; z-index:1;
+    width:36px; height:36px; display:flex;
+    align-items:center; justify-content:center;
+    border-radius:50%; transition:background 0.2s;
+}
+.auth-modal-close:hover { background:#f0f0f0; }
+#authTabBar.auth-tab-bar { display:flex; border-bottom:2px solid #f0f0f0; padding:0 1.8rem; }
+#authTabBar .auth-tab {
+    flex:1; padding:15px 8px; background:none; border:none;
+    font-size:0.92rem; font-weight:700; color:#aaa; cursor:pointer;
+    border-bottom:3px solid transparent; margin-bottom:-2px; transition:color 0.2s,border-color 0.2s;
+}
+#authTabBar .auth-tab.active { color:#2c5530; border-bottom-color:#4CAF50; }
+.auth-panel { padding:1.4rem 1.8rem 1.8rem; }
+.auth-panel.hidden { display:none; }
+.auth-panel-subtitle { color:#888; font-size:0.88rem; margin-bottom:1.2rem; }
+.auth-field { margin-bottom:1rem; }
+.auth-field label {
+    display:flex; align-items:center; gap:6px;
+    font-size:0.82rem; font-weight:700; color:#555; margin-bottom:5px;
+}
+.auth-field input {
+    width:100%; padding:11px 14px;
+    border:1.5px solid #ddd; border-radius:8px;
+    font-size:0.95rem; transition:border-color 0.2s; box-sizing:border-box;
+}
+.auth-field input:focus { border-color:#4CAF50; outline:none; }
+.auth-pw-wrap { position:relative; }
+.auth-pw-wrap input { padding-right:44px; }
+.auth-pw-toggle {
+    position:absolute; right:12px; top:50%; transform:translateY(-50%);
+    background:none; border:none; cursor:pointer;
+    color:#aaa; padding:4px; display:flex; align-items:center; transition:color 0.2s;
+}
+.auth-pw-toggle:hover { color:#2c5530; }
+.auth-msg { padding:10px 14px; border-radius:8px; font-size:0.85rem; font-weight:600; margin-bottom:10px; }
+.auth-msg.error   { background:#fce4e4; color:#c62828; }
+.auth-msg.success { background:#e8f5e9; color:#2e7d32; }
+.auth-submit { width:100%; }
+.auth-switch-link { text-align:center; margin-top:0.8rem; font-size:0.88rem; }
+.auth-switch-link a { color:#4CAF50; text-decoration:none; }
+.auth-switch-link a:hover { text-decoration:underline; }
+.auth-btn-spinner {
+    width:18px; height:18px;
+    border:2px solid rgba(255,255,255,0.4);
+    border-top-color:#fff; border-radius:50%;
+    animation:spin 0.7s linear infinite; display:inline-block;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+.auth-verify-icon {
+    width:60px; height:60px; background:#e8f5e9;
+    border-radius:50%; display:flex;
+    align-items:center; justify-content:center;
+    margin:0 auto 1rem;
+}
+#authVerifyPanel { text-align:center; }
+
+/* ── Register specific ── */
+.reg-age-block { margin:12px 0; padding:12px 14px; background:#f0f7f0; border-radius:8px; border:1px solid #c8e6c9; }
+.reg-age-label { display:block; font-size:0.85rem; font-weight:700; color:#2c5530; margin-bottom:6px; }
+.reg-required  { color:#f44336; }
+.reg-dob-input { width:100%; padding:10px 12px; border:2px solid #ddd; border-radius:8px; font-size:0.95rem; box-sizing:border-box; }
+.reg-dob-input:focus { border-color:#4CAF50; outline:none; }
+.reg-age-hint  { font-size:0.78rem; color:#666; margin-top:6px; }
+.reg-checkbox-group {
+    display:flex; align-items:flex-start;
+    gap:10px; margin:10px 0;
+    font-size:0.84rem; color:#444; line-height:1.5;
+}
+.reg-checkbox-group input[type="checkbox"] { margin-top:2px; flex-shrink:0; width:16px; height:16px; accent-color:#4CAF50; cursor:pointer; }
+.reg-checkbox-group label { cursor:pointer; }
+.reg-checkbox-group a { color:#4CAF50; }
+.reg-consequences-box {
+    background:#fff3e0; border:1px solid #ffcc80; border-left:4px solid #e65100;
+    border-radius:8px; padding:12px 14px; margin:12px 0;
+    font-size:0.82rem; color:#444; line-height:1.6;
+}
+.reg-consequences-box strong { display:block; color:#bf360c; margin-bottom:6px; font-size:0.85rem; }
+.reg-consequences-box ul { margin-left:1.2rem; margin-bottom:6px; }
+.reg-consequences-box li { margin-bottom:2px; }
+.reg-warn-head { display:flex; align-items:center; gap:6px; color:#bf360c; font-weight:700; font-size:0.85rem; margin-bottom:6px; }
+
+/* ════════════════════════════════════════
+   FULL LEGAL SECTION
+════════════════════════════════════════ */
+.full-legal-section { background:#f8f9fa; padding:4rem 0; border-top:2px solid #e0e0e0; }
+.full-legal-section h2 { color:#2c5530; margin-bottom:1.5rem; font-size:1.5rem; text-align:center; }
+.full-legal-body { background:#fff; border-radius:10px; padding:2rem; box-shadow:0 2px 8px rgba(0,0,0,0.06); max-width:860px; margin:0 auto; }
+.full-legal-body p { color:#444; font-size:0.92rem; line-height:1.75; margin-bottom:1rem; }
+
+/* ════════════════════════════════════════
+   FOOTER
+════════════════════════════════════════ */
+footer { background:#2c5530; color:#fff; padding:3rem 0 2rem; text-align:center; }
+.social-links h3 { margin-bottom:1rem; }
+.social-buttons {
+    display:flex; justify-content:center;
+    gap:1rem; flex-wrap:wrap; margin-bottom:2rem;
+}
+.social-btn-facebook,.social-btn-instagram,
+.social-btn-twitter,.social-btn-tiktok {
+    display:inline-flex; align-items:center; justify-content:center;
+    padding:10px 20px; text-decoration:none;
+    border-radius:5px; font-weight:700;
+    min-height:44px; transition:opacity 0.2s; color:#fff;
+}
+.social-btn-facebook  { background:#1877f2; }
+.social-btn-instagram { background:linear-gradient(45deg,#405de6,#5851db,#833ab4,#c13584,#e1306c,#fd1d1d,#f77737,#fcaf45,#ffdc80); }
+.social-btn-twitter   { background:linear-gradient(55deg,#3349d7,#000); }
+.social-btn-tiktok    { background:linear-gradient(55deg,#ff0050,#00f2ea,#000); }
+.social-btn-facebook:hover,.social-btn-instagram:hover,
+.social-btn-twitter:hover,.social-btn-tiktok:hover { opacity:0.82; }
+.footer-legal { border-top:1px solid #4CAF50; padding-top:2rem; color:#ccc; font-size:0.85rem; line-height:2; }
+
+/* ════════════════════════════════════════
+   WHATSAPP FLOAT
+════════════════════════════════════════ */
+.whatsapp-float {
+    position:fixed; bottom:28px; right:28px; z-index:9998;
+    background:#25D366; border-radius:50px;
+    display:flex; align-items:center; gap:8px;
+    padding:12px 18px 12px 14px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.25);
+    transition:transform 0.2s,box-shadow 0.2s;
+    text-decoration:none; overflow:hidden;
+}
+.whatsapp-float:hover { transform:scale(1.05); box-shadow:0 6px 20px rgba(0,0,0,0.3); }
+.whatsapp-label { color:#fff; font-size:0.82rem; font-weight:700; white-space:nowrap; }
+
+/* ════════════════════════════════════════
+   TOAST
+════════════════════════════════════════ */
+.toast {
+    position:fixed; bottom:90px; left:50%;
+    transform:translateX(-50%) translateY(10px);
+    background:#2c5530; color:#fff;
+    padding:12px 24px; border-radius:25px;
+    font-size:0.95rem; font-weight:600;
+    box-shadow:0 4px 14px rgba(0,0,0,0.25);
+    z-index:9997; opacity:0;
+    transition:opacity 0.3s,transform 0.3s;
+    pointer-events:none; white-space:nowrap; max-width:calc(100vw - 40px);
+}
+.toast.toast-show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ════════════════════════════════════════
+   PRODUCTS PAGE — PAGE BANNER
+════════════════════════════════════════ */
+.page-banner {
+    background-image:url('https://res.cloudinary.com/dbcfzmxzt/image/upload/v1775733144/product.page.bg_ufs0xe.webp');
+    background-size:cover; background-position:center;
+    min-height:260px; height:38vh; max-height:460px;
+    color:#fff; text-align:center;
+    display:flex; align-items:center; justify-content:center;
+    padding:2rem 1.5rem;
+}
+.page-banner h2 { font-size:2.6rem; margin-bottom:0.5rem; text-shadow:2px 2px 12px rgba(0,0,0,0.9); }
+.page-banner p  { font-size:1.1rem; text-shadow:1px 1px 8px rgba(0,0,0,0.9); }
+
+/* ════════════════════════════════════════
+   SEARCH & FILTER
+════════════════════════════════════════ */
+.search-filter-section {
+    background:#fff; padding:1.4rem 0;
+    border-bottom:1px solid #ddd;
+    position:sticky; top:0; z-index:90;
+    box-shadow:0 2px 6px rgba(0,0,0,0.06);
+}
+.search-filter-bar { display:flex; gap:1rem; align-items:center; flex-wrap:wrap; }
+.search-input-wrapper {
+    flex:1; min-width:200px;
+    display:flex; align-items:center; gap:10px;
+    background:#fff; border:1.5px solid #ddd;
+    border-radius:999px; padding:0 18px; min-height:48px;
+    transition:border-color 0.2s,box-shadow 0.2s;
+}
+.search-input-wrapper:focus-within { border-color:#4CAF50; box-shadow:0 0 0 3px rgba(76,175,80,0.12); }
+.search-icon { font-size:1rem; color:#aaa; flex-shrink:0; }
+.search-input-wrapper input[type="text"] {
+    flex:1; border:none; outline:none;
+    font-size:0.97rem; color:#333; background:transparent; min-height:44px; padding:0;
+}
+.filter-group { display:flex; gap:10px; flex-shrink:0; flex-wrap:wrap; }
+.filter-pill {
+    padding:0 20px; height:48px;
+    border:1.5px solid #ddd; border-radius:999px;
+    font-size:0.92rem; color:#333; background:#fff;
+    outline:none; cursor:pointer; min-width:130px;
+    -webkit-appearance:none; appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 14px center;
+    padding-right:38px; transition:border-color 0.2s;
+}
+.filter-pill:focus,.filter-pill:hover { border-color:#4CAF50; }
+.results-count { margin-top:0.6rem; font-size:0.88rem; color:#888; }
+.no-results { text-align:center; padding:3rem; color:#666; font-size:1.1rem; }
+
+/* ════════════════════════════════════════
+   STICKY CART BAR
+════════════════════════════════════════ */
+.sticky-cart-bar {
+    position:fixed; bottom:0; left:0; right:0; z-index:490;
+    background:#2c5530; color:#fff; padding:12px 20px;
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    box-shadow:0 -4px 18px rgba(0,0,0,0.2);
+    transform:translateY(100%); transition:transform 0.35s cubic-bezier(0.4,0,0.2,1);
+}
+.sticky-cart-bar.visible { transform:translateY(0); }
+.sticky-cart-info { display:flex; align-items:center; gap:10px; min-width:0; }
+.sticky-cart-text { display:flex; flex-direction:column; min-width:0; }
+.sticky-cart-count { font-size:0.78rem; opacity:0.78; line-height:1.2; }
+.sticky-cart-total { font-size:1.1rem; font-weight:700; line-height:1.2; white-space:nowrap; }
+.sticky-cart-btn {
+    background:#4CAF50; color:#fff; border:none;
+    border-radius:5px; padding:12px 22px;
+    font-size:0.95rem; font-weight:700;
+    cursor:pointer; min-height:44px; white-space:nowrap; flex-shrink:0; transition:background 0.2s;
+}
+.sticky-cart-btn:hover { background:#45a049; }
+
+/* ════════════════════════════════════════
+   CHECKOUT
+════════════════════════════════════════ */
+.checkout-section { padding:3rem 0 5rem; background:#f8f9fa; min-height:60vh; }
+.checkout-grid { display:grid; grid-template-columns:1fr 380px; gap:2rem; align-items:start; }
+.checkout-panel { background:#fff; border-radius:12px; padding:2rem; box-shadow:0 4px 16px rgba(0,0,0,0.07); }
+.checkout-panel h2 { color:#2c5530; font-size:1.25rem; margin-bottom:1.3rem; padding-bottom:0.8rem; border-bottom:2px solid #f0f0f0; }
+.co-form-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem; }
+.co-form-row.full { grid-template-columns:1fr; }
+.co-field { display:flex; flex-direction:column; gap:4px; }
+.co-field label { font-size:0.82rem; font-weight:700; color:#555; }
+.co-field input,.co-field select,.co-field textarea {
+    padding:11px 14px; border:1.5px solid #ddd; border-radius:8px;
+    font-size:0.95rem; font-family:inherit; color:#333; transition:border-color 0.2s; background:#fff;
+}
+.co-field input:focus,.co-field select:focus,.co-field textarea:focus { border-color:#4CAF50; outline:none; }
+.payment-methods { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:1.4rem; }
+.payment-method-btn {
+    flex:1; min-width:90px; padding:12px 8px;
+    border:2px solid #ddd; border-radius:10px; background:#fff;
+    cursor:pointer; text-align:center;
+    transition:border-color 0.2s,background 0.2s;
+    font-size:0.8rem; font-weight:700; color:#555;
+}
+.payment-method-btn.active { border-color:#4CAF50; background:#f0fff0; color:#2c5530; }
+.payment-method-btn:hover:not(.active) { border-color:#999; }
+.pm-card-icons { display:flex; justify-content:center; gap:4px; margin-bottom:4px; }
+.co-summary-item {
+    display:flex; justify-content:space-between;
+    align-items:flex-start; gap:8px;
+    padding:10px 0; border-bottom:1px solid #f0f0f0; font-size:0.9rem;
+}
+.co-item-name { color:#333; flex:1; line-height:1.4; }
+.co-item-price { font-weight:700; color:#2c5530; white-space:nowrap; }
+.co-totals { margin-top:1rem; padding-top:1rem; border-top:2px solid #f0f0f0; }
+.co-total-row { display:flex; justify-content:space-between; font-size:0.9rem; margin-bottom:6px; color:#555; }
+.co-total-row.grand { font-size:1.1rem; font-weight:700; color:#2c5530; margin-top:8px; padding-top:8px; border-top:1px dashed #ccc; }
+.btn-place-order {
+    width:100%; padding:15px; background:#4CAF50; color:#fff;
+    border:none; border-radius:10px; font-size:1rem; font-weight:700;
+    cursor:pointer; margin-top:1.2rem; min-height:50px; transition:background 0.2s;
+}
+.btn-place-order:hover { background:#45a049; }
+.co-secure-note { text-align:center; font-size:0.78rem; color:#aaa; margin-top:8px; }
+.co-success { text-align:center; padding:2.5rem 1rem; }
+
+/* ════════════════════════════════════════
+   TRACK PAGE
+════════════════════════════════════════ */
+.track-status-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:5px 14px; border-radius:20px;
+    font-size:0.82rem; font-weight:700;
+}
+.status-pending          { background:#fff3e0; color:#e65100; }
+.status-confirmed        { background:#e3f2fd; color:#1565c0; }
+.status-payment_received { background:#e8f5e9; color:#2e7d32; }
+.status-processing       { background:#e3f2fd; color:#1565c0; }
+.status-dispatched       { background:#ede7f6; color:#6a1b9a; }
+.status-out_for_delivery { background:#fff8e1; color:#f57f17; }
+.status-delivered        { background:#e8f5e9; color:#2e7d32; }
+.status-collected        { background:#e8f5e9; color:#2e7d32; }
+.status-cancelled        { background:#fce4e4; color:#c62828; }
+
+/* ════════════════════════════════════════
+   ADMIN PANEL TOGGLE PILL
+════════════════════════════════════════ */
+.admin-toggle-pill {
+    display:inline-flex; align-items:center; gap:8px;
+    padding:10px 16px; border:2px solid #ddd;
+    border-radius:8px; cursor:pointer;
+    font-size:0.85rem; font-weight:600; color:#555;
+    transition:border-color 0.2s,background 0.2s,color 0.2s;
+    user-select:none; min-height:44px;
+}
+.admin-toggle-pill:has(input:checked) { border-color:#4CAF50; background:#f0fff0; color:#2c5530; }
+.admin-toggle-pill input[type="radio"] { accent-color:#4CAF50; }
+.zone-fee-badge {
+    display:inline-block; background:#e8f5e9; color:#2c5530;
+    font-size:0.78rem; font-weight:700; padding:2px 10px;
+    border-radius:20px; margin-left:8px;
+}
+
+/* ════════════════════════════════════════
+   RESPONSIVE — 768px
+════════════════════════════════════════ */
+@media (max-width:768px) {
+    .hamburger { display:flex; }
+    header .container { flex-wrap:wrap; position:relative; }
+    .logo-img { height:48px; }
+    .logo h1  { font-size:1.35rem; }
+    .main-nav {
+        display:none; position:absolute; top:100%;
+        left:0; width:100%; background:#2c5530;
+        padding:0.5rem 0 1rem; box-shadow:0 4px 10px rgba(0,0,0,0.2);
     }
-    /* Add new products here AND in products.js */
-];
-
-// ─────────────────────────────────────────
-//  DEFAULT REVIEWS
-// ─────────────────────────────────────────
-const DEFAULT_REVIEWS = [
-    {
-        id: 'default-1',
-        name: 'Thabo K.',
-        rating: 5,
-        text: 'Absolutely love the Premium Indica Strain! Great quality, fast delivery and very well packaged. Will definitely be ordering again.',
-        date: '2026-01-15',
-        response: 'Thank you so much Thabo! We appreciate your support and look forward to serving you again. — The Bud Shop Team'
-    },
-    {
-        id: 'default-2',
-        name: 'Lerato M.',
-        rating: 5,
-        text: 'The CBD Oil Tincture has been a game changer for me. Excellent product and the team is always helpful when I have questions.',
-        date: '2026-01-28',
-        response: 'We are so glad the tincture is working well for you Lerato! Do not hesitate to reach out anytime. — The Bud Shop Team'
-    },
-    {
-        id: 'default-3',
-        name: 'Ryan P.',
-        rating: 4,
-        text: 'Really impressed with the Sativa Blend. Smooth and great quality. I would love to see more accessories in stock though!',
-        date: '2026-02-03',
-        response: 'Thanks for the feedback Ryan! Great news — we are expanding our accessories range very soon. Watch this space! — The Bud Shop Team'
-    },
-    {
-        id: 'default-4',
-        name: 'Nomsa D.',
-        rating: 5,
-        text: 'Best cannabis shop around! The Hybrid Edibles are delicious and the dosage is perfect. Highly recommend to anyone looking for quality.',
-        date: '2026-02-10',
-        response: 'Wow, thank you Nomsa! Reviews like yours mean the world to us. See you next time! — The Bud Shop Team'
-    }
-];
-
-const AUTO_RESPONSE = 'Thank you for taking the time to leave a review! We truly appreciate your feedback and support. See you again soon! — The Bud Shop Team';
-
-// ─────────────────────────────────────────
-//  CART HELPERS
-// ─────────────────────────────────────────
-function getCart() {
-    return JSON.parse(localStorage.getItem('cart')) || [];
-}
-function saveCart(cart) {
-    localStorage.setItem('cart', JSON.stringify(cart));
-}
-function getProductById(id) {
-    var adminList = [];
-    try { adminList = JSON.parse(localStorage.getItem('adminProducts')) || []; } catch(e) {}
-    var found = adminList.find(function(p){ return p.id === id; });
-    return found || PRODUCTS.find(function(p){ return p.id === id; });
+    .main-nav.open { display:block; }
+    .main-nav ul { flex-direction:column; gap:0; align-items:center; }
+    .main-nav ul li { width:100%; text-align:center; }
+    .main-nav ul li a { display:block; padding:0.9rem 1rem; min-height:48px; border-bottom:1px solid rgba(255,255,255,0.1); }
+    .main-nav ul li:last-child a { border-bottom:none; }
+    .hero { min-height:300px; height:auto; padding:4rem 1.5rem; }
+    .hero-content h2 { font-size:2rem; }
+    .product-grid { grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:1rem; }
+    .qv-inner { grid-template-columns:1fr; }
+    .search-filter-bar { flex-direction:column; gap:10px; }
+    .search-input-wrapper { width:100%; }
+    .filter-group { width:100%; }
+    .filter-pill { flex:1; min-width:0; }
+    .newsletter-form { flex-direction:column; align-items:center; gap:10px; }
+    .newsletter-form input { width:100%; max-width:340px; }
+    .newsletter-form .btn-primary { width:100%; max-width:340px; }
+    .social-buttons { flex-direction:column; align-items:center; }
+    .checkout-grid { grid-template-columns:1fr; }
+    .swipe-hint { display:block; }
+    .carousel-arrow { width:40px; height:40px; font-size:1.4rem; }
 }
 
-function getAllProducts() {
-    var adminList = [];
-    try { adminList = JSON.parse(localStorage.getItem('adminProducts')) || []; } catch(e) {}
-    var merged = JSON.parse(JSON.stringify(PRODUCTS));
-    adminList.forEach(function(ap) {
-        var idx = merged.findIndex(function(p){ return p.id === ap.id; });
-        if (idx >= 0) { merged[idx] = ap; } else { merged.push(ap); }
-    });
-    return merged;
+@media (max-width:600px) {
+    .modal { padding:12px; align-items:flex-end; }
+    .modal-content { border-radius:16px 16px 0 0; max-width:100%; padding:24px 18px 32px; }
+    #ageModal { padding:16px; align-items:center; }
+    #ageModal .modal-content { border-radius:16px; }
+    .modal-buttons { flex-direction:column; gap:10px; }
+    .modal-buttons .btn-primary,
+    .modal-buttons .btn-secondary { width:100%; font-size:1rem; padding:14px; }
+    .checkout-panel { padding:1.2rem; }
+    .checkout-panel h2 { font-size:1.05rem; }
+    .co-form-row { grid-template-columns:1fr; gap:0.8rem; }
+    .payment-methods { gap:8px; }
+    .payment-method-btn { min-width:0; font-size:0.72rem; padding:10px 5px; }
+    .auth-modal-content { max-width:100%; }
+    .auth-panel { padding:1rem 1rem 1.4rem; }
+    #authTabBar.auth-tab-bar { padding:0 0.8rem; }
 }
 
-function getPrimaryImage(product) {
-    if (product.images && product.images.length > 0) return product.images[0];
-    if (product.image) return product.image;
-    return '';
-}
-function updateCartCount() {
-    const total = getCart().reduce((sum, item) => sum + item.quantity, 0);
-    const el = document.getElementById('cartCount');
-    if (el) el.textContent = total;
-}
-
-// ─────────────────────────────────────────
-//  ADD / REMOVE CART
-// ─────────────────────────────────────────
-window.addToCart = function (productId) {
-    const cart = getCart();
-    const existing = cart.find(item => item.id === productId);
-    if (existing) {
-        existing.quantity += 1;
-    } else {
-        cart.push({ id: productId, quantity: 1 });
-    }
-    saveCart(cart);
-    updateCartCount();
-    updateStickyCartBar();   // Feature 3
-    showToast('Item added to cart! 🛒');
-};
-
-window.removeFromCart = function (productId) {
-    const cart = getCart().filter(item => item.id !== productId);
-    saveCart(cart);
-    updateCartCount();
-    updateStickyCartBar();   // Feature 3
-    renderCartModal();
-};
-
-// ─────────────────────────────────────────
-//  CART MODAL RENDER
-// ─────────────────────────────────────────
-function renderCartModal() {
-    const cart    = getCart();
-    const itemsEl = document.getElementById('cartItems');
-    const totalEl = document.getElementById('cartTotal');
-    if (!itemsEl) return;
-
-    if (cart.length === 0) {
-        itemsEl.innerHTML = '<p class="cart-empty">Your cart is empty.</p>';
-        if (totalEl) totalEl.textContent = '0.00';
-        return;
-    }
-
-    let total = 0;
-    let html  = '';
-    cart.forEach(item => {
-        const p = getProductById(item.id);
-        if (!p) return;
-        const line = p.price * item.quantity;
-        total += line;
-        html += `
-        <div class="cart-item">
-            <div class="cart-item-info">
-                <p>${p.name}</p>
-                <span>Qty: ${item.quantity} &times; R${p.price.toFixed(2)}</span>
-            </div>
-            <div class="cart-item-price">R${line.toFixed(2)}</div>
-            <button class="cart-item-remove" onclick="removeFromCart(${p.id})" aria-label="Remove">&times;</button>
-        </div>`;
-    });
-
-    itemsEl.innerHTML = html;
-    if (totalEl) totalEl.textContent = total.toFixed(2);
+@media (max-width:480px) {
+    .container { padding:0 10px; }
+    .hero-content h2 { font-size:1.6rem; }
+    /* ── 2-column product grid on mobile ── */
+    .product-grid { grid-template-columns:repeat(2,1fr); gap:10px; }
+    .product-image { height:140px; }
+    /* Compact card info for small screens */
+    .product-info { padding:0.7rem 0.7rem 0.8rem; }
+    .product-info h3 { font-size:0.82rem; line-height:1.3; margin-bottom:0.2rem; }
+    .product-price { font-size:0.95rem; margin:0.2rem 0 0.4rem; }
+    .product-desc-short { display:none; }
+    .cannabis-product-tag { font-size:0.65rem; padding:2px 6px; }
+    .product-category-label { font-size:0.62rem; margin-bottom:0.15rem; }
+    /* Stack buttons vertically */
+    .product-card-actions { flex-direction:column; gap:6px; padding:0 0.7rem 0.7rem; }
+    .add-to-cart { padding:9px 8px; font-size:0.8rem; min-height:38px; }
+    .quick-view-btn { padding:7px 8px; font-size:0.75rem; min-height:34px; }
+    .page-banner h2 { font-size:1.8rem; }
+    .page-banner p  { font-size:0.9rem; }
+    .social-btn-facebook,.social-btn-instagram,
+    .social-btn-twitter,.social-btn-tiktok { width:100%; max-width:280px; }
+    footer { padding:2rem 0 1.5rem; }
+    .whatsapp-float { bottom:16px; right:14px; padding:12px; border-radius:50%; max-width:52px; }
+    .whatsapp-label { display:none; }
+    .promo-banner { font-size:0.73rem; padding:7px 0; display:block !important; }
+    .promo-banner-inner { padding:0 38px; }
+    .clb-text { font-size:0.78rem; }
 }
 
-// ─────────────────────────────────────────
-//  TOAST
-// ─────────────────────────────────────────
-function showToast(msg) {
-    const old = document.querySelector('.toast');
-    if (old) old.remove();
-    const t = document.createElement('div');
-    t.className = 'toast';
-    t.textContent = msg;
-    document.body.appendChild(t);
-    requestAnimationFrame(() => t.classList.add('toast-show'));
-    setTimeout(() => {
-        t.classList.remove('toast-show');
-        setTimeout(() => t.remove(), 300);
-    }, 2500);
+@media (max-width:360px) {
+    .logo h1 { font-size:1.1rem; }
+    .logo-img { height:40px; }
+    .hero-content h2 { font-size:1.4rem; }
 }
 
-// ─────────────────────────────────────────
-//  INLINE FORM MESSAGES
-// ─────────────────────────────────────────
-function showMessage(el, text, type) {
-    if (!el) return;
-    el.textContent = text;
-    el.className = 'form-message ' + type;
-    el.classList.remove('hidden');
-    setTimeout(() => el.classList.add('hidden'), 4000);
-}
-
-// ─────────────────────────────────────────
-//  DOM READY
-// ─────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', function () {
-
-    const ageModal    = document.getElementById('ageModal');
-    const mainContent = document.getElementById('mainContent');
-
-    function revealSite() {
-        ageModal.style.display = 'none';
-        mainContent.classList.remove('hidden');
-        initPage();
-    }
-
-    if (localStorage.getItem('ageVerified') === 'true') {
-        revealSite();
-    }
-
-    document.getElementById('ageYes').addEventListener('click', function () {
-        localStorage.setItem('ageVerified', 'true');
-        revealSite();
-    });
-
-    document.getElementById('ageNo').addEventListener('click', function () {
-        window.location.href = 'https://www.google.com';
-    });
-});
-
-// ─────────────────────────────────────────
-//  PROMO BANNER
-// ─────────────────────────────────────────
-function initPromoBanner() {
-    var banner   = document.getElementById('promoBanner');
-    var textEl   = document.getElementById('promoBannerText');
-    var closeBtn = document.getElementById('promoBannerClose');
-    if (!banner) return;
-
-    // The banner HTML text is hardcoded in index.html / products.html
-    // and is the same for ALL visitors (it's deployed to Netlify).
-    // The banner is always visible — no localStorage gate.
-    // We simply make sure the close button works.
-
-    if (closeBtn) {
-        closeBtn.addEventListener('click', function() {
-            banner.style.display = 'none';
-        });
-    }
-
-    // If the admin has saved a custom banner message via admin.html
-    // on THIS device (same browser), apply it as an override.
-    // To push a banner to ALL visitors: edit the text directly in
-    // index.html and products.html, then re-deploy to Netlify.
-    try {
-        var stored = JSON.parse(localStorage.getItem('activeBanner'));
-        if (stored && stored.text && textEl) {
-            textEl.textContent = stored.text;
-            var colorMap = { green:'#2c5530', red:'#c62828', orange:'#e65100', blue:'#1565c0' };
-            banner.style.background = colorMap[stored.color] || '#2c5530';
-        }
-    } catch(e) {}
-}
-
-
-// ─────────────────────────────────────────
-//  PAGE INIT
-// ─────────────────────────────────────────
-function initPage() {
-    updateCartCount();
-    initPromoBanner();
-    renderFeaturedProductsWithSkeleton();
-    initModals();
-    initHamburger();
-    initSmoothScroll();
-    initNewsletter();
-    initReviews();
-    initQuickViewModal();
-}
-
-// ═══════════════════════════════════════════
-//  FEATURE 4: SKELETON → REAL PRODUCTS
-// ═══════════════════════════════════════════
-function renderFeaturedProductsWithSkeleton() {
-    const grid = document.getElementById('featuredGrid');
-    if (!grid) return;
-
-    // 1. Show 3 skeleton cards instantly
-    for (let i = 0; i < 3; i++) {
-        grid.appendChild(buildSkeletonCard());
-    }
-
-    // 2. After a short simulated load delay, swap in real cards
-    setTimeout(function() {
-        grid.innerHTML = '';
-        getAllProducts().slice(0, 3).forEach(function(p, idx) {
-            var card = buildProductCard(p);
-            card.style.animationDelay = (idx * 100) + 'ms';
-            grid.appendChild(card);
-        });
-    }, 800);
-}
-
-function buildSkeletonCard() {
-    const el = document.createElement('div');
-    el.className = 'product-skeleton';
-    el.innerHTML = `
-        <div class="skeleton-img"></div>
-        <div class="skeleton-body">
-            <div class="skeleton-line medium"></div>
-            <div class="skeleton-line price"></div>
-            <div class="skeleton-line long"></div>
-            <div class="skeleton-line medium"></div>
-            <div class="skeleton-line short"></div>
-            <div class="skeleton-btn"></div>
-        </div>`;
-    return el;
-}
-
-function buildProductCard(p) {
-    var card = document.createElement('div');
-    card.className = 'product-card';
-
-    var primaryImg = getPrimaryImage(p);
-    var allImages  = (p.images && p.images.length > 0) ? p.images : (primaryImg ? [primaryImg] : []);
-    var showCannabisTag = p.isCannabis !== false;
-
-    // Build thumbnail strip for multi-image products
-    var thumbsHtml = '';
-    if (allImages.length > 1) {
-        thumbsHtml = '<div class="product-thumbs">';
-        allImages.forEach(function(src, i) {
-            thumbsHtml += '<div class="product-thumb' + (i === 0 ? ' active' : '') + '" data-src="' + src + '">' +
-                '<img src="' + src + '" alt="View ' + (i + 1) + '" loading="lazy"></div>';
-        });
-        thumbsHtml += '</div>';
-    }
-
-    card.innerHTML =
-        '<div class="product-image" role="button" tabindex="0" aria-label="Quick view ' + p.name + '">' +
-            (primaryImg
-                ? '<img src="' + primaryImg + '" alt="' + p.name + '" loading="lazy" class="card-main-img">'
-                : '<span class="no-image">No image</span>') +
-        '</div>' +
-        thumbsHtml +
-        '<div class="product-info">' +
-            '<h3>' + p.name + '</h3>' +
-            '<p class="product-price">R' + p.price.toFixed(2) + '</p>' +
-            '<div class="product-details">' +
-                '<p><strong>Description:</strong> ' + p.description + '</p>' +
-                '<p><strong>THC:</strong> ' + p.thc + ' | <strong>CBD:</strong> ' + p.cbd + '</p>' +
-                '<p><strong>Category:</strong> ' + p.category + '</p>' +
-                (showCannabisTag ? '<p class="cannabis-product-tag">Cannabis-infused product — 18+ only</p>' : '') +
-                '<p><small><em>Lab-tested for quality and compliance</em></small></p>' +
-            '</div>' +
-            '<div class="product-card-actions">' +
-                '<button class="add-to-cart" onclick="addToCart(' + p.id + ')">Add to Cart</button>' +
-                '<button class="quick-view-btn" data-id="' + p.id + '">Quick View</button>' +
-            '</div>' +
-        '</div>';
-
-    // Thumbnail switching
-    card.querySelectorAll('.product-thumb').forEach(function(thumb) {
-        thumb.addEventListener('click', function(e) {
-            e.stopPropagation();
-            var mainImg = card.querySelector('.card-main-img');
-            if (mainImg) mainImg.src = thumb.dataset.src;
-            card.querySelectorAll('.product-thumb').forEach(function(t) { t.classList.remove('active'); });
-            thumb.classList.add('active');
-        });
-    });
-
-    card.querySelector('.product-image').addEventListener('click', function() { openQuickView(p.id); });
-    card.querySelector('.product-image').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' || e.key === ' ') openQuickView(p.id);
-    });
-    card.querySelector('.quick-view-btn').addEventListener('click', function() { openQuickView(p.id); });
-
-    return card;
-}
-
-// ═══════════════════════════════════════════
-//  FEATURE 2: QUICK-VIEW MODAL
-// ═══════════════════════════════════════════
-function initQuickViewModal() {
-    // Create the modal and inject into body if it doesn't exist yet
-    if (document.getElementById('quickViewModal')) return;
-
-    const modal = document.createElement('div');
-    modal.id = 'quickViewModal';
-    modal.className = 'modal hidden';
-    modal.innerHTML = `
-        <div class="modal-content" id="qvContent">
-            <span class="close" id="qvClose">&times;</span>
-            <div class="qv-inner" id="qvInner">
-                <!-- Populated by openQuickView() -->
-            </div>
-        </div>`;
-    document.body.appendChild(modal);
-
-    // Close on X
-    document.getElementById('qvClose').addEventListener('click', closeQuickView);
-    // Close on backdrop click
-    modal.addEventListener('click', function (e) {
-        if (e.target === modal) closeQuickView();
-    });
-    // Close on Escape key
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') closeQuickView();
-    });
-}
-
-function openQuickView(productId) {
-    const p = getProductById(productId);
-    if (!p) return;
-
-    const modal = document.getElementById('quickViewModal');
-    const inner = document.getElementById('qvInner');
-    if (!modal || !inner) return;
-
-    var qvPrimaryImg = getPrimaryImage(p);
-    var qvImages = (p.images && p.images.length > 0) ? p.images : (qvPrimaryImg ? [qvPrimaryImg] : []);
-    var qvThumbStrip = '';
-    if (qvImages.length > 1) {
-        qvThumbStrip = '<div class="qv-thumb-strip">';
-        qvImages.forEach(function(src, i) {
-            qvThumbStrip += '<div class="qv-thumb' + (i === 0 ? ' active' : '') + '" data-src="' + src + '">' +
-                '<img src="' + src + '" alt="View ' + (i+1) + '" loading="lazy"></div>';
-        });
-        qvThumbStrip += '</div>';
-    }
-    var showCannabisQV = p.isCannabis !== false;
-    inner.innerHTML =
-        '<div class="qv-gallery">' +
-            '<div class="qv-main-img">' +
-                (qvPrimaryImg
-                    ? '<img src="' + qvPrimaryImg + '" alt="' + p.name + '" loading="lazy" id="qvMainImg">'
-                    : '<span class="no-image">No image available</span>') +
-            '</div>' +
-            qvThumbStrip +
-        '</div>' +
-        '<div class="qv-details">' +
-            '<p class="qv-category">' + p.category + '</p>' +
-            '<h2 class="qv-name">' + p.name + '</h2>' +
-            '<p class="qv-price">R' + p.price.toFixed(2) + '</p>' +
-            '<p class="qv-desc">' + p.description + '</p>' +
-            '<div class="qv-badges">' +
-                '<span class="qv-badge">THC: ' + p.thc + '</span>' +
-                '<span class="qv-badge">CBD: ' + p.cbd + '</span>' +
-                (showCannabisQV ? '<span class="qv-badge cannabis-badge">Cannabis-infused — 18+ only</span>' : '') +
-            '</div>' +
-            '<p class="qv-lab-note">Lab-tested for quality and compliance</p>' +
-            '<button class="qv-add-btn" id="qvAddBtn">Add to Cart — R' + p.price.toFixed(2) + '</button>' +
-        '</div>';
-
-    // Thumbnail switching in quick-view
-    inner.querySelectorAll('.qv-thumb').forEach(function(thumb) {
-        thumb.addEventListener('click', function() {
-            var mainImg = inner.querySelector('#qvMainImg');
-            if (mainImg) mainImg.src = thumb.dataset.src;
-            inner.querySelectorAll('.qv-thumb').forEach(function(t) { t.classList.remove('active'); });
-            thumb.classList.add('active');
-        });
-    });
-
-    document.getElementById('qvAddBtn').addEventListener('click', function () {
-        addToCart(p.id);
-        closeQuickView();
-    });
-
-    modal.classList.remove('hidden');
-    // Prevent body scroll while modal open
-    document.body.style.overflow = 'hidden';
-}
-
-function closeQuickView() {
-    const modal = document.getElementById('quickViewModal');
-    if (modal) modal.classList.add('hidden');
-    document.body.style.overflow = '';
-}
-
-// ─────────────────────────────────────────
-//  MODALS (login + cart)
-// ─────────────────────────────────────────
-function initModals() {
-    var cartModal = document.getElementById('cartModal');
-    var loginBtn  = document.getElementById('loginBtn');
-    var cartBtn   = document.getElementById('cartBtn');
-
-    // Login — delegated to auth.js
-    if (loginBtn) {
-        loginBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            if (typeof openAuthModal === 'function') openAuthModal('login');
-        });
-    }
-
-    // Cart open
-    if (cartBtn) {
-        cartBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            renderCartModal();
-            if (cartModal) cartModal.classList.remove('hidden');
-        });
-    }
-
-    // Close buttons (× with data-modal)
-    document.querySelectorAll('.close[data-modal]').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var t = document.getElementById(this.dataset.modal);
-            if (t) t.classList.add('hidden');
-        });
-    });
-
-    // Click outside modal to close
-    window.addEventListener('click', function(e) {
-        if (e.target === cartModal) cartModal.classList.add('hidden');
-    });
-
-    // Checkout button
-    var checkoutBtn = document.getElementById('checkoutBtn');
-    if (checkoutBtn) {
-        checkoutBtn.addEventListener('click', function() {
-            var cart = getCart();
-            if (!cart.length) { showToast('Your cart is empty'); return; }
-            if (typeof isLoggedIn === 'function' && !isLoggedIn()) {
-                if (cartModal) cartModal.classList.add('hidden');
-                if (typeof openAuthModal === 'function') {
-                    openAuthModal('login', function() { window.location.href = 'checkout.html'; });
-                }
-                return;
-            }
-            window.location.href = 'checkout.html';
-        });
-    }
-}
-
-// ─────────────────────────────────────────
-//  HAMBURGER
-// ─────────────────────────────────────────
-function initHamburger() {
-    var btn = document.getElementById('hamburgerBtn');
-    var nav = document.getElementById('mainNav');
-    if (!btn || !nav) return;
-
-    btn.addEventListener('click', function() {
-        btn.classList.toggle('open');
-        nav.classList.toggle('open');
-    });
-
-    nav.querySelectorAll('a').forEach(function(a) {
-        a.addEventListener('click', function(e) {
-            var href = this.getAttribute('href');
-
-            // Close the hamburger menu
-            btn.classList.remove('open');
-            nav.classList.remove('open');
-
-            // If it's an anchor on the same page (#home, #about etc.)
-            // stop the default jump and do a smooth scroll after the
-            // nav has had time to close (150ms)
-            if (href && href.startsWith('#') && href.length > 1) {
-                e.preventDefault();
-                setTimeout(function() {
-                    var target = document.querySelector(href);
-                    if (target) {
-                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
-                }, 150);
-            }
-        });
-    });
-}
-
-// ─────────────────────────────────────────
-//  SMOOTH SCROLL
-// ─────────────────────────────────────────
-function initSmoothScroll() {
-    document.querySelectorAll('a[href^="#"]').forEach(a => {
-        a.addEventListener('click', function (e) {
-            const href = this.getAttribute('href');
-            if (!href || href === '#') return;
-            const target = document.querySelector(href);
-            if (target) {
-                e.preventDefault();
-                target.scrollIntoView({ behavior: 'smooth' });
-            }
-        });
-    });
-}
-
-// ─────────────────────────────────────────
-//  NEWSLETTER
-// ─────────────────────────────────────────
-function initNewsletter() {
-    const form  = document.getElementById('newsletterForm');
-    const msgEl = document.getElementById('newsletterMessage');
-    if (!form) return;
-
-    form.addEventListener('submit', function (e) {
-        e.preventDefault();
-        const email = document.getElementById('newsletterEmail').value.trim();
-        if (!email) { showMessage(msgEl, 'Please enter your email.', 'error'); return; }
-
-        const list = JSON.parse(localStorage.getItem('newsletter')) || [];
-        if (list.includes(email)) {
-            showMessage(msgEl, 'You are already subscribed!', 'error');
-        } else {
-            list.push(email);
-            localStorage.setItem('newsletter', JSON.stringify(list));
-            showMessage(msgEl, 'Thank you for subscribing!', 'success');
-            form.reset();
-        }
-    });
-}
-
-// ═══════════════════════════════════════════
-//  REVIEWS  +  FEATURE 1: SWIPE SUPPORT
-// ═══════════════════════════════════════════
-
-let currentSlide = 0;
-let allReviews   = [];
-
-function initReviews() {
-    buildReviewList();
-    renderCarousel();
-    initCarouselArrows();
-    initCarouselSwipe();   // Feature 1
-    initReviewForm();
-}
-
-function buildReviewList() {
-    const stored = JSON.parse(localStorage.getItem('customerReviews')) || [];
-    allReviews   = [...DEFAULT_REVIEWS, ...stored];
-}
-
-function renderCarousel() {
-    const track = document.getElementById('carouselTrack');
-    const dots  = document.getElementById('carouselDots');
-    if (!track || !dots) return;
-
-    track.innerHTML = '';
-    allReviews.forEach(review => {
-        const filled = '★'.repeat(review.rating);
-        const empty  = '☆'.repeat(5 - review.rating);
-        const date   = formatDate(review.date);
-        const resp   = review.response || AUTO_RESPONSE;
-
-        const card = document.createElement('div');
-        card.className = 'review-card';
-        card.innerHTML = `
-            <div class="review-card-header">
-                <span class="review-author"></span>
-                <span class="review-date">${date}</span>
-            </div>
-            <div class="review-stars">${filled}${empty}</div>
-            <p class="review-text"></p>
-            <div class="review-response">
-                <div class="review-response-label">The Bud Shop Response</div>
-                <p class="response-text"></p>
-            </div>`;
-
-        card.querySelector('.review-author').textContent = review.name;
-        card.querySelector('.review-text').textContent   = review.text;
-        card.querySelector('.response-text').textContent = resp;
-        track.appendChild(card);
-    });
-
-    dots.innerHTML = '';
-    allReviews.forEach((_, i) => {
-        const dot = document.createElement('button');
-        dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
-        dot.setAttribute('aria-label', 'Review ' + (i + 1));
-        dot.addEventListener('click', () => goToSlide(i));
-        dots.appendChild(dot);
-    });
-
-    goToSlide(currentSlide < allReviews.length ? currentSlide : 0);
-}
-
-function goToSlide(index) {
-    currentSlide = index;
-    const track = document.getElementById('carouselTrack');
-    if (track) track.style.transform = `translateX(-${index * 100}%)`;
-
-    document.querySelectorAll('.carousel-dot').forEach((d, i) => {
-        d.classList.toggle('active', i === index);
-    });
-
-    const prev = document.getElementById('carouselPrev');
-    const next = document.getElementById('carouselNext');
-    if (prev) prev.disabled = index === 0;
-    if (next) next.disabled = index === allReviews.length - 1;
-}
-
-function initCarouselArrows() {
-    document.getElementById('carouselPrev').addEventListener('click', function () {
-        if (currentSlide > 0) goToSlide(currentSlide - 1);
-    });
-    document.getElementById('carouselNext').addEventListener('click', function () {
-        if (currentSlide < allReviews.length - 1) goToSlide(currentSlide + 1);
-    });
-}
-
-// ── Feature 1: Touch swipe ──
-function initCarouselSwipe() {
-    const wrapper = document.querySelector('.carousel-track-wrapper');
-    const track   = document.getElementById('carouselTrack');
-    const hint    = document.querySelector('.swipe-hint');
-    if (!wrapper || !track) return;
-
-    let startX     = 0;
-    let currentX   = 0;
-    let isDragging = false;
-    let startOffset = 0;
-    const SWIPE_THRESHOLD = 50; // px needed to trigger slide change
-
-    function getClientX(e) {
-        return e.touches ? e.touches[0].clientX : e.clientX;
-    }
-
-    function onStart(e) {
-        // Only handle horizontal intent — don't block vertical scroll
-        startX      = getClientX(e);
-        startOffset = currentSlide * wrapper.offsetWidth;
-        isDragging  = true;
-        track.classList.add('no-transition');
-        wrapper.classList.add('dragging');
-    }
-
-    function onMove(e) {
-        if (!isDragging) return;
-        currentX = getClientX(e);
-        const diff    = startX - currentX;
-        const newPos  = startOffset + diff;
-        const maxPos  = (allReviews.length - 1) * wrapper.offsetWidth;
-        // Clamp with rubber-band feel at edges
-        const clamped = Math.max(-40, Math.min(maxPos + 40, newPos));
-        track.style.transform = `translateX(-${clamped}px)`;
-    }
-
-    function onEnd() {
-        if (!isDragging) return;
-        isDragging = false;
-        track.classList.remove('no-transition');
-        wrapper.classList.remove('dragging');
-
-        const diff = startX - currentX;
-
-        if (diff > SWIPE_THRESHOLD && currentSlide < allReviews.length - 1) {
-            goToSlide(currentSlide + 1);
-        } else if (diff < -SWIPE_THRESHOLD && currentSlide > 0) {
-            goToSlide(currentSlide - 1);
-        } else {
-            // Snap back to current
-            goToSlide(currentSlide);
-        }
-
-        // Hide the swipe hint after first successful swipe
-        if (hint && Math.abs(diff) > SWIPE_THRESHOLD) {
-            hint.classList.add('hidden');
-            localStorage.setItem('swipeHintSeen', '1');
-        }
-    }
-
-    // Touch events
-    wrapper.addEventListener('touchstart', onStart, { passive: true });
-    wrapper.addEventListener('touchmove',  onMove,  { passive: true });
-    wrapper.addEventListener('touchend',   onEnd);
-
-    // Mouse drag (for desktop testing)
-    wrapper.addEventListener('mousedown',  onStart);
-    window.addEventListener('mousemove',   onMove);
-    window.addEventListener('mouseup',     onEnd);
-
-    // Hide hint if already seen
-    if (hint && localStorage.getItem('swipeHintSeen')) {
-        hint.classList.add('hidden');
-    }
-}
-
-// ─────────────────────────────────────────
-//  REVIEW FORM
-// ─────────────────────────────────────────
-function initReviewForm() {
-    const form      = document.getElementById('reviewForm');
-    const starEls   = document.querySelectorAll('.star-input .star');
-    const ratingIn  = document.getElementById('reviewRating');
-    const textarea  = document.getElementById('reviewText');
-    const charCount = document.getElementById('charCount');
-    const msgEl     = document.getElementById('reviewMessage');
-    if (!form) return;
-
-    starEls.forEach(star => {
-        star.addEventListener('mouseover', function () {
-            const val = +this.dataset.value;
-            starEls.forEach(s => s.classList.toggle('hovered', +s.dataset.value <= val));
-        });
-        star.addEventListener('mouseout', function () {
-            starEls.forEach(s => s.classList.remove('hovered'));
-        });
-        star.addEventListener('click', function () {
-            const val = +this.dataset.value;
-            ratingIn.value = val;
-            starEls.forEach(s => s.classList.toggle('selected', +s.dataset.value <= val));
-        });
-    });
-
-    textarea.addEventListener('input', function () {
-        charCount.textContent = this.value.length;
-    });
-
-    form.addEventListener('submit', function (e) {
-        e.preventDefault();
-        const name   = document.getElementById('reviewName').value.trim();
-        const rating = parseInt(ratingIn.value, 10);
-        const text   = textarea.value.trim();
-
-        if (!name)                   { showMessage(msgEl, 'Please enter your name.', 'error'); return; }
-        if (rating < 1 || rating > 5){ showMessage(msgEl, 'Please select a star rating.', 'error'); return; }
-        if (!text)                   { showMessage(msgEl, 'Please write your review.', 'error'); return; }
-
-        const newReview = {
-            id:       'cust-' + Date.now(),
-            name, rating, text,
-            date:     new Date().toISOString().split('T')[0],
-            response: AUTO_RESPONSE
-        };
-
-        const stored = JSON.parse(localStorage.getItem('customerReviews')) || [];
-        stored.push(newReview);
-        localStorage.setItem('customerReviews', JSON.stringify(stored));
-
-        form.reset();
-        ratingIn.value = 0;
-        starEls.forEach(s => s.classList.remove('selected', 'hovered'));
-        charCount.textContent = '0';
-
-        showMessage(msgEl, 'Thank you for your review!', 'success');
-
-        buildReviewList();
-        renderCarousel();
-        setTimeout(() => goToSlide(allReviews.length - 1), 50);
-    });
-}
-
-// ═══════════════════════════════════════════
-//  FEATURE 3: STICKY CART BAR  (homepage)
-//  Note: also used in products.js — defined
-//  here so it works on both pages.
-// ═══════════════════════════════════════════
-function updateStickyCartBar() {
-    const bar = document.getElementById('stickyCartBar');
-    if (!bar) return;
-
-    const cart  = getCart();
-    const total = cart.reduce((sum, item) => {
-        const p = getProductById(item.id);
-        return p ? sum + p.price * item.quantity : sum;
-    }, 0);
-    const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-
-    const countEl = document.getElementById('stickyCartCount');
-    const totalEl = document.getElementById('stickyCartTotal');
-    if (countEl) countEl.textContent = `${count} item${count !== 1 ? 's' : ''} in cart`;
-    if (totalEl) totalEl.textContent = `R${total.toFixed(2)}`;
-
-    if (count > 0) {
-        bar.classList.add('visible');
-    } else {
-        bar.classList.remove('visible');
-    }
-}
-
-// ─────────────────────────────────────────
-//  HELPERS
-// ─────────────────────────────────────────
-function formatDate(dateStr) {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' });
-}
+/* ════════════════════════════════════════
+   AUTH MODAL
+════════════════════════════════════════ */
+.auth-modal-wrap { max-width:460px; padding:0; overflow:hidden; text-align:left; }
+.auth-tabs { display:flex; border-bottom:2px solid #f0f0f0; }
+.auth-tab { flex:1; padding:14px 8px; background:none; border:none; font-size:0.9rem; font-weight:700; color:#aaa; cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; transition:color 0.2s,border-color 0.2s; }
+.auth-tab.active { color:#2c5530; border-bottom-color:#4CAF50; }
+.auth-panel { padding:1.4rem 1.8rem 1.8rem; }
+.auth-panel.hidden { display:none; }
+.auth-subtitle { color:#888; font-size:0.87rem; margin-bottom:1.2rem; }
+.auth-field { margin-bottom:0.9rem; }
+.auth-field label { display:block; font-size:0.82rem; font-weight:700; color:#555; margin-bottom:5px; }
+.auth-field input { width:100%; padding:11px 14px; border:1.5px solid #ddd; border-radius:8px; font-size:0.92rem; box-sizing:border-box; transition:border-color 0.2s; }
+.auth-field input:focus { border-color:#4CAF50; outline:none; }
+.auth-pw-wrap { position:relative; }
+.auth-pw-wrap input { padding-right:44px; }
+.auth-pw-toggle { position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:#aaa; padding:4px; display:flex; align-items:center; transition:color 0.2s; }
+.auth-pw-toggle:hover { color:#2c5530; }
+.auth-msg { padding:10px 14px; border-radius:8px; font-size:0.84rem; font-weight:600; margin-bottom:10px; }
+.auth-msg.error   { background:#fce4e4; color:#c62828; }
+.auth-msg.success { background:#e8f5e9; color:#2e7d32; }
+.auth-submit { width:100%; margin-top:4px; }
+.auth-switch { text-align:center; margin-top:0.8rem; font-size:0.87rem; }
+.auth-switch a { color:#4CAF50; text-decoration:none; }
+.auth-switch a:hover { text-decoration:underline; }
+.auth-hint { font-size:0.76rem; color:#888; margin-top:5px; }
+.reg-dob-block { background:#f0f7f0; border:1px solid #c8e6c9; border-radius:8px; padding:12px 14px; margin-top:4px; }
+.reg-dob-label { display:block; font-size:0.82rem; font-weight:700; color:#2c5530; margin-bottom:6px; }
+.reg-check-row { display:flex; align-items:flex-start; gap:10px; margin:10px 0; font-size:0.83rem; color:#444; line-height:1.5; }
+.reg-check-row input[type="checkbox"] { margin-top:2px; flex-shrink:0; width:16px; height:16px; accent-color:#4CAF50; cursor:pointer; }
+.reg-check-row label { cursor:pointer; }
+.reg-check-row a { color:#4CAF50; }
+.reg-warn-box { background:#fff3e0; border:1px solid #ffcc80; border-left:4px solid #e65100; border-radius:8px; padding:10px 12px; margin:10px 0; font-size:0.79rem; color:#444; line-height:1.6; }
+.reg-warn-box strong { display:block; color:#bf360c; margin-bottom:4px; }
