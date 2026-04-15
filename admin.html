@@ -1,12 +1,8 @@
-<!-- SAME HEAD + STYLES (UNCHANGED ABOVE) -->
-<!-- KEEP EVERYTHING ABOVE EXACTLY THE SAME -->
-
-<script>
 // ─────────────────────────────────────────────────
-//  ADMIN SYSTEM (FINAL PROFESSIONAL VERSION)
+//  ADMIN SYSTEM (FINAL STABLE VERSION)
 // ─────────────────────────────────────────────────
 
-// ─── IMAGE SYSTEM (UPGRADED) ───
+// ─── IMAGE SYSTEM ───
 let adminImages = [];
 let primaryIndex = 0;
 
@@ -48,14 +44,14 @@ function removeImage(index) {
     renderImages();
 }
 
-// ─── CATEGORY SYSTEM (SUPABASE VERSION) ───
+// ─── CATEGORY SYSTEM (SUPABASE) ───
 let categories = [];
 
 async function loadCategories() {
     const { data, error } = await supabase.from('categories').select('*');
 
     if (error) {
-        console.error(error);
+        console.error("Categories error:", error);
         return;
     }
 
@@ -79,7 +75,7 @@ function populateSubCatSelect() {
 
     subSelect.innerHTML = '<option value="">None</option>';
 
-    const found = categories.find(c => c.name === cat);
+    const found = categories.find(c => String(c.name) === String(cat));
     if (!found || !found.subcategories) return;
 
     found.subcategories.forEach(sub => {
@@ -87,7 +83,7 @@ function populateSubCatSelect() {
     });
 }
 
-// ─── CATEGORY MANAGER UI ───
+// ─── CATEGORY MANAGER ───
 function renderCategoryManager() {
     const el = document.getElementById("catListEl");
     el.innerHTML = "";
@@ -139,18 +135,19 @@ async function addSub(catId) {
     const value = input.value.trim();
     if (!value) return;
 
-    const cat = categories.find(c => c.id === catId);
+    const cat = categories.find(c => String(c.id) === String(catId));
     const updated = [...(cat.subcategories || []), value];
 
     await supabase.from('categories')
         .update({ subcategories: updated })
         .eq('id', catId);
 
+    input.value = ""; // ✅ FIXED UX
     loadCategories();
 }
 
 async function removeSub(catId, sub) {
-    const cat = categories.find(c => c.id === catId);
+    const cat = categories.find(c => String(c.id) === String(catId));
     const updated = (cat.subcategories || []).filter(s => s !== sub);
 
     await supabase.from('categories')
@@ -162,14 +159,21 @@ async function removeSub(catId, sub) {
 
 // ─── PRODUCTS ───
 async function loadProducts() {
-    const { data } = await supabase.from('products').select('*');
+    const { data, error } = await supabase.from('products').select('*');
+
+    if (error) {
+        console.error("Products error:", error);
+        return;
+    }
+
+    const products = data || [];
 
     const el = document.getElementById('productListEl');
-    document.getElementById('productCount').textContent = data.length;
+    document.getElementById('productCount').textContent = products.length;
 
     el.innerHTML = '';
 
-    data.forEach(p => {
+    products.forEach(p => {
         el.innerHTML += `
             <div class="product-list-item">
                 <img src="${p.image_url}" class="product-list-thumb">
@@ -194,13 +198,19 @@ async function saveProduct() {
         return;
     }
 
-    await supabase.from('products').insert([{
+    const { error } = await supabase.from('products').insert([{
         name,
         price,
         category,
         subcategory: sub,
         image_url: adminImages[primaryIndex]
     }]);
+
+    if (error) {
+        console.error(error);
+        alert("Error saving product");
+        return;
+    }
 
     alert("Product added!");
     clearForm();
@@ -214,6 +224,7 @@ async function deleteProduct(id) {
     loadProducts();
 }
 
+// ─── CLEAR FORM ───
 function clearForm() {
     document.getElementById('pName').value = "";
     document.getElementById('pPrice').value = "";
@@ -231,4 +242,3 @@ window.addEventListener("load", function() {
     loadCategories();
     loadProducts();
 });
-</script>
