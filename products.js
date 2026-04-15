@@ -649,10 +649,24 @@ async function renderProducts() {
         }
     }, 400);
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    if (localStorage.getItem('ageVerified') !== 'true') {
+        window.location.replace('index.html');
+        return;
+    }
+
+    initPromoBanner();
+    updateCartCount();
+
+    // ✅ CALL PRODUCTS
+    renderProducts();
+
     setupModals();
     setupSearchAndFilter();
     setupHamburger();
     initQuickViewModal();
     initStickyCartBar();
+
     if (typeof initAuth === 'function') initAuth().catch(function() {});
 });
