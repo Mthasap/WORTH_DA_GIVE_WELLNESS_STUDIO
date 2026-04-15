@@ -3,27 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Products &mdash; WorthDaGive Wellness Studio</title>
+<title>Products — WorthDaGive Wellness Studio</title>
+
 <link rel="stylesheet" href="styles.css">
 
+<!-- SUPABASE -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-<script defer src="supabase.js"></script>
+<script src="supabase.js"></script>
+
+<!-- APP -->
 <script defer src="products.js"></script>
-<style>
-.product-category-label{font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#4CAF50;margin-bottom:0.3rem}
-.product-desc-short{font-size:0.84rem;color:#666;margin-bottom:0.6rem;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.product-sub-cat{font-weight:400;color:#888;font-size:0.7rem;letter-spacing:0.5px;margin-left:4px}
-</style>
+<script defer src="auth.js"></script>
+
 </head>
 <body>
 
 <div id="mainContent">
 
-    <!-- PROMOTIONAL BANNER -->
+    <!-- PROMO BANNER (CONSISTENT) -->
     <div id="promoBanner" class="promo-banner">
         <div class="promo-banner-inner">
-            <span id="promoBannerText">Browse our premium product range &mdash; Lab-Tested &amp; Legally Compliant</span>
-            <button class="promo-banner-close" id="promoBannerClose" aria-label="Close">&times;</button>
+            <span id="promoBannerText">
+                Browse our premium product range — Lab-Tested & Legally Compliant
+            </span>
+            <button id="promoBannerClose">&times;</button>
         </div>
     </div>
 
@@ -31,149 +34,32 @@
     <header>
         <div class="container">
             <div class="logo">
-                <a href="index.html">
-                    <img src="https://res.cloudinary.com/dbcfzmxzt/image/upload/v1775733144/main_logo_hm6s6w.png" alt="WorthDaGive Wellness Studio" class="logo-img" loading="lazy">
-                    <div class="logo-text">
-                        <h1>WorthDaGive</h1>
-                        <span class="tagline">Wellness Studio</span>
-                    </div>
-                </a>
+                <a href="index.html">WorthDaGive</a>
             </div>
-            <button class="hamburger" id="hamburgerBtn" aria-label="Toggle navigation">
-                <span></span><span></span><span></span>
-            </button>
-            <nav class="main-nav" id="mainNav">
-                <ul>
-                    <li><a href="index.html">Home</a></li>
-                    <li><a href="products.html" class="active">Products</a></li>
-                    <li><a href="index.html#about">About</a></li>
-                    <li><a href="index.html#contact">Contact</a></li>
-                    <li><a href="track.html">Track Order</a></li>
-                    <li>
-                        <a href="#" id="loginBtn" class="nav-icon-link">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                            Login
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" id="cartBtn" class="nav-icon-link">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-                            Cart (<span id="cartCount">0</span>)
-                        </a>
-                    </li>
-                </ul>
+
+            <nav>
+                <a href="index.html">Home</a>
+                <a href="products.html">Products</a>
+                <a href="#" id="loginBtn">Login</a>
+                <a href="#" id="cartBtn">Cart (<span id="cartCount">0</span>)</a>
             </nav>
         </div>
     </header>
 
-    <!-- PAGE BANNER -->
+    <!-- TITLE -->
     <section class="page-banner">
-        <div class="container">
-            <h2>Our Products</h2>
-            <p>Premium cannabis-infused products &mdash; Lab-tested &amp; legally compliant</p>
-        </div>
+        <h2>Our Products</h2>
+        <p>Premium cannabis products</p>
     </section>
 
-    <!-- LEGAL NOTICE -->
-    <section class="cannabis-legal-banner">
-        <div class="container">
-            <div class="clb-inner">
-                <svg class="clb-svg-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                    <line x1="12" y1="9" x2="12" y2="13"/>
-                    <line x1="12" y1="17" x2="12.01" y2="17"/>
-                </svg>
-                <div class="clb-text">
-                    <strong>Cannabis Products &mdash; 18+ Only (South Africa)</strong> &mdash;
-                    Products on this page may contain or relate to cannabis. Sale to persons under 18 is a criminal offence under the
-                    <em>Cannabis for Private Purposes Act 7 of 2024</em> and the <em>Drugs and Drug Trafficking Act 140 of 1992</em>.
-                    <a href="index.html#legal-full" class="clb-link">Full legal notice</a>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- SEARCH & FILTER — categories populated by JS from wdg_categories -->
-    <section class="search-filter-section">
-        <div class="container">
-            <div class="search-filter-bar">
-                <div class="search-input-wrapper">
-                    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    <input type="text" id="searchInput" placeholder="Search products..." autocomplete="off">
-                </div>
-                <div class="filter-group">
-                    <!-- Options injected by products.js populateCategoryFilter() -->
-                    <select id="categoryFilter" class="filter-pill">
-                        <option value="all">All Categories</option>
-                    </select>
-                    <select id="sortFilter" class="filter-pill">
-                        <option value="default">Sort By</option>
-                        <option value="price-asc">Price: Low to High</option>
-                        <option value="price-desc">Price: High to Low</option>
-                        <option value="name-asc">Name: A to Z</option>
-                    </select>
-                </div>
-            </div>
-            <p id="resultsCount" class="results-count"></p>
-        </div>
-    </section>
-
-    <!-- PRODUCTS GRID -->
+    <!-- PRODUCTS -->
     <section class="products-section">
         <div class="container">
-            <div class="product-grid" id="productGrid"></div>
-            <div id="noResults" class="no-results hidden">
-                <p>No products found matching your search.</p>
-            </div>
+            <div id="productGrid" class="product-grid"></div>
         </div>
     </section>
 
-    <!-- FOOTER -->
-    <footer>
-        <div class="container">
-            <div class="social-links">
-                <h3>Follow Us</h3>
-                <div class="social-buttons">
-                    <a href="#" class="social-btn-facebook">Facebook</a>
-                    <a href="https://www.instagram.com/worthdagive?igsh=NjhmaWQ4eXlmeHJu" class="social-btn-instagram">Instagram</a>
-                    <a href="#" class="social-btn-twitter">X / Twitter</a>
-                    <a href="#" class="social-btn-tiktok">TikTok</a>
-                </div>
-            </div>
-            <div class="footer-legal">
-                <p>All applicable products are cannabis-infused and intended for adults 18+ only.</p>
-                <p>Sold in compliance with the Cannabis for Private Purposes Act 7 of 2024 (South Africa).</p>
-                <p>&copy; 2026 WorthDaGive Wellness Studio. All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
 </div>
 
-<!-- CART MODAL -->
-<div id="cartModal" class="modal hidden">
-    <div class="modal-content">
-        <button class="close" data-modal="cartModal" aria-label="Close">&times;</button>
-        <h2>Shopping Cart</h2>
-        <div id="cartItems"></div>
-        <div class="cart-total">
-            <p>Total: R<span id="cartTotal">0.00</span></p>
-            <button id="checkoutBtn" class="btn-primary">Proceed to Checkout</button>
-        </div>
-    </div>
-</div>
-
-<!-- WHATSAPP -->
-<a href="https://wa.me/27000000000" target="_blank" rel="noopener noreferrer" class="whatsapp-float" aria-label="Chat on WhatsApp">
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-    <span class="whatsapp-label">Chat with us</span>
-</a>
-
-<script src="supabase.js"></script>
-<script src="auth.js"></script>
-<script src="products.js"></script>
-<script>
-if (localStorage.getItem('ageVerified') !== 'true') window.location.replace('index.html');
-if (typeof initAuth === 'function') initAuth().catch(function(){});
-</script>
 </body>
 </html>
