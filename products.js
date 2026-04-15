@@ -1,12 +1,16 @@
-/* ═══════════════════════════════════════════════════
-   WORTHDAGIVE — products.js (SUPABASE FINAL CLEAN)
-═══════════════════════════════════════════════════ */
+// ─────────────────────────────────────────
+//  WORTHDAGIVE — PRODUCTS (MASTER SOURCE)
+// ─────────────────────────────────────────
 
-// ─────────────────────────────────────────────────
-//  PRODUCTS (SUPABASE)
-// ─────────────────────────────────────────────────
 async function getAllProducts() {
-    return await WDG.getProducts();
+    const { data, error } = await supabase.from('products').select('*');
+
+    if (error) {
+        console.error("Products error:", error);
+        return [];
+    }
+
+    return data || [];
 }
 
 async function getProductById(id) {
@@ -14,9 +18,9 @@ async function getProductById(id) {
     return products.find(p => String(p.id) === String(id));
 }
 
-// ─────────────────────────────────────────────────
+// ─────────────────────────────────────────
 //  CART
-// ─────────────────────────────────────────────────
+// ─────────────────────────────────────────
 function getCart() {
     try { return JSON.parse(localStorage.getItem('cart')) || []; }
     catch(e) { return []; }
@@ -41,12 +45,11 @@ window.addToCart = function(productId) {
 
     saveCart(cart);
     updateCartCount();
-    alert("Added to cart");
 };
 
-// ─────────────────────────────────────────────────
+// ─────────────────────────────────────────
 //  PRODUCT CARD
-// ─────────────────────────────────────────────────
+// ─────────────────────────────────────────
 function createProductCard(product) {
     const img = product.image_url || '';
 
@@ -55,16 +58,16 @@ function createProductCard(product) {
             <img src="${img}" alt="${product.name}">
             <div class="product-info">
                 <h3>${product.name}</h3>
-                <p>R${product.price}</p>
+                <p>R${Number(product.price).toFixed(2)}</p>
                 <button onclick="addToCart('${product.id}')">Add to Cart</button>
             </div>
         </div>
     `;
 }
 
-// ─────────────────────────────────────────────────
+// ─────────────────────────────────────────
 //  RENDER PRODUCTS
-// ─────────────────────────────────────────────────
+// ─────────────────────────────────────────
 async function renderProducts() {
     const grid = document.getElementById("productGrid");
     if (!grid) return;
@@ -81,9 +84,9 @@ async function renderProducts() {
     grid.innerHTML = products.map(createProductCard).join("");
 }
 
-// ─────────────────────────────────────────────────
+// ─────────────────────────────────────────
 //  INIT
-// ─────────────────────────────────────────────────
+// ─────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", function() {
     updateCartCount();
     renderProducts();
