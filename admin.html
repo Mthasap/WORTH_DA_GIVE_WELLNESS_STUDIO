@@ -325,30 +325,90 @@ body{font-family:Arial,sans-serif;background:#f0f2f5;color:#333}
 
 <script>
 // ─────────────────────────────────────────────────
-//  SIMPLE ADMIN SYSTEM (SUPABASE FIXED)
+//  ADMIN UI + SUPABASE (FULL UPGRADE)
 // ─────────────────────────────────────────────────
 
-// TEMP image holder
-let imageUrl = "";
+// ─── IMAGE SYSTEM ───
+let adminImages = [];
+let primaryIndex = 0;
 
-// ADD IMAGE
 function addImageUrl() {
-    imageUrl = document.getElementById("pImageUrl").value.trim();
-    if (!imageUrl) {
+    const input = document.getElementById("pImageUrl");
+    const url = input.value.trim();
+
+    if (!url) {
         alert("Paste image URL");
         return;
     }
-    alert("Image added");
+
+    adminImages.push(url);
+    input.value = "";
+    renderImages();
 }
 
-// LOAD PRODUCTS
-async function loadProducts() {
-    const { data, error } = await supabase.from('products').select('*');
+function renderImages() {
+    const container = document.getElementById("imgList");
+    container.innerHTML = "";
 
-    if (error) {
-        console.error(error);
-        return;
-    }
+    adminImages.forEach((img, i) => {
+        container.innerHTML += `
+            <div class="img-thumb ${i === primaryIndex ? 'primary' : ''}">
+                <img src="${img}">
+                <button class="del" onclick="removeImage(${i})">×</button>
+                ${i === primaryIndex ? '<div class="primary-badge">Primary</div>' : ''}
+            </div>
+        `;
+    });
+}
+
+function removeImage(index) {
+    adminImages.splice(index, 1);
+    if (primaryIndex >= adminImages.length) primaryIndex = 0;
+    renderImages();
+}
+
+function setFit(mode, btn) {
+    document.getElementById("pFit").value = mode;
+
+    document.querySelectorAll(".fit-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+}
+
+// ─── CATEGORY SYSTEM ───
+let categories = [
+    { name: "Disposables", subs: ["Vapes", "Refills"] },
+    { name: "Edibles", subs: [] },
+    { name: "Accessories", subs: [] },
+    { name: "Beverages", subs: [] },
+    { name: "Hair & Beauty", subs: [] }
+];
+
+function populateCategories() {
+    const select = document.getElementById("pCategory");
+    select.innerHTML = '<option value="">Select category</option>';
+
+    categories.forEach(cat => {
+        select.innerHTML += `<option value="${cat.name}">${cat.name}</option>`;
+    });
+}
+
+function populateSubCatSelect() {
+    const cat = document.getElementById("pCategory").value;
+    const subSelect = document.getElementById("pSubCategory");
+
+    subSelect.innerHTML = '<option value="">None</option>';
+
+    const found = categories.find(c => c.name === cat);
+    if (!found) return;
+
+    found.subs.forEach(sub => {
+        subSelect.innerHTML += `<option value="${sub}">${sub}</option>`;
+    });
+}
+
+// ─── LOAD PRODUCTS ───
+async function loadProducts() {
+    const { data } = await supabase.from('products').select('*');
 
     const el = document.getElementById('productListEl');
     document.getElementById('productCount').textContent = data.length;
@@ -369,14 +429,15 @@ async function loadProducts() {
     });
 }
 
-// SAVE PRODUCT
+// ─── SAVE PRODUCT ───
 async function saveProduct() {
     const name = document.getElementById('pName').value.trim();
     const price = parseFloat(document.getElementById('pPrice').value);
     const category = document.getElementById('pCategory').value;
+    const sub = document.getElementById('pSubCategory').value;
 
-    if (!name || !price || !category || !imageUrl) {
-        alert("Fill all fields + add image");
+    if (!name || !price || !category || adminImages.length === 0) {
+        alert("Fill all required fields + add image");
         return;
     }
 
@@ -384,7 +445,8 @@ async function saveProduct() {
         name,
         price,
         category,
-        image_url: imageUrl
+        subcategory: sub,
+        image_url: adminImages[primaryIndex]
     }]);
 
     if (error) {
@@ -398,7 +460,7 @@ async function saveProduct() {
     loadProducts();
 }
 
-// DELETE
+// ─── DELETE ───
 async function deleteProduct(id) {
     if (!confirm("Delete product?")) return;
 
@@ -406,17 +468,22 @@ async function deleteProduct(id) {
     loadProducts();
 }
 
-// CLEAR FORM
+// ─── CLEAR FORM ───
 function clearForm() {
     document.getElementById('pName').value = "";
     document.getElementById('pPrice').value = "";
     document.getElementById('pCategory').value = "";
+    document.getElementById('pSubCategory').value = "";
     document.getElementById('pImageUrl').value = "";
-    imageUrl = "";
+
+    adminImages = [];
+    primaryIndex = 0;
+    renderImages();
 }
 
-// INIT
+// ─── INIT ───
 window.addEventListener("load", function() {
+    populateCategories();
     loadProducts();
 });
 </script>
