@@ -321,8 +321,21 @@ body{font-family:Arial,sans-serif;background:#f0f2f5;color:#333}
 
 <script>
 // ─────────────────────────────────────────────────
-//  SUPABASE ADMIN SYSTEM (FINAL)
+//  SIMPLE ADMIN SYSTEM (SUPABASE FIXED)
 // ─────────────────────────────────────────────────
+
+// TEMP image holder
+let imageUrl = "";
+
+// ADD IMAGE
+function addImageUrl() {
+    imageUrl = document.getElementById("pImageUrl").value.trim();
+    if (!imageUrl) {
+        alert("Paste image URL");
+        return;
+    }
+    alert("Image added");
+}
 
 // LOAD PRODUCTS
 async function loadProducts() {
@@ -357,10 +370,9 @@ async function saveProduct() {
     const name = document.getElementById('pName').value.trim();
     const price = parseFloat(document.getElementById('pPrice').value);
     const category = document.getElementById('pCategory').value;
-    const image = adminImages[0];
 
-    if (!name || !price || !category || !image) {
-        alert("Fill all required fields");
+    if (!name || !price || !category || !imageUrl) {
+        alert("Fill all fields + add image");
         return;
     }
 
@@ -368,7 +380,7 @@ async function saveProduct() {
         name,
         price,
         category,
-        image_url: image
+        image_url: imageUrl
     }]);
 
     if (error) {
@@ -377,17 +389,26 @@ async function saveProduct() {
         return;
     }
 
-    alert("Product added successfully!");
-    clearProductForm();
+    alert("Product added!");
+    clearForm();
     loadProducts();
 }
 
-// DELETE PRODUCT
+// DELETE
 async function deleteProduct(id) {
     if (!confirm("Delete product?")) return;
 
     await supabase.from('products').delete().eq('id', id);
     loadProducts();
+}
+
+// CLEAR FORM
+function clearForm() {
+    document.getElementById('pName').value = "";
+    document.getElementById('pPrice').value = "";
+    document.getElementById('pCategory').value = "";
+    document.getElementById('pImageUrl').value = "";
+    imageUrl = "";
 }
 
 // INIT
