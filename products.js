@@ -94,7 +94,15 @@ async function initPromoBanner() {
     var textEl   = document.getElementById('promoBannerText');
     var closeBtn = document.getElementById('promoBannerClose');
     if (!banner) return;
-    if (closeBtn) closeBtn.addEventListener('click', function() { banner.style.display = 'none'; });
+    if (closeBtn) {
+        var closeBanner = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            banner.style.display = 'none';
+        };
+        closeBtn.addEventListener('click',    closeBanner, { passive: false });
+        closeBtn.addEventListener('touchend', closeBanner, { passive: false });
+    }
     try {
         var data = await dbGetActiveBanner();
         if (data && data.text) {
