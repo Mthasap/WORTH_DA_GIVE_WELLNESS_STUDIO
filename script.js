@@ -106,11 +106,15 @@ async function initPromoBanner() {
 
     if (!banner) return;
 
-    // Close button always works
+    // Close button — works on click AND touch (mobile)
     if (closeBtn) {
-        closeBtn.addEventListener('click', function() {
+        var closeBanner = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
             banner.style.display = 'none';
-        });
+        };
+        closeBtn.addEventListener('click',      closeBanner, { passive: false });
+        closeBtn.addEventListener('touchend',   closeBanner, { passive: false });
     }
 
     try {
