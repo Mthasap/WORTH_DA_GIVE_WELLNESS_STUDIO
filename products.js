@@ -27,9 +27,15 @@ function getProductById(id) {
 }
 
 function getPrimaryImage(p) {
-    if (p.images && p.images.length) return p.images[0];
-    if (p.image_url) return p.image_url;
-    return '';
+    var url = '';
+    if (p.images && p.images.length) url = p.images[0];
+    else if (p.image_url) url = p.image_url;
+    
+    // Auto-compress and resize Cloudinary images for instant mobile loading
+    if (url && url.includes('cloudinary.com') && url.includes('/upload/v')) {
+        return url.replace('/upload/', '/upload/w_600,q_auto,f_auto/');
+    }
+    return url;
 }
 
 window.addToCart = function(productId) {
