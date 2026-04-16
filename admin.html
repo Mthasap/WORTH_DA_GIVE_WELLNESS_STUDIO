@@ -344,9 +344,9 @@ function renderCategoryList() {
         }).join('');
         return '<div class="cat-row">' +
             '<div class="cat-main"><span class="cat-name">' + cat.name + '</span>' +
-            '<button class="btn-del" onclick="deleteCat(\\"' + safeid + '\\")">Remove</button></div>' +
+            '<button class="btn-del" onclick="deleteCat(\'' + safeid + '\')">Remove</button></div>' +
             (subPills ? '<div class="cat-subs">' + subPills + '</div>' : '') +
-            '<div class="add-sub"><input type="text" id="subinp_' + safeid + '" placeholder="Add sub-category" onkeydown="if(event.key==='Enter')addSub(\\"' + safeid + '\\")"><button onclick="addSub(\\"' + safeid + '\\")">+ Sub</button></div>' +
+            '<div class="add-sub"><input type="text" id="subinp_' + safeid + '" placeholder="Add sub-category" onkeydown="if(event.key===\'Enter\')addSub(\'' + safeid + '\')"><button onclick="addSub(\'' + safeid + '\')">+ Sub</button></div>' +
             '</div>';
     }).join('');
 }
@@ -401,8 +401,8 @@ async function loadProducts() {
             (thumb ? '<img src="' + thumb + '" class="prod-thumb" loading="lazy" onerror="this.style.display=\'none\'">' :
                      '<div class="prod-thumb" style="display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:#aaa">No img</div>') +
             '<div class="prod-info"><strong>' + p.name + '</strong><span>R' + Number(p.price).toFixed(2) + ' &bull; ' + (p.category || '') + (p.subcategory ? ' &rsaquo; ' + p.subcategory : '') + (imgCount > 1 ? ' &bull; <span style="color:#4CAF50;font-weight:700">' + imgCount + ' photos</span>' : '') + '</span></div>' +
-            '<button class="btn-edit" onclick="editProduct(\\'' + p.id + '\\')">Edit</button>' +
-            '<button class="btn-del" onclick="deleteProduct(\\'' + p.id + '\\')">Delete</button>' +
+            '<button class="btn-edit" onclick="editProduct(\'' + p.id + '\')">Edit</button>' +
+            '<button class="btn-del" onclick="deleteProduct(\'' + p.id + '\')">Delete</button>' +
             '</div>';
     }).join('');
 }
@@ -510,8 +510,8 @@ async function loadBanners() {
             '<span class="type-tag ' + typeClass + '">' + (b.type || 'ANN').toUpperCase() + '</span>' +
             '<span class="banner-text">' + b.text + (b.expires_at ? ' <em style="color:#999;font-size:0.75rem">(expires ' + b.expires_at + ')</em>' : '') + '</span>' +
             (b.active ? '<span style="color:#4CAF50;font-size:0.78rem;font-weight:700">ACTIVE</span>' :
-                '<button class="btn-act" onclick="reactivateBanner(\\'' + b.id + '\\')">Reactivate</button>') +
-            '<button class="btn-del" onclick="deleteBanner(\\'' + b.id + '\\')">Delete</button>' +
+                '<button class="btn-act" onclick="reactivateBanner(\'' + b.id + '\')">Reactivate</button>') +
+            '<button class="btn-del" onclick="deleteBanner(\'' + b.id + '\')">Delete</button>' +
             '</div>';
     }).join('');
 }
