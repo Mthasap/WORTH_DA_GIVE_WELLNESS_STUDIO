@@ -1,493 +1,302 @@
-/* ═══════════════════════════════════════════════════
-   WORTHDAGIVE — products.js   (products page)
-   Products are hardcoded in PRODUCTS array below.
-   ALL visitors see the same products regardless of device.
-   Admin can add new products via admin.html — new entries
-   get appended to PRODUCTS here and the file re-deployed.
-═══════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════
+//  WORTHDAGIVE — products.js  (products page)
+//  Reads products from Supabase — same for ALL visitors
+// ═══════════════════════════════════════════════════════
 
-// ─────────────────────────────────────────────────
-//  CATEGORIES  (mirrors admin.html DEFAULT_CATEGORIES)
-// ─────────────────────────────────────────────────
-var DEFAULT_CATEGORIES = [
-    { name: "Disposables",             subs: ["Vapes", "Refills", "Hybrid"] },
-    { name: "Edibles",                 subs: [] },
-    { name: "Accessories",             subs: [] },
-    { name: "WorthDaGive Merchandise", subs: [] },
-    { name: "Beverages",               subs: [] },
-    { name: "Hair & Beauty",           subs: [] },
-    { name: "Pre-Rolls",               subs: ["Indica"] }
-];
-
-function getCategories() {
-    try {
-        var stored = localStorage.getItem('wdg_categories');
-        if (stored) return JSON.parse(stored);
-    } catch(e) {}
-    return JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
-}
-
-// ─────────────────────────────────────────────────
-//  PRODUCTS  — hardcoded so ALL visitors see them.
-//  To add a product: copy a block, increment id,
-//  fill in details, re-deploy to Netlify.
-// ─────────────────────────────────────────────────
-var PRODUCTS = [
-    {
-        id: 1,
-        name: "Jack The Ripper Sativa",
-        price: 650.00,
-        description: "Jack The Ripper Sativa disposable vape. A premium sativa-dominant experience in a sleek, ready-to-use device.",
-        thc: "Available on request",
-        cbd: "Available on request",
-        category: "Disposables",
-        subCategory: "Vapes",
-        isCannabis: true,
-        image: "https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775678961/JACK_THE_RIPPER_SATIVA_disposable_vape_cfv9yc.png",
-        images: ["https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775678961/JACK_THE_RIPPER_SATIVA_disposable_vape_cfv9yc.png"]
-    },
-    {
-        id: 2,
-        name: "THC Concentrated Sundae Driver Disposable Vape",
-        price: 650.00,
-        description: "Liquid Gold THC Concentrated Sundae Driver Disposable Vape.",
-        thc: "Available on request",
-        cbd: "Available on request",
-        category: "Disposables",
-        subCategory: "Vapes",
-        isCannabis: true,
-        image: "https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775680930/THC_Concentrated_Sundae_driver_Disposable_Vape_grtkfz.png",
-        images: ["https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,w_600/v1775680930/THC_Concentrated_Sundae_driver_Disposable_Vape_grtkfz.png"]
-    },
-    {
-        id: 3,
-        name: "Purple Skittles Indoor Pre-Roll",
-        price: 100.00,
-        description: "Premium indoor flower pre-roll, Purple Skittles flavour.",
-        thc: "Available on request",
-        cbd: "Available on request",
-        category: "Pre-Rolls",
-        subCategory: "Indica",
-        isCannabis: true,
-        image: "https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,dpr_auto,c_fit,w_400,h_400/v1775810915/New_pre-roll_j_s_mdhiq0.png",
-        images: ["https://res.cloudinary.com/dbcfzmxzt/image/upload/f_auto,q_auto,dpr_auto,c_fit,w_400,h_400/v1775810915/New_pre-roll_j_s_mdhiq0.png"]
-    }
-    /* ── ADD NEW PRODUCTS ABOVE THIS LINE ──────────────────────
-       Format:
-       ,{
-           id: 4,
-           name: "Product Name",
-           price: 0.00,
-           description: "Description here.",
-           thc: "Available on request",
-           cbd: "Available on request",
-           category: "Category",
-           subCategory: "Sub",
-           isCannabis: true,
-           image: "https://res.cloudinary.com/...",
-           images: ["https://res.cloudinary.com/..."]
-       }
-    ─────────────────────────────────────────────────────────── */
-];
-
-// ─────────────────────────────────────────────────
-//  PRODUCT HELPERS
-// ─────────────────────────────────────────────────
-function getAllProducts() {
-    return PRODUCTS;
-}
-
-function getProductById(id) {
-    return PRODUCTS.find(function(p) { return p.id === id; });
-}
-
-function getPrimaryImage(product) {
-    if (product.images && product.images.length > 0) return product.images[0];
-    if (product.image) return product.image;
-    return '';
-}
-
-// ─────────────────────────────────────────────────
-//  CART
-// ─────────────────────────────────────────────────
+// ─── CART (same as script.js) ─────────────────────────
 function getCart()   { try { return JSON.parse(localStorage.getItem('cart')) || []; } catch(e) { return []; } }
 function saveCart(c) { localStorage.setItem('cart', JSON.stringify(c)); }
 
 function updateCartCount() {
-    var total = getCart().reduce(function(s, i) { return s + i.quantity; }, 0);
+    var n = getCart().reduce(function(s, i) { return s + i.quantity; }, 0);
     var el = document.getElementById('cartCount');
-    if (el) el.textContent = total;
+    if (el) el.textContent = n;
+}
+
+var PRODUCTS_CACHE = null;
+
+async function fetchProducts() {
+    if (PRODUCTS_CACHE) return PRODUCTS_CACHE;
+    try { PRODUCTS_CACHE = await dbGetProducts(); } catch(e) { PRODUCTS_CACHE = []; }
+    return PRODUCTS_CACHE;
+}
+
+function getProductById(id) {
+    if (!PRODUCTS_CACHE) return null;
+    return PRODUCTS_CACHE.find(function(p) { return String(p.id) === String(id); });
+}
+
+function getPrimaryImage(p) {
+    if (p.images && p.images.length) return p.images[0];
+    if (p.image_url) return p.image_url;
+    return '';
 }
 
 window.addToCart = function(productId) {
     var cart = getCart();
-    var existing = cart.find(function(i) { return i.id === productId; });
-    if (existing) { existing.quantity += 1; }
-    else           { cart.push({ id: productId, quantity: 1 }); }
+    var item = cart.find(function(i) { return String(i.id) === String(productId); });
+    if (item) item.quantity++;
+    else cart.push({ id: productId, quantity: 1 });
     saveCart(cart);
     updateCartCount();
-    updateStickyCartBar();
     showToast('Added to cart');
+    updateStickyBar();
 };
 
 window.removeFromCart = function(productId) {
-    saveCart(getCart().filter(function(i) { return i.id !== productId; }));
+    saveCart(getCart().filter(function(i) { return String(i.id) !== String(productId); }));
     updateCartCount();
-    updateStickyCartBar();
-    displayCart();
+    updateStickyBar();
+    renderCartModal();
 };
 
-// ─────────────────────────────────────────────────
-//  CART MODAL
-// ─────────────────────────────────────────────────
-function displayCart() {
+function renderCartModal() {
     var cart = getCart();
-    var itemsEl = document.getElementById('cartItems');
-    var totalEl = document.getElementById('cartTotal');
-    if (!itemsEl) return;
+    var el  = document.getElementById('cartItems');
+    var tot = document.getElementById('cartTotal');
+    if (!el) return;
     if (!cart.length) {
-        itemsEl.innerHTML = '<p class="cart-empty">Your cart is empty.</p>';
-        if (totalEl) totalEl.textContent = '0.00';
+        el.innerHTML = '<p style="text-align:center;color:#aaa;padding:1.5rem 0">Your cart is empty</p>';
+        if (tot) tot.textContent = '0.00';
         return;
     }
     var total = 0, html = '';
     cart.forEach(function(item) {
         var p = getProductById(item.id);
         if (!p) return;
-        var line  = p.price * item.quantity;
-        total    += line;
-        var thumb = getPrimaryImage(p);
-        html +=
-            '<div class="cart-item">' +
-            (thumb ? '<img src="' + thumb + '" style="width:48px;height:48px;object-fit:cover;border-radius:6px;flex-shrink:0;" loading="lazy" alt="' + p.name + '">' : '') +
-            '<div class="cart-item-info"><p>' + p.name + '</p>' +
-            '<span>Qty: ' + item.quantity + ' &times; R' + p.price.toFixed(2) + '</span></div>' +
+        var line = Number(p.price) * item.quantity;
+        total += line;
+        var img = getPrimaryImage(p);
+        html += '<div class="cart-item">' +
+            (img ? '<img src="' + img + '" style="width:48px;height:48px;object-fit:cover;border-radius:6px;flex-shrink:0">' : '') +
+            '<div class="cart-item-info"><p>' + p.name + '</p><span>Qty: ' + item.quantity + ' &times; R' + Number(p.price).toFixed(2) + '</span></div>' +
             '<div class="cart-item-price">R' + line.toFixed(2) + '</div>' +
-            '<button class="cart-item-remove" onclick="removeFromCart(' + p.id + ')" aria-label="Remove">&times;</button>' +
+            '<button class="cart-item-remove" onclick="removeFromCart(\'' + p.id + '\')" aria-label="Remove">&times;</button>' +
             '</div>';
     });
-    itemsEl.innerHTML = html;
-    if (totalEl) totalEl.textContent = total.toFixed(2);
+    el.innerHTML = html;
+    if (tot) tot.textContent = total.toFixed(2);
 }
 
-// ─────────────────────────────────────────────────
-//  TOAST
-// ─────────────────────────────────────────────────
 function showToast(msg) {
     var old = document.querySelector('.toast');
     if (old) old.remove();
     var t = document.createElement('div');
-    t.className = 'toast';
-    t.textContent = msg;
+    t.className = 'toast'; t.textContent = msg;
     document.body.appendChild(t);
     requestAnimationFrame(function() { t.classList.add('toast-show'); });
-    setTimeout(function() {
-        t.classList.remove('toast-show');
-        setTimeout(function() { t.remove(); }, 300);
-    }, 2500);
+    setTimeout(function() { t.classList.remove('toast-show'); setTimeout(function() { t.remove(); }, 300); }, 2500);
 }
 
-// ─────────────────────────────────────────────────
-//  SKELETON CARD
-// ─────────────────────────────────────────────────
+// ─── BANNER ───────────────────────────────────────────
+async function initPromoBanner() {
+    var banner   = document.getElementById('promoBanner');
+    var textEl   = document.getElementById('promoBannerText');
+    var closeBtn = document.getElementById('promoBannerClose');
+    if (!banner) return;
+    if (closeBtn) closeBtn.addEventListener('click', function() { banner.style.display = 'none'; });
+    try {
+        var data = await dbGetActiveBanner();
+        if (data && data.text) {
+            if (textEl) textEl.textContent = data.text;
+            var colorMap = { green:'#2c5530', red:'#c62828', orange:'#e65100', blue:'#1565c0' };
+            banner.style.background = colorMap[data.color] || '#2c5530';
+            banner.style.display = '';
+        } else {
+            banner.style.display = 'none';
+        }
+    } catch(e) {
+        banner.style.display = 'none';
+    }
+}
+
+// ─── PRODUCT CARD ─────────────────────────────────────
 function buildSkeletonCard() {
     var el = document.createElement('div');
     el.className = 'product-skeleton';
-    el.innerHTML =
-        '<div class="skeleton-img"></div>' +
-        '<div class="skeleton-body">' +
-        '<div class="skeleton-line medium"></div>' +
-        '<div class="skeleton-line price"></div>' +
-        '<div class="skeleton-line long"></div>' +
-        '<div class="skeleton-line short"></div>' +
-        '<div class="skeleton-btn"></div></div>';
+    el.innerHTML = '<div class="skeleton-img"></div><div class="skeleton-body">' +
+        '<div class="skeleton-line medium"></div><div class="skeleton-line price"></div>' +
+        '<div class="skeleton-line long"></div><div class="skeleton-btn"></div></div>';
     return el;
 }
 
-// ─────────────────────────────────────────────────
-//  PRODUCT CARD
-// ─────────────────────────────────────────────────
-function createProductCard(product) {
-    var card       = document.createElement('div');
+function buildProductCard(p) {
+    var card = document.createElement('div');
     card.className = 'product-card';
-    card.dataset.id = product.id;
-
-    var primaryImg = getPrimaryImage(product);
-    var allImages  = (product.images && product.images.length) ? product.images : (primaryImg ? [primaryImg] : []);
-    var showTag    = product.isCannabis !== false;
-    var subLabel   = product.subCategory ? ' <span class="product-sub-cat">' + product.subCategory + '</span>' : '';
-
-    var thumbsHtml = '';
-    if (allImages.length > 1) {
-        thumbsHtml = '<div class="product-thumbs">';
-        allImages.forEach(function(src, i) {
-            thumbsHtml += '<div class="product-thumb' + (i === 0 ? ' active' : '') + '" data-src="' + src + '">' +
-                '<img src="' + src + '" alt="View ' + (i + 1) + '" loading="lazy"></div>';
-        });
-        thumbsHtml += '</div>';
-    }
-
+    var img = getPrimaryImage(p);
+    var tag = (p.is_cannabis !== false) ? '<p class="cannabis-product-tag">Cannabis-infused &mdash; 18+ only</p>' : '';
+    var sub = p.subcategory ? '<span class="product-sub-cat">' + p.subcategory + '</span>' : '';
     card.innerHTML =
-        '<div class="product-image" role="button" tabindex="0" aria-label="Quick view ' + product.name + '">' +
-            (primaryImg
-                ? '<img src="' + primaryImg + '" alt="' + product.name + '" loading="lazy" class="card-main-img">'
-                : '<span class="no-image">No image</span>') +
+        '<div class="product-image" role="button" tabindex="0" aria-label="Quick view ' + p.name + '">' +
+            (img ? '<img src="' + img + '" alt="' + p.name + '" loading="lazy" class="card-main-img">' : '<span class="no-image">No image</span>') +
         '</div>' +
-        thumbsHtml +
         '<div class="product-info">' +
-            '<p class="product-category-label">' + product.category + subLabel + '</p>' +
-            '<h3>' + product.name + '</h3>' +
-            '<p class="product-price">R' + product.price.toFixed(2) + '</p>' +
-            (product.description ? '<p class="product-desc-short">' + product.description + '</p>' : '') +
-            (showTag ? '<p class="cannabis-product-tag">Cannabis-infused &mdash; 18+ only</p>' : '') +
+            '<p class="product-category-label">' + (p.category || '') + sub + '</p>' +
+            '<h3>' + p.name + '</h3>' +
+            '<p class="product-price">R' + Number(p.price).toFixed(2) + '</p>' +
+            (p.description ? '<p class="product-desc-short">' + p.description + '</p>' : '') +
+            tag +
             '<div class="product-card-actions">' +
-                '<button class="add-to-cart" onclick="addToCart(' + product.id + ')">Add to Cart</button>' +
-                '<button class="quick-view-btn" data-id="' + product.id + '">Quick View</button>' +
+                '<button class="add-to-cart" onclick="addToCart(\'' + p.id + '\')">Add to Cart</button>' +
+                '<button class="quick-view-btn" onclick="openQuickView(\'' + p.id + '\')">Quick View</button>' +
             '</div>' +
         '</div>';
-
-    card.querySelectorAll('.product-thumb').forEach(function(thumb) {
-        thumb.addEventListener('click', function(e) {
-            e.stopPropagation();
-            var main = card.querySelector('.card-main-img');
-            if (main) main.src = thumb.dataset.src;
-            card.querySelectorAll('.product-thumb').forEach(function(t) { t.classList.remove('active'); });
-            thumb.classList.add('active');
-        });
-    });
-
-    card.querySelector('.product-image').addEventListener('click', function() { openQuickView(product.id); });
-    card.querySelector('.product-image').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' || e.key === ' ') openQuickView(product.id);
-    });
-    card.querySelector('.quick-view-btn').addEventListener('click', function() { openQuickView(product.id); });
-
+    card.querySelector('.product-image').addEventListener('click', function() { openQuickView(p.id); });
     return card;
-}
-
-// ─────────────────────────────────────────────────
-//  QUICK-VIEW MODAL
-// ─────────────────────────────────────────────────
-function initQuickViewModal() {
-    if (document.getElementById('quickViewModal')) return;
-    var modal = document.createElement('div');
-    modal.id = 'quickViewModal';
-    modal.className = 'modal hidden';
-    modal.innerHTML =
-        '<div class="modal-content" id="qvContent">' +
-        '<button class="close" id="qvClose" aria-label="Close">&times;</button>' +
-        '<div class="qv-inner" id="qvInner"></div></div>';
-    document.body.appendChild(modal);
-    document.getElementById('qvClose').addEventListener('click', closeQuickView);
-    modal.addEventListener('click', function(e) { if (e.target === modal) closeQuickView(); });
-    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeQuickView(); });
 }
 
 function openQuickView(productId) {
     var p = getProductById(productId);
     if (!p) return;
-    var modal = document.getElementById('quickViewModal');
-    var inner = document.getElementById('qvInner');
-    if (!modal || !inner) return;
-
-    var primaryImg = getPrimaryImage(p);
-    var allImages  = (p.images && p.images.length) ? p.images : (primaryImg ? [primaryImg] : []);
-    var showTag    = p.isCannabis !== false;
-
-    var thumbStrip = '';
-    if (allImages.length > 1) {
-        thumbStrip = '<div class="qv-thumb-strip">';
-        allImages.forEach(function(src, i) {
-            thumbStrip += '<div class="qv-thumb' + (i === 0 ? ' active' : '') + '" data-src="' + src + '">' +
-                '<img src="' + src + '" alt="View ' + (i+1) + '" loading="lazy"></div>';
-        });
-        thumbStrip += '</div>';
-    }
-
-    inner.innerHTML =
-        '<div class="qv-gallery">' +
-            '<div class="qv-main-img">' +
-                (primaryImg ? '<img src="' + primaryImg + '" alt="' + p.name + '" loading="lazy" id="qvMainImg">'
-                            : '<span class="no-image">No image available</span>') +
-            '</div>' + thumbStrip +
+    var existing = document.getElementById('quickViewModal');
+    if (existing) existing.remove();
+    var img = getPrimaryImage(p);
+    var tag = (p.is_cannabis !== false) ? '<span class="qv-badge cannabis-badge">Cannabis-infused &mdash; 18+ only</span>' : '';
+    var modal = document.createElement('div');
+    modal.id = 'quickViewModal';
+    modal.style.cssText = 'display:flex;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.8);align-items:center;justify-content:center;padding:16px';
+    modal.innerHTML =
+        '<div class="qv-box" style="background:#fff;border-radius:14px;max-width:680px;width:100%;max-height:90vh;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;position:relative">' +
+        '<button onclick="document.getElementById(\'quickViewModal\').remove();document.body.style.overflow=\'\'" style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:1.6rem;cursor:pointer;color:#555;z-index:1;width:36px;height:36px;display:flex;align-items:center;justify-content:flex-end">&times;</button>' +
+        '<div style="background:#f0f0f0;display:flex;align-items:center;justify-content:center;min-height:260px;border-radius:14px 0 0 14px;overflow:hidden">' +
+            (img ? '<img src="' + img + '" alt="' + p.name + '" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy">' : '<span style="color:#aaa;font-size:0.9rem">No image</span>') +
         '</div>' +
-        '<div class="qv-details">' +
-            '<p class="qv-category">' + p.category + (p.subCategory ? ' &rsaquo; ' + p.subCategory : '') + '</p>' +
-            '<h2 class="qv-name">' + p.name + '</h2>' +
-            '<p class="qv-price">R' + p.price.toFixed(2) + '</p>' +
-            (p.description ? '<p class="qv-desc">' + p.description + '</p>' : '') +
-            '<div class="qv-badges">' +
+        '<div style="padding:2rem;display:flex;flex-direction:column;gap:0.5rem">' +
+            '<p style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#4CAF50">' + (p.category || '') + (p.subcategory ? ' &rsaquo; ' + p.subcategory : '') + '</p>' +
+            '<h2 style="color:#2c5530;font-size:1.3rem;line-height:1.3">' + p.name + '</h2>' +
+            '<p style="font-size:1.4rem;font-weight:700;color:#4CAF50">R' + Number(p.price).toFixed(2) + '</p>' +
+            (p.description ? '<p style="font-size:0.9rem;color:#555;line-height:1.7">' + p.description + '</p>' : '') +
+            '<div style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0">' +
                 (p.thc && p.thc !== 'N/A' ? '<span class="qv-badge">THC: ' + p.thc + '</span>' : '') +
                 (p.cbd && p.cbd !== 'N/A' ? '<span class="qv-badge">CBD: ' + p.cbd + '</span>' : '') +
-                (showTag ? '<span class="qv-badge cannabis-badge">Cannabis-infused &mdash; 18+ only</span>' : '') +
+                tag +
             '</div>' +
-            '<button class="qv-add-btn" id="qvAddBtn">Add to Cart &mdash; R' + p.price.toFixed(2) + '</button>' +
+            '<button onclick="addToCart(\'' + p.id + '\');document.getElementById(\'quickViewModal\').remove();document.body.style.overflow=\'\'" style="margin-top:auto;padding:14px;background:#4CAF50;color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;width:100%">Add to Cart &mdash; R' + Number(p.price).toFixed(2) + '</button>' +
+        '</div>' +
         '</div>';
-
-    inner.querySelectorAll('.qv-thumb').forEach(function(thumb) {
-        thumb.addEventListener('click', function() {
-            var main = inner.querySelector('#qvMainImg');
-            if (main) main.src = thumb.dataset.src;
-            inner.querySelectorAll('.qv-thumb').forEach(function(t) { t.classList.remove('active'); });
-            thumb.classList.add('active');
-        });
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) { modal.remove(); document.body.style.overflow = ''; }
     });
-
-    document.getElementById('qvAddBtn').addEventListener('click', function() {
-        addToCart(p.id);
-        closeQuickView();
-    });
-
-    modal.classList.remove('hidden');
+    document.body.appendChild(modal);
     document.body.style.overflow = 'hidden';
 }
 
-function closeQuickView() {
-    var modal = document.getElementById('quickViewModal');
-    if (modal) modal.classList.add('hidden');
-    document.body.style.overflow = '';
-}
-
-// ─────────────────────────────────────────────────
-//  STICKY CART BAR
-// ─────────────────────────────────────────────────
-function initStickyCartBar() {
-    if (document.getElementById('stickyCartBar')) return;
-    var bar = document.createElement('div');
-    bar.id = 'stickyCartBar';
-    bar.className = 'sticky-cart-bar';
-    bar.innerHTML =
-        '<div class="sticky-cart-info">' +
-            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>' +
-            '<div class="sticky-cart-text">' +
-                '<span class="sticky-cart-count" id="stickyCartCount">0 items</span>' +
-                '<span class="sticky-cart-total" id="stickyCartTotal">R0.00</span>' +
-            '</div>' +
-        '</div>' +
-        '<button class="sticky-cart-btn" id="stickyCartBtn">View Cart &amp; Checkout</button>';
-    document.body.appendChild(bar);
-    document.getElementById('stickyCartBtn').addEventListener('click', function() {
-        displayCart();
-        var cm = document.getElementById('cartModal');
-        if (cm) cm.classList.remove('hidden');
-    });
-    var sec = document.querySelector('.products-section');
-    if (sec) sec.classList.add('has-sticky-bar');
-    updateStickyCartBar();
-}
-
-function updateStickyCartBar() {
-    var bar = document.getElementById('stickyCartBar');
-    if (!bar) return;
-    var cart  = getCart();
-    var count = cart.reduce(function(s, i) { return s + i.quantity; }, 0);
-    var total = cart.reduce(function(s, i) {
-        var p = getProductById(i.id);
-        return p ? s + p.price * i.quantity : s;
-    }, 0);
-    var ce = document.getElementById('stickyCartCount');
-    var te = document.getElementById('stickyCartTotal');
-    if (ce) ce.textContent = count + ' item' + (count !== 1 ? 's' : '') + ' in cart';
-    if (te) te.textContent = 'R' + total.toFixed(2);
-    bar.classList.toggle('visible', count > 0);
-}
-
-// ─────────────────────────────────────────────────
-//  CATEGORY FILTER
-// ─────────────────────────────────────────────────
-function populateCategoryFilter() {
+// ─── CATEGORY FILTER ─────────────────────────────────
+async function populateCategoryFilter() {
     var sel = document.getElementById('categoryFilter');
     if (!sel) return;
     var current = sel.value;
     sel.innerHTML = '<option value="all">All Categories</option>';
-    getCategories().forEach(function(cat) {
-        var opt = document.createElement('option');
-        opt.value = cat.name;
-        opt.textContent = cat.name;
-        if (cat.name === current) opt.selected = true;
-        sel.appendChild(opt);
-        if (cat.subs && cat.subs.length) {
-            cat.subs.forEach(function(sub) {
-                var sopt = document.createElement('option');
-                sopt.value = cat.name + ' > ' + sub;
-                sopt.textContent = '\u00a0\u00a0\u00a0\u00bb ' + sub;
-                if (sopt.value === current) sopt.selected = true;
-                sel.appendChild(sopt);
-            });
-        }
-    });
+    try {
+        var cats = await dbGetCategories();
+        cats.forEach(function(cat) {
+            var opt = document.createElement('option');
+            opt.value = cat.name; opt.textContent = cat.name;
+            if (cat.name === current) opt.selected = true;
+            sel.appendChild(opt);
+            if (cat.subcategories && cat.subcategories.length) {
+                cat.subcategories.forEach(function(sub) {
+                    var sopt = document.createElement('option');
+                    sopt.value = cat.name + ' > ' + sub;
+                    sopt.textContent = '\u00a0\u00a0\u00a0\u00bb ' + sub;
+                    sel.appendChild(sopt);
+                });
+            }
+        });
+    } catch(e) {}
 }
 
-// ─────────────────────────────────────────────────
-//  RENDER PRODUCTS
-// ─────────────────────────────────────────────────
-function renderProducts() {
-    populateCategoryFilter();
-    var searchQuery    = (document.getElementById('searchInput') ? document.getElementById('searchInput').value : '').trim().toLowerCase();
-    var categoryFilter = document.getElementById('categoryFilter') ? document.getElementById('categoryFilter').value : 'all';
-    var sortOption     = document.getElementById('sortFilter') ? document.getElementById('sortFilter').value : 'default';
-    var grid           = document.getElementById('productGrid');
-    var noResults      = document.getElementById('noResults');
-    var resultsCount   = document.getElementById('resultsCount');
-    var allP           = getAllProducts();
+// ─── RENDER PRODUCTS ──────────────────────────────────
+async function renderProducts() {
+    await populateCategoryFilter();
+
+    var searchQ = (document.getElementById('searchInput') ? document.getElementById('searchInput').value : '').trim().toLowerCase();
+    var catF    = document.getElementById('categoryFilter') ? document.getElementById('categoryFilter').value : 'all';
+    var sortF   = document.getElementById('sortFilter') ? document.getElementById('sortFilter').value : 'default';
+    var grid    = document.getElementById('productGrid');
+    var noRes   = document.getElementById('noResults');
+    var resCount = document.getElementById('resultsCount');
 
     if (!grid) return;
     grid.innerHTML = '';
-    for (var s = 0; s < Math.min(Math.max(allP.length, 1), 6); s++) grid.appendChild(buildSkeletonCard());
+    for (var s = 0; s < 4; s++) grid.appendChild(buildSkeletonCard());
 
-    var filtered = allP.filter(function(product) {
-        var search = !searchQuery ||
-            product.name.toLowerCase().indexOf(searchQuery) >= 0 ||
-            (product.description || '').toLowerCase().indexOf(searchQuery) >= 0 ||
-            product.category.toLowerCase().indexOf(searchQuery) >= 0 ||
-            (product.subCategory || '').toLowerCase().indexOf(searchQuery) >= 0;
-        var cat = categoryFilter === 'all' ||
-            product.category === categoryFilter ||
-            (product.category + ' > ' + (product.subCategory || '')) === categoryFilter;
+    var all = await fetchProducts();
+
+    var filtered = all.filter(function(p) {
+        var search = !searchQ ||
+            p.name.toLowerCase().indexOf(searchQ) >= 0 ||
+            (p.description || '').toLowerCase().indexOf(searchQ) >= 0 ||
+            (p.category || '').toLowerCase().indexOf(searchQ) >= 0;
+        var cat = catF === 'all' ||
+            p.category === catF ||
+            (p.category + ' > ' + (p.subcategory || '')) === catF;
         return search && cat;
     });
 
-    if (sortOption === 'price-asc')  filtered.sort(function(a, b) { return a.price - b.price; });
-    if (sortOption === 'price-desc') filtered.sort(function(a, b) { return b.price - a.price; });
-    if (sortOption === 'name-asc')   filtered.sort(function(a, b) { return a.name.localeCompare(b.name); });
+    if (sortF === 'price-asc')  filtered.sort(function(a,b) { return Number(a.price) - Number(b.price); });
+    if (sortF === 'price-desc') filtered.sort(function(a,b) { return Number(b.price) - Number(a.price); });
+    if (sortF === 'name-asc')   filtered.sort(function(a,b) { return a.name.localeCompare(b.name); });
 
     setTimeout(function() {
         grid.innerHTML = '';
         if (!filtered.length) {
-            if (noResults) noResults.classList.remove('hidden');
-            if (resultsCount) resultsCount.textContent = '';
+            if (noRes) noRes.classList.remove('hidden');
+            if (resCount) resCount.textContent = '';
         } else {
-            if (noResults) noResults.classList.add('hidden');
-            if (resultsCount) resultsCount.textContent = 'Showing ' + filtered.length + ' of ' + allP.length + ' product' + (allP.length !== 1 ? 's' : '');
-            filtered.forEach(function(product, idx) {
-                var card = createProductCard(product);
+            if (noRes) noRes.classList.add('hidden');
+            if (resCount) resCount.textContent = 'Showing ' + filtered.length + ' of ' + all.length + ' product' + (all.length !== 1 ? 's' : '');
+            filtered.forEach(function(p, idx) {
+                var card = buildProductCard(p);
                 card.style.animationDelay = (idx * 80) + 'ms';
                 grid.appendChild(card);
             });
         }
-    }, 400);
+    }, 300);
 }
 
-// ─────────────────────────────────────────────────
-//  SEARCH & FILTER
-// ─────────────────────────────────────────────────
-function setupSearchAndFilter() {
-    var si = document.getElementById('searchInput');
-    var cf = document.getElementById('categoryFilter');
-    var sf = document.getElementById('sortFilter');
-    if (si) si.addEventListener('input', renderProducts);
-    if (cf) cf.addEventListener('change', renderProducts);
-    if (sf) sf.addEventListener('change', renderProducts);
+// ─── STICKY BAR ───────────────────────────────────────
+function updateStickyBar() {
+    var bar = document.getElementById('stickyBar');
+    if (!bar) return;
+    var cart  = getCart();
+    var count = cart.reduce(function(s,i) { return s + i.quantity; }, 0);
+    var total = cart.reduce(function(s,i) {
+        var p = getProductById(i.id);
+        return p ? s + Number(p.price) * i.quantity : s;
+    }, 0);
+    var ce = document.getElementById('stickyCount');
+    var te = document.getElementById('stickyTotal');
+    if (ce) ce.textContent = count + ' item' + (count !== 1 ? 's' : '');
+    if (te) te.textContent = 'R' + total.toFixed(2);
+    bar.classList.toggle('visible', count > 0);
 }
 
-// ─────────────────────────────────────────────────
-//  HAMBURGER
-// ─────────────────────────────────────────────────
-function setupHamburger() {
+function initStickyBar() {
+    if (document.getElementById('stickyBar')) return;
+    var bar = document.createElement('div');
+    bar.id = 'stickyBar';
+    bar.className = 'sticky-cart-bar';
+    bar.innerHTML = '<div class="sticky-cart-info">' +
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>' +
+        '<div><span class="sticky-cart-count" id="stickyCount">0 items</span><span class="sticky-cart-total" id="stickyTotal">R0.00</span></div>' +
+        '</div><button class="sticky-cart-btn" id="stickyBtn">View Cart</button>';
+    document.body.appendChild(bar);
+    document.getElementById('stickyBtn').addEventListener('click', function() {
+        renderCartModal();
+        var cm = document.getElementById('cartModal');
+        if (cm) cm.classList.remove('hidden');
+    });
+    updateStickyBar();
+}
+
+// ─── HAMBURGER ────────────────────────────────────────
+function initHamburger() {
     var btn = document.getElementById('hamburgerBtn');
     var nav = document.getElementById('mainNav');
     if (!btn || !nav) return;
-    btn.addEventListener('click', function() {
+    btn.addEventListener('click', function(e) {
+        e.stopPropagation();
         btn.classList.toggle('open');
         nav.classList.toggle('open');
     });
@@ -497,38 +306,35 @@ function setupHamburger() {
             nav.classList.remove('open');
         });
     });
+    document.addEventListener('click', function(e) {
+        if (!nav.contains(e.target) && !btn.contains(e.target)) {
+            btn.classList.remove('open');
+            nav.classList.remove('open');
+        }
+    });
 }
 
-// ─────────────────────────────────────────────────
-//  MODALS  (cart + login via auth.js)
-// ─────────────────────────────────────────────────
-function setupModals() {
-    var cartModal  = document.getElementById('cartModal');
-    var loginBtn   = document.getElementById('loginBtn');
-    var cartBtn    = document.getElementById('cartBtn');
+// ─── MODALS ───────────────────────────────────────────
+function initModals() {
+    var loginBtn  = document.getElementById('loginBtn');
+    var cartBtn   = document.getElementById('cartBtn');
+    var cartModal = document.getElementById('cartModal');
 
-    if (loginBtn) {
-        loginBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            if (typeof openAuthModal === 'function') openAuthModal('login');
-        });
-    }
-
-    if (cartBtn) {
-        cartBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            displayCart();
-            if (cartModal) cartModal.classList.remove('hidden');
-        });
-    }
-
-    document.querySelectorAll('.close[data-modal]').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var t = document.getElementById(this.dataset.modal);
+    if (loginBtn) loginBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (typeof openAuthModal === 'function') openAuthModal('login');
+    });
+    if (cartBtn) cartBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        renderCartModal();
+        if (cartModal) cartModal.classList.remove('hidden');
+    });
+    document.querySelectorAll('.close[data-modal]').forEach(function(b) {
+        b.addEventListener('click', function() {
+            var t = document.getElementById(b.dataset.modal);
             if (t) t.classList.add('hidden');
         });
     });
-
     window.addEventListener('click', function(e) {
         if (e.target === cartModal) cartModal.classList.add('hidden');
     });
@@ -536,65 +342,41 @@ function setupModals() {
     var checkoutBtn = document.getElementById('checkoutBtn');
     if (checkoutBtn) {
         checkoutBtn.addEventListener('click', function() {
-            var cart = getCart();
-            if (!cart.length) { showToast('Your cart is empty'); return; }
-            if (typeof isLoggedIn === 'function' && !isLoggedIn()) {
-                if (cartModal) cartModal.classList.add('hidden');
-                if (typeof openAuthModal === 'function') {
-                    openAuthModal('login', function() { window.location.href = 'checkout.html'; });
-                }
-                return;
-            }
-            window.location.href = 'checkout.html';
+            if (!getCart().length) { showToast('Your cart is empty'); return; }
+            if (typeof authGetSession === 'function') {
+                authGetSession().then(function(sess) {
+                    if (!sess) {
+                        if (cartModal) cartModal.classList.add('hidden');
+                        if (typeof openAuthModal === 'function') openAuthModal('login', function() { window.location.href = 'checkout.html'; });
+                    } else { window.location.href = 'checkout.html'; }
+                }).catch(function() { window.location.href = 'checkout.html'; });
+            } else { window.location.href = 'checkout.html'; }
         });
     }
 }
 
-// ─────────────────────────────────────────────────
-//  PROMO BANNER  (reads from localStorage set by admin)
-// ─────────────────────────────────────────────────
-function initPromoBanner() {
-    var banner   = document.getElementById('promoBanner');
-    var textEl   = document.getElementById('promoBannerText');
-    var closeBtn = document.getElementById('promoBannerClose');
-    if (!banner) return;
-
-    // Banner text is hardcoded in the HTML (same for all visitors via Netlify).
-    // Close button always works.
-    if (closeBtn) {
-        closeBtn.addEventListener('click', function() {
-            banner.style.display = 'none';
-        });
-    }
-
-    // localStorage override: only applies on the same device as the admin.
-    // To change the banner for ALL visitors: edit promoBannerText in
-    // index.html and products.html directly, then re-deploy to Netlify.
-    try {
-        var stored = JSON.parse(localStorage.getItem('activeBanner'));
-        if (stored && stored.text && textEl) {
-            textEl.textContent = stored.text;
-            var colorMap = { green:'#2c5530', red:'#c62828', orange:'#e65100', blue:'#1565c0' };
-            banner.style.background = colorMap[stored.color] || '#2c5530';
-        }
-    } catch(e) {}
+// ─── SEARCH & FILTER ──────────────────────────────────
+function setupSearchFilter() {
+    var si = document.getElementById('searchInput');
+    var cf = document.getElementById('categoryFilter');
+    var sf = document.getElementById('sortFilter');
+    if (si) si.addEventListener('input', renderProducts);
+    if (cf) cf.addEventListener('change', renderProducts);
+    if (sf) sf.addEventListener('change', renderProducts);
 }
 
-// ─────────────────────────────────────────────────
-//  DOM READY
-// ─────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', function() {
+// ─── INIT ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async function() {
     if (localStorage.getItem('ageVerified') !== 'true') {
         window.location.replace('index.html');
         return;
     }
-    initPromoBanner();
     updateCartCount();
+    initPromoBanner();
+    initHamburger();
+    initModals();
+    setupSearchFilter();
+    initStickyBar();
     renderProducts();
-    setupModals();
-    setupSearchAndFilter();
-    setupHamburger();
-    initQuickViewModal();
-    initStickyCartBar();
     if (typeof initAuth === 'function') initAuth().catch(function() {});
 });
