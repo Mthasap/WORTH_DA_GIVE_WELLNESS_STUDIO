@@ -389,7 +389,7 @@ async function removeSub(catId, sub) {
 
 // ── Products ──────────────────────────────────────────
 async function loadProducts() {
-    var res = await SB.from('products').select('*').order('created_at', { ascending: false });
+    var res = await SB.from('products').select('*').eq('active', true).order('created_at', { ascending: false });
     var products = res.data || [];
     document.getElementById('productCount').textContent = products.length;
     var el = document.getElementById('productListEl');
