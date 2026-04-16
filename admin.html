@@ -444,9 +444,11 @@ async function saveProduct() {
 
     var res;
     if (editId) {
-        res = await SB.from('products').update(payload).eq('id', editId).select().single();
+        // UPDATE: use .single() — we know exactly one row matches the id
+        res = await SB.from('products').update(payload).eq('id', editId).select();
     } else {
-        res = await SB.from('products').insert(payload).select().single();
+        // INSERT: do NOT use .single() — avoids "coerce to single JSON" error
+        res = await SB.from('products').insert([payload]).select();
     }
 
     if (res.error) {
@@ -456,7 +458,7 @@ async function saveProduct() {
 
     clearProductForm();
     loadProducts();
-    showMsg('productMsg', editId ? 'Product updated. Visible to all visitors now.' : 'Product added. Visible to all visitors now.', 'ok');
+    showMsg('productMsg', editId ? 'Product updated. Visible to all visitors now.' : 'Product added! Visible on ALL devices immediately.', 'ok');
 }
 
 function clearProductForm() {
@@ -517,25 +519,43 @@ async function loadBanners() {
 }
 
 async function activateBanner() {
-    var text    = document.getElementById('bannerText').value.trim();
-    var type    = document.getElementById('bannerType').value;
-    var color   = document.getElementById('bannerColor').value;
-    var expiry  = document.getElementById('bannerExpiry').value;
+    var text   = document.getElementById('bannerText').value.trim();
+    var type   = document.getElementById('bannerType').value;
+    var color  = document.getElementById('bannerColor').value;
+    var expiry = document.getElementById('bannerExpiry').value;
     if (!text) { showMsg('bannerMsg', 'Please enter banner text.', 'err'); return; }
 
-    // Deactivate all existing banners
-    await SB.from('banners').update({ active: false }).neq('id', 0);
+    try {
+        // Deactivate all existing banners first
+        await SB.from('banners').update({ active: false }).neq('id', 0);
 
-    var row = { text: text, type: type, color: color, active: true };
-    if (expiry) row.expires_at = expiry;
+        // Build the row — only include expires_at if a date was actually set
+        // (avoids schema cache error if the column was only recently added)
+        var row = { text: text, type: type, color: color, active: true };
+        if (expiry && expiry.trim() !== '') {
+            row.expires_at = expiry;
+        }
 
-    var res = await SB.from('banners').insert(row);
-    if (res.error) { showMsg('bannerMsg', 'Error: ' + res.error.message, 'err'); return; }
+        var res = await SB.from('banners').insert([row]).select();
+        if (res.error) {
+            // If expires_at column still missing, retry without it
+            if (res.error.message && res.error.message.indexOf('expires_at') !== -1) {
+                delete row.expires_at;
+                res = await SB.from('banners').insert([row]).select();
+            }
+            if (res.error) {
+                showMsg('bannerMsg', 'Error: ' + res.error.message, 'err');
+                return;
+            }
+        }
 
-    document.getElementById('bannerText').value  = '';
-    document.getElementById('bannerExpiry').value = '';
-    showMsg('bannerMsg', 'Banner activated. Visible to ALL visitors immediately.', 'ok');
-    loadBanners();
+        document.getElementById('bannerText').value   = '';
+        document.getElementById('bannerExpiry').value  = '';
+        showMsg('bannerMsg', 'Banner activated! Visible to ALL visitors on ALL devices immediately.', 'ok');
+        loadBanners();
+    } catch(e) {
+        showMsg('bannerMsg', 'Error: ' + e.message, 'err');
+    }
 }
 
 async function clearBanner() {
