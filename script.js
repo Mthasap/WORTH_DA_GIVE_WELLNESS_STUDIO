@@ -35,7 +35,6 @@ function getPrimaryImage(p) {
     }
     return url;
 }
-
 // ─── CART ────────────────────────────────────────────
 function getCart() { try { return JSON.parse(localStorage.getItem('cart')) || []; } catch(e) { return []; } }
 function saveCart(c) { localStorage.setItem('cart', JSON.stringify(c)); }
