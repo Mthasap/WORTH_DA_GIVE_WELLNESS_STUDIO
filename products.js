@@ -14,10 +14,17 @@ function updateCartCount() {
 }
 
 var PRODUCTS_CACHE = null;
+var PRODUCTS_LOAD_ERROR = null;
 
 async function fetchProducts() {
     if (PRODUCTS_CACHE) return PRODUCTS_CACHE;
-    try { PRODUCTS_CACHE = await dbGetProducts(); } catch(e) { PRODUCTS_CACHE = []; }
+    try {
+        PRODUCTS_LOAD_ERROR = null;
+        PRODUCTS_CACHE = await dbGetProducts();
+    } catch(e) {
+        PRODUCTS_LOAD_ERROR = e.message || 'Could not load products';
+        PRODUCTS_CACHE = [];
+    }
     return PRODUCTS_CACHE;
 }
 
@@ -164,30 +171,64 @@ function openQuickView(productId) {
     if (!p) return;
     var existing = document.getElementById('quickViewModal');
     if (existing) existing.remove();
-    var img = getPrimaryImage(p);
-    var tag = (p.is_cannabis !== false) ? '<span class="qv-badge cannabis-badge">Cannabis-infused &mdash; 18+ only</span>' : '';
+
+    // Collect all images
+    var images = (p.images && p.images.length) ? p.images : (p.image_url ? [p.image_url] : []);
+    var currentImg = 0;
+
+    var tag = (p.is_cannabis !== false) ? '<span class="qv-badge cannabis-badge">Cannabis-infused — 18+ only</span>' : '';
     var modal = document.createElement('div');
     modal.id = 'quickViewModal';
-    modal.style.cssText = 'display:flex;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.8);align-items:center;justify-content:center;padding:16px';
-    modal.innerHTML =
-        '<div class="qv-box" style="background:#fff;border-radius:14px;max-width:680px;width:100%;max-height:90vh;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;position:relative">' +
-        '<button onclick="document.getElementById(\'quickViewModal\').remove();document.body.style.overflow=\'\'" style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:1.6rem;cursor:pointer;color:#555;z-index:1;width:36px;height:36px;display:flex;align-items:center;justify-content:flex-end">&times;</button>' +
-        '<div style="background:#f0f0f0;display:flex;align-items:center;justify-content:center;min-height:260px;border-radius:14px 0 0 14px;overflow:hidden">' +
-            (img ? '<img src="' + img + '" alt="' + p.name + '" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy">' : '<span style="color:#aaa;font-size:0.9rem">No image</span>') +
-        '</div>' +
-        '<div style="padding:2rem;display:flex;flex-direction:column;gap:0.5rem">' +
-            '<p style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#4CAF50">' + (p.category || '') + (p.subcategory ? ' &rsaquo; ' + p.subcategory : '') + '</p>' +
-            '<h2 style="color:#2c5530;font-size:1.3rem;line-height:1.3">' + p.name + '</h2>' +
-            '<p style="font-size:1.4rem;font-weight:700;color:#4CAF50">R' + Number(p.price).toFixed(2) + '</p>' +
-            (p.description ? '<p style="font-size:0.9rem;color:#555;line-height:1.7">' + p.description + '</p>' : '') +
-            '<div style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0">' +
-                (p.thc && p.thc !== 'N/A' ? '<span class="qv-badge">THC: ' + p.thc + '</span>' : '') +
-                (p.cbd && p.cbd !== 'N/A' ? '<span class="qv-badge">CBD: ' + p.cbd + '</span>' : '') +
-                tag +
+    modal.style.cssText = 'display:flex;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;padding:16px';
+
+    function buildGallery() {
+        var imgUrl = images[currentImg] || '';
+        // Cloudinary optimisation
+        if (imgUrl && imgUrl.includes('cloudinary.com') && imgUrl.includes('/upload/')) {
+            imgUrl = imgUrl.replace('/upload/', '/upload/w_700,q_auto,f_auto/');
+        }
+        var dots = images.length > 1 ? images.map(function(_, i) {
+            return '<span onclick="__qvGoto(' + i + ')" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin:0 3px;cursor:pointer;background:' + (i === currentImg ? '#4CAF50' : 'rgba(255,255,255,0.5)') + '"></span>';
+        }).join('') : '';
+        var prevBtn = images.length > 1 ? '<button id="qvPrev" onclick="__qvNav(-1)" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.45);color:#fff;border:none;border-radius:50%;width:34px;height:34px;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center">&#8249;</button>' : '';
+        var nextBtn = images.length > 1 ? '<button id="qvNext" onclick="__qvNav(1)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.45);color:#fff;border:none;border-radius:50%;width:34px;height:34px;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center">&#8250;</button>' : '';
+        var counter = images.length > 1 ? '<span style="position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.5);color:#fff;font-size:0.72rem;padding:3px 9px;border-radius:20px;font-weight:700">' + (currentImg+1) + ' / ' + images.length + '</span>' : '';
+
+        return '<div class="qv-box" style="background:#fff;border-radius:14px;max-width:720px;width:100%;max-height:92vh;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;position:relative">' +
+            '<button onclick="document.getElementById(\'quickViewModal\').remove();document.body.style.overflow=\'\'" style="position:absolute;top:10px;right:12px;background:rgba(0,0,0,0.15);border:none;font-size:1.4rem;cursor:pointer;color:#333;z-index:10;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center">&times;</button>' +
+            '<div style="background:#f0f0f0;display:flex;align-items:center;justify-content:center;min-height:280px;border-radius:14px 0 0 14px;overflow:hidden;position:relative">' +
+                (imgUrl ? '<img id="qvMainImg" src="' + imgUrl + '" alt="' + p.name + '" style="width:100%;height:100%;object-fit:cover;display:block;min-height:280px;transition:opacity 0.2s" loading="lazy">' : '<span style="color:#aaa;font-size:0.9rem">No image</span>') +
+                prevBtn + nextBtn + counter +
+                (dots ? '<div style="position:absolute;bottom:10px;left:0;right:0;text-align:center">' + dots + '</div>' : '') +
             '</div>' +
-            '<button onclick="addToCart(\'' + p.id + '\');document.getElementById(\'quickViewModal\').remove();document.body.style.overflow=\'\'" style="margin-top:auto;padding:14px;background:#4CAF50;color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;width:100%">Add to Cart &mdash; R' + Number(p.price).toFixed(2) + '</button>' +
-        '</div>' +
+            '<div style="padding:2rem;display:flex;flex-direction:column;gap:0.5rem">' +
+                '<p style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#4CAF50">' + (p.category || '') + (p.subcategory ? ' › ' + p.subcategory : '') + '</p>' +
+                '<h2 style="color:#2c5530;font-size:1.25rem;line-height:1.3">' + p.name + '</h2>' +
+                '<p style="font-size:1.4rem;font-weight:700;color:#4CAF50">R' + Number(p.price).toFixed(2) + '</p>' +
+                (p.description ? '<p style="font-size:0.88rem;color:#555;line-height:1.7">' + p.description + '</p>' : '') +
+                '<div style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0">' +
+                    (p.thc && p.thc !== 'N/A' ? '<span class="qv-badge">THC: ' + p.thc + '</span>' : '') +
+                    (p.cbd && p.cbd !== 'N/A' ? '<span class="qv-badge">CBD: ' + p.cbd + '</span>' : '') +
+                    tag +
+                '</div>' +
+                '<button onclick="addToCart(\'' + p.id + '\');document.getElementById(\'quickViewModal\').remove();document.body.style.overflow=\'\'" style="margin-top:auto;padding:14px;background:#4CAF50;color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;width:100%">Add to Cart — R' + Number(p.price).toFixed(2) + '</button>' +
+            '</div>' +
         '</div>';
+    }
+
+    window.__qvNav = function(dir) {
+        currentImg = (currentImg + dir + images.length) % images.length;
+        modal.querySelector('.qv-box').outerHTML; // force re-read
+        modal.innerHTML = buildGallery();
+        document.body.style.overflow = 'hidden';
+    };
+    window.__qvGoto = function(i) {
+        currentImg = i;
+        modal.innerHTML = buildGallery();
+        document.body.style.overflow = 'hidden';
+    };
+
+    modal.innerHTML = buildGallery();
     modal.addEventListener('click', function(e) {
         if (e.target === modal) { modal.remove(); document.body.style.overflow = ''; }
     });
@@ -236,6 +277,17 @@ async function renderProducts() {
     for (var s = 0; s < 4; s++) grid.appendChild(buildSkeletonCard());
 
     var all = await fetchProducts();
+
+    // Show a clear error if Supabase failed to load
+    if (PRODUCTS_LOAD_ERROR) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem 1rem;color:#c62828">' +
+            '<p style="font-size:1rem;font-weight:700">⚠️ Could not load products</p>' +
+            '<p style="font-size:0.85rem;color:#888;margin-top:6px">' + PRODUCTS_LOAD_ERROR + '</p>' +
+            '<button onclick="PRODUCTS_CACHE=null;renderProducts()" style="margin-top:14px;padding:10px 22px;background:#4CAF50;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700">Try Again</button>' +
+            '</div>';
+        if (noRes) noRes.classList.add('hidden');
+        return;
+    }
 
     var filtered = all.filter(function(p) {
         var search = !searchQ ||
@@ -382,9 +434,34 @@ function setupSearchFilter() {
 // ─── INIT ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async function() {
     if (localStorage.getItem('ageVerified') !== 'true') {
-        window.location.replace('index.html');
+        // Show inline age gate instead of redirecting — prevents blank page on direct links
+        var gate = document.createElement('div');
+        gate.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;padding:20px';
+        gate.innerHTML = '<div style="background:#fff;border-radius:16px;padding:2.5rem;max-width:440px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.4)">' +
+            '<div style="width:60px;height:60px;background:#e8f5e9;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.2rem">🌿</div>' +
+            '<h2 style="color:#2c5530;margin-bottom:0.5rem">Age Verification</h2>' +
+            '<p style="color:#666;font-size:0.9rem;line-height:1.6;margin-bottom:1.5rem">This website sells <strong>cannabis-infused products</strong> regulated under South African law. You must be <strong>18 or older</strong> to continue.</p>' +
+            '<div style="display:flex;gap:10px;justify-content:center">' +
+            '<button id="gateYes" style="flex:1;padding:13px;background:#4CAF50;color:#fff;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer">Yes, I am 18+</button>' +
+            '<button id="gateNo" style="flex:1;padding:13px;background:#f5f5f5;color:#555;border:2px solid #ddd;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer">No, I am under 18</button>' +
+            '</div>' +
+            '<p style="margin-top:1rem;font-size:0.75rem;color:#aaa">By entering you confirm you are 18+ and agree to our terms.</p>' +
+            '</div>';
+        document.body.appendChild(gate);
+        document.getElementById('gateYes').onclick = function() {
+            localStorage.setItem('ageVerified', 'true');
+            gate.remove();
+            bootPage();
+        };
+        document.getElementById('gateNo').onclick = function() {
+            window.location.replace('index.html');
+        };
         return;
     }
+    bootPage();
+});
+
+async function bootPage() {
     updateCartCount();
     initPromoBanner();
     initHamburger();
@@ -393,4 +470,4 @@ document.addEventListener('DOMContentLoaded', async function() {
     initStickyBar();
     renderProducts();
     if (typeof initAuth === 'function') initAuth().catch(function() {});
-});
+}
