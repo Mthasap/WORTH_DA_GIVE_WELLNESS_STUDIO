@@ -39,6 +39,17 @@ function getPrimaryImage(p) {
 function getCart() { try { return JSON.parse(localStorage.getItem('cart')) || []; } catch(e) { return []; } }
 function saveCart(c) { localStorage.setItem('cart', JSON.stringify(c)); }
 
+function validateCartAgainstProducts(products) {
+    if (!products || !products.length) return;
+    var validIds = products.map(function(p) { return String(p.id); });
+    var cart = getCart();
+    var cleaned = cart.filter(function(i) { return validIds.indexOf(String(i.id)) > -1; });
+    if (cleaned.length !== cart.length) {
+        saveCart(cleaned);
+        updateCartCount();
+    }
+}
+
 function updateCartCount() {
     var n = getCart().reduce(function(s, i) { return s + i.quantity; }, 0);
     var el = document.getElementById('cartCount');
@@ -534,6 +545,12 @@ async function initPage() {
     initNewsletter();
     initReviews();
     initStickyBar();
+
+    // Validate cart once products loaded (removes ghost items)
+    fetchProducts().then(function(products) {
+        validateCartAgainstProducts(products);
+        updateCartCount();
+    });
 
     // Init auth state
     if (typeof initAuth === 'function') {
