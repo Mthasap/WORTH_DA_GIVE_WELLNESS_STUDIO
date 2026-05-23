@@ -1,5 +1,11 @@
 {
+  "name": "worthdagive-api",
+  "version": "1.0.0",
+  "description": "WorthDaGive Wellness Studio - Vercel serverless API",
   "dependencies": {
-    "@supabase/supabase-js": "latest"
+    "@supabase/supabase-js": "^2.39.0"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
