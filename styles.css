@@ -598,7 +598,7 @@ header .container {
 /* ════════════════════════════════════════
    AUTH MODAL
 ════════════════════════════════════════ */
-.auth-modal-content { max-width:460px; padding:0; overflow:hidden; text-align:left; }
+.auth-modal-content { max-width:460px; padding:0; overflow-y:auto; -webkit-overflow-scrolling:touch; text-align:left; }
 .auth-modal-close {
     position:absolute; top:12px; right:16px;
     font-size:1.4rem; background:none; border:none;
@@ -720,7 +720,7 @@ footer { background:#2c5530; color:#fff; padding:3rem 0 2rem; text-align:center;
    WHATSAPP FLOAT
 ════════════════════════════════════════ */
 .whatsapp-float {
-    position:fixed; bottom:28px; right:28px; z-index:9998;
+    position:fixed; bottom:28px; left:20px; z-index:9998;
     background:#25D366; border-radius:50px;
     display:flex; align-items:center; gap:8px;
     padding:12px 18px 12px 14px;
@@ -980,7 +980,7 @@ footer { background:#2c5530; color:#fff; padding:3rem 0 2rem; text-align:center;
     .social-btn-facebook,.social-btn-instagram,
     .social-btn-twitter,.social-btn-tiktok { width:100%; max-width:280px; }
     footer { padding:2rem 0 1.5rem; }
-    .whatsapp-float { bottom:16px; right:14px; padding:12px; border-radius:50%; max-width:52px; }
+    .whatsapp-float { bottom:16px; left:12px; padding:12px; border-radius:50%; max-width:52px; }
     .whatsapp-label { display:none; }
     .promo-banner { font-size:0.73rem; padding:7px 0; display:block !important; }
     .promo-banner-inner { padding:0 38px; }
