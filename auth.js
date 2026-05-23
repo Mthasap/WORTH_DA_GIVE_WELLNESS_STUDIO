@@ -111,7 +111,25 @@ function injectAuthModal() {
                         <span class="auth-btn-spinner hidden"></span>
                     </button>
                 </form>
+                <p class="auth-switch-link"><a href="#" onclick="switchAuthTab('forgot');return false;">Forgot your password?</a></p>
                 <p class="auth-switch-link"><a href="#" onclick="switchAuthTab('register');return false;">Don't have an account? Register here</a></p>
+            </div>
+
+            <!-- ── FORGOT PASSWORD ── -->
+            <div id="authForgotPanel" class="auth-panel hidden">
+                <p class="auth-panel-subtitle">Enter your email to receive a password reset link.</p>
+                <form id="authForgotForm" novalidate>
+                    <div class="auth-field">
+                        <label for="forgotEmail">${ICONS.mail} Email Address</label>
+                        <input type="email" id="forgotEmail" placeholder="you@example.com" autocomplete="email" required>
+                    </div>
+                    <div id="authForgotMsg" class="auth-msg hidden"></div>
+                    <button type="submit" class="btn-primary auth-submit" id="authForgotBtn">
+                        <span class="auth-btn-text">Send Reset Link</span>
+                        <span class="auth-btn-spinner hidden"></span>
+                    </button>
+                </form>
+                <p class="auth-switch-link"><a href="#" onclick="switchAuthTab('login');return false;">Back to Sign In</a></p>
             </div>
 
             <!-- ── REGISTER ── -->
@@ -139,6 +157,12 @@ function injectAuthModal() {
                             <input type="password" id="regPassword2" placeholder="Repeat password" autocomplete="new-password" required>
                             <button type="button" class="auth-pw-toggle" onclick="togglePw('regPassword2',this)" tabindex="-1">${ICONS.eye}</button>
                         </div>
+                    </div>
+
+                    <!-- Phone (optional, for SMS OTP) -->
+                    <div class="auth-field">
+                        <label>📱 Mobile Number <span style="font-size:0.75rem;color:#888;font-weight:400">(optional — for SMS updates)</span></label>
+                        <input type="tel" id="regPhone" placeholder="+27 81 234 5678" autocomplete="tel">
                     </div>
 
                     <!-- Date of birth -->
@@ -180,6 +204,14 @@ function injectAuthModal() {
                 <div class="auth-verify-icon">${ICONS.mail}</div>
                 <h3>Check your email</h3>
                 <p>We've sent a verification link to <strong id="authVerifyEmail"></strong>. Click the link in the email to activate your account, then return here and sign in.</p>
+                <div id="authOtpBlock" class="hidden" style="margin-top:1.2rem;padding:1rem;background:#f0f9ff;border-radius:10px;border:1px solid #bae6fd">
+                    <p style="font-size:0.85rem;color:#0369a1;margin-bottom:0.8rem">📱 Enter the SMS code sent to your phone:</p>
+                    <div style="display:flex;gap:8px">
+                        <input type="text" id="otpInput" maxlength="6" placeholder="6-digit code" style="flex:1;padding:10px 12px;border:2px solid #ddd;border-radius:8px;font-size:1rem;letter-spacing:4px;text-align:center">
+                        <button onclick="verifyPhoneOtp()" style="padding:10px 16px;background:#4CAF50;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer">Verify</button>
+                    </div>
+                    <div id="otpMsg" class="auth-msg hidden" style="margin-top:8px"></div>
+                </div>
                 <button class="btn-primary" style="width:100%;margin-top:1rem;" onclick="switchAuthTab('login')">Go to Sign In</button>
             </div>
         </div>`;
@@ -192,6 +224,7 @@ function injectAuthModal() {
 
     document.getElementById('authLoginForm').addEventListener('submit', handleLogin);
     document.getElementById('authRegisterForm').addEventListener('submit', handleRegister);
+    document.getElementById('authForgotForm').addEventListener('submit', handleForgotPassword);
 }
 
 function openAuthModal(tab, onSuccess) {
@@ -213,14 +246,11 @@ function closeAuthModal() {
 let _authSuccessCallback = null;
 
 function switchAuthTab(tab) {
-    ['login','register','verify'].forEach(t => {
-        const panel = document.getElementById('authLoginPanel') ||
-                      document.getElementById('auth' + t.charAt(0).toUpperCase() + t.slice(1) + 'Panel');
-        // use explicit ids
+    const panels = ['login','register','verify','forgot','reset'];
+    panels.forEach(t => {
+        const el = document.getElementById('auth' + t.charAt(0).toUpperCase() + t.slice(1) + 'Panel');
+        if (el) el.classList.toggle('hidden', t !== tab);
     });
-    document.getElementById('authLoginPanel').classList.toggle('hidden',    tab !== 'login');
-    document.getElementById('authRegisterPanel').classList.toggle('hidden', tab !== 'register');
-    document.getElementById('authVerifyPanel').classList.toggle('hidden',   tab !== 'verify');
     document.querySelectorAll('#authTabBar .auth-tab').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.tab === tab);
     });
@@ -263,7 +293,7 @@ async function handleLogin(e) {
 
     setSubmitting('authLoginBtn', true);
     try {
-        await WDG.authLogin({ email, password });
+        await WDG.authLogin(email, password);
         _currentSession = await WDG.authGetSession();
         _currentProfile = await WDG.authGetProfile();
         updateNavAuth();
@@ -309,8 +339,26 @@ async function handleRegister(e) {
 
     setSubmitting('authRegBtn', true);
     try {
-        await WDG.authRegister({ email, password, fullName, dob });
+        await WDG.authRegister(email, password, fullName, dob);
+        const phone = (document.getElementById('regPhone') || {}).value || '';
         document.getElementById('authVerifyEmail').textContent = email;
+
+        // If phone number provided, send SMS OTP
+        const phoneBlock = document.getElementById('authOtpBlock');
+        if (phone && phone.trim().length >= 10) {
+            const cleaned = phone.trim().replace(/\s/g, '');
+            _pendingPhone = cleaned;
+            try {
+                await WDG.authSendPhoneOtp(cleaned);
+                if (phoneBlock) phoneBlock.classList.remove('hidden');
+            } catch(phoneErr) {
+                // Phone OTP failed silently — don't block registration
+                console.warn('SMS OTP failed:', phoneErr.message);
+                if (phoneBlock) phoneBlock.classList.add('hidden');
+            }
+        } else {
+            if (phoneBlock) phoneBlock.classList.add('hidden');
+        }
         switchAuthTab('verify');
     } catch (err) {
         const msg = err.message || 'Registration failed.';
@@ -319,6 +367,51 @@ async function handleRegister(e) {
         setSubmitting('authRegBtn', false);
     }
 }
+
+/* ── Forgot Password handler ── */
+async function handleForgotPassword(e) {
+    e.preventDefault();
+    const email  = document.getElementById('forgotEmail').value.trim();
+    const msgEl  = 'authForgotMsg';
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showAuthMsg(msgEl, 'Please enter a valid email address.', 'error'); return;
+    }
+    setSubmitting('authForgotBtn', true);
+    try {
+        await WDG.authResetPassword(email);
+        showAuthMsg(msgEl, '✅ Reset link sent! Check your email inbox (and spam folder).', 'success');
+        document.getElementById('forgotEmail').value = '';
+    } catch(err) {
+        showAuthMsg(msgEl, err.message || 'Could not send reset email. Please try again.', 'error');
+    } finally {
+        setSubmitting('authForgotBtn', false);
+    }
+}
+
+/* ── Phone OTP verification (called from verify panel) ── */
+let _pendingPhone = '';
+async function verifyPhoneOtp() {
+    const token  = (document.getElementById('otpInput') || {}).value || '';
+    const msgEl  = document.getElementById('otpMsg');
+    if (!token || token.length < 4) {
+        if (msgEl) { msgEl.textContent = 'Enter the 6-digit code from your SMS.'; msgEl.className = 'auth-msg error'; msgEl.classList.remove('hidden'); }
+        return;
+    }
+    try {
+        await WDG.authVerifyPhoneOtp(_pendingPhone, token);
+        if (msgEl) { msgEl.textContent = '✅ Phone verified!'; msgEl.className = 'auth-msg success'; msgEl.classList.remove('hidden'); }
+        // Update profile with verified phone
+        const db = await WDG.getDB();
+        const sess = await WDG.authGetSession();
+        if (sess) {
+            await db.from('profiles').update({ phone: _pendingPhone }).eq('id', sess.user.id);
+        }
+        setTimeout(() => switchAuthTab('login'), 1500);
+    } catch(err) {
+        if (msgEl) { msgEl.textContent = 'Invalid code. Please try again.'; msgEl.className = 'auth-msg error'; msgEl.classList.remove('hidden'); }
+    }
+}
+window.verifyPhoneOtp = verifyPhoneOtp;
 
 /* ── Global toast (used across pages) ── */
 function showToastGlobal(msg, type) {
