@@ -3,6 +3,19 @@
 //  Reads products from Supabase — same for ALL visitors
 // ═══════════════════════════════════════════════════════
 
+// ─── CART VALIDATION ─────────────────────────────────
+// Cleans out stale cart items whose product IDs no longer exist in the catalogue.
+function validateCartAgainstProducts(products) {
+    if (!products || !products.length) return;
+    var validIds = products.map(function(p) { return String(p.id); });
+    var cart = getCart();
+    var cleaned = cart.filter(function(i) { return validIds.indexOf(String(i.id)) > -1; });
+    if (cleaned.length !== cart.length) {
+        saveCart(cleaned);
+        updateCartCount();
+    }
+}
+
 // ─── CART (same as script.js) ─────────────────────────
 function getCart()   { try { return JSON.parse(localStorage.getItem('cart')) || []; } catch(e) { return []; } }
 function saveCart(c) { localStorage.setItem('cart', JSON.stringify(c)); }
@@ -147,9 +160,15 @@ function buildProductCard(p) {
     var img = getPrimaryImage(p);
     var tag = (p.is_cannabis !== false) ? '<p class="cannabis-product-tag">Cannabis-infused &mdash; 18+ only</p>' : '';
     var sub = p.subcategory ? '<span class="product-sub-cat">' + p.subcategory + '</span>' : '';
+    // Multi-image badge
+    var images = (p.images && p.images.length) ? p.images : (p.image_url ? [p.image_url] : []);
+    var imgBadge = images.length > 1
+        ? '<span class="card-img-count">&#128247; ' + images.length + '</span>'
+        : '';
     card.innerHTML =
         '<div class="product-image" role="button" tabindex="0" aria-label="Quick view ' + p.name + '">' +
             (img ? '<img src="' + img + '" alt="' + p.name + '" loading="lazy" class="card-main-img">' : '<span class="no-image">No image</span>') +
+            imgBadge +
         '</div>' +
         '<div class="product-info">' +
             '<p class="product-category-label">' + (p.category || '') + sub + '</p>' +
@@ -159,7 +178,7 @@ function buildProductCard(p) {
             tag +
             '<div class="product-card-actions">' +
                 '<button class="add-to-cart" onclick="addToCart(\'' + p.id + '\')">Add to Cart</button>' +
-                '<button class="quick-view-btn" onclick="openQuickView(\'' + p.id + '\')">Quick View</button>' +
+                '<button class="quick-view-btn" onclick="openQuickView(\'' + p.id + '\')">View ' + (images.length > 1 ? '(' + images.length + ' photos)' : 'Details') + '</button>' +
             '</div>' +
         '</div>';
     card.querySelector('.product-image').addEventListener('click', function() { openQuickView(p.id); });
@@ -468,6 +487,9 @@ async function bootPage() {
     initModals();
     setupSearchFilter();
     initStickyBar();
-    renderProducts();
+    // renderProducts will fetch products; we validate cart after loading
+    await renderProducts();
+    validateCartAgainstProducts(PRODUCTS_CACHE);
+    updateCartCount(); // Re-render count after validation
     if (typeof initAuth === 'function') initAuth().catch(function() {});
 }
