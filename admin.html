@@ -223,10 +223,12 @@ hr.div{border:none;border-top:1px solid #eee;margin:1.5rem 0}
 <div id="loginGate">
   <div class="login-wrap">
     <h2>Admin Panel</h2>
-    <p>WorthDaGive Wellness Studio</p>
+    <p>WorthDaGive Wellness Studio — Admin Access Only</p>
+    <input type="email" id="adminEmail" placeholder="Admin email address" style="margin-bottom:10px">
     <input type="password" id="adminPw" placeholder="Admin password">
-    <button class="btn-save" style="width:100%;margin-top:4px" onclick="doLogin()">Enter Admin Panel</button>
+    <button class="btn-save" style="width:100%;margin-top:8px" onclick="doLogin()">Enter Admin Panel</button>
     <div class="login-error" id="loginErr"></div>
+    <p style="font-size:0.75rem;color:#aaa;margin-top:14px">Access is restricted. All activity is logged.</p>
   </div>
 </div>
 
@@ -387,10 +389,11 @@ hr.div{border:none;border-top:1px solid #eee;margin:1.5rem 0}
 </div><!-- /adminPanel -->
 
 <script>
-var ADMIN_PW = 'admin123';
-
 var SUPABASE_URL = "https://tndsmvsuowqdmhtatmie.supabase.co";
 var SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRuZHNtdnN1b3dxZG1odGF0bWllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMzM0MjAsImV4cCI6MjA5MDkwOTQyMH0.KLd3B-MQI1BBJSg98lfFugnqPDqeBBBGuM-cRbI0Eyw";
+// ADMIN_EMAILS: list of email addresses that have admin access.
+// In production, use Supabase RLS + a role column in the profiles table.
+var ADMIN_EMAILS = ['admin@worthdagive.com', 'owner@worthdagive.co.za'];
 var SB;
 
 // ── Init ───────────────────────────────────────────────
@@ -399,25 +402,54 @@ function initSB() {
 }
 
 // ── Login ──────────────────────────────────────────────
-function doLogin() {
-  var pw = document.getElementById('adminPw').value;
-  if (pw === ADMIN_PW) {
+async function doLogin() {
+  var email = (document.getElementById('adminEmail').value || '').trim().toLowerCase();
+  var pw    = document.getElementById('adminPw').value;
+  var errEl = document.getElementById('loginErr');
+  errEl.textContent = '';
+
+  if (!email || !pw) { errEl.textContent = 'Please enter your email and password.'; return; }
+
+  initSB();
+  try {
+    var res = await SB.auth.signInWithPassword({ email: email, password: pw });
+    if (res.error) throw res.error;
+
+    // Check if this user is an admin
+    var profRes = await SB.from('profiles').select('role,email').eq('id', res.data.user.id).single();
+    var isAdmin = (profRes.data && profRes.data.role === 'admin') ||
+                  ADMIN_EMAILS.indexOf(res.data.user.email.toLowerCase()) > -1;
+
+    if (!isAdmin) {
+      await SB.auth.signOut();
+      errEl.textContent = 'Access denied. You do not have admin privileges.';
+      return;
+    }
+
     sessionStorage.setItem('adminIn', '1');
-    document.getElementById('loginGate').style.display = 'none';
-    document.getElementById('adminPanel').classList.remove('hidden');
-    initSB();
-    loadAll();
-  } else {
-    document.getElementById('loginErr').textContent = 'Incorrect password.';
+    sessionStorage.setItem('adminEmail', res.data.user.email);
+    showAdminPanel();
+  } catch(e) {
+    errEl.textContent = 'Login failed: ' + (e.message || 'Incorrect credentials.');
   }
 }
+
+function showAdminPanel() {
+  document.getElementById('loginGate').style.display = 'none';
+  document.getElementById('adminPanel').classList.remove('hidden');
+  loadAll();
+}
+document.getElementById('adminEmail').addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
 document.getElementById('adminPw').addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
 
 function doLogout() {
   sessionStorage.removeItem('adminIn');
+  sessionStorage.removeItem('adminEmail');
+  if (SB) SB.auth.signOut();
   document.getElementById('adminPanel').classList.add('hidden');
   document.getElementById('loginGate').style.display = '';
   document.getElementById('adminPw').value = '';
+  document.getElementById('adminEmail').value = '';
 }
 
 if (sessionStorage.getItem('adminIn') === '1') {
