@@ -51,7 +51,11 @@ function validateCartAgainstProducts(products) {
 }
 
 function updateCartCount() {
-    var n = getCart().reduce(function(s, i) { return s + i.quantity; }, 0);
+    var cart = getCart();
+    // Immediately remove any items that have no id (corrupted entries)
+    var cleaned = cart.filter(function(i) { return i && i.id !== undefined && i.id !== null && i.quantity > 0; });
+    if (cleaned.length !== cart.length) saveCart(cleaned);
+    var n = cleaned.reduce(function(s, i) { return s + i.quantity; }, 0);
     var el = document.getElementById('cartCount');
     if (el) el.textContent = n;
 }
@@ -367,12 +371,7 @@ function initModals() {
 }
 
 // ─── REVIEWS ─────────────────────────────────────────
-var DEFAULT_REVIEWS = [
-    { id:'r1', name:'Lebo M.', rating:5, text:'Absolutely top-tier quality. The Jack The Ripper Sativa hits perfectly. Will definitely order again!', date:'2026-03-15', response:'Thank you Lebo! We really appreciate your support. — WorthDaGive Team' },
-    { id:'r2', name:'Sipho K.', rating:5, text:'Fast delivery, discreet packaging. The Sundae Driver is smooth and exactly as described. 10/10.', date:'2026-03-20', response:'Thank you Sipho! Enjoy every puff. — WorthDaGive Team' },
-    { id:'r3', name:'Zanele N.', rating:4, text:'Great products overall. The pre-rolls are well packed and burn evenly. Only wish there were more flavours.', date:'2026-03-28', response:'Thank you Zanele! More flavours are coming soon. Watch this space! — WorthDaGive Team' },
-    { id:'r4', name:'Thabo D.', rating:5, text:'Best cannabis store in SA. The quality is consistent every single time. Highly recommended.', date:'2026-04-02', response:'We appreciate the kind words Thabo! See you on the next order. — WorthDaGive Team' }
-];
+var DEFAULT_REVIEWS = [];
 
 var currentSlide = 0;
 var carouselInterval = null;
