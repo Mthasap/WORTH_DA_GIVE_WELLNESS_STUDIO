@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel — WorthDaGive</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f0f2f5;color:#333;min-height:100vh}
+.hidden{display:none!important}
+
+/* ── Login ── */
+.login-wrap{max-width:400px;margin:80px auto;background:#fff;border-radius:12px;padding:2.5rem;box-shadow:0 6px 24px rgba(0,0,0,0.1);text-align:center}
+.login-wrap h2{color:#2c5530;margin-bottom:0.5rem}
+.login-wrap p{color:#888;font-size:0.88rem;margin-bottom:1.5rem}
+.login-wrap input{width:100%;padding:12px;margin-bottom:10px;border:2px solid #ddd;border-radius:8px;font-size:1rem}
+.login-wrap input:focus{border-color:#4CAF50;outline:none}
+.login-error{color:#c62828;font-size:0.85rem;min-height:20px;margin-top:4px}
+
+/* ── Header ── */
+.admin-header{background:#1a3a1e;color:#fff;padding:1rem 0;position:sticky;top:0;z-index:100;box-shadow:0 2px 10px rgba(0,0,0,0.3)}
+.admin-header .inner{max-width:1300px;margin:0 auto;padding:0 20px;display:flex;justify-content:space-between;align-items:center}
+.admin-header h1{font-size:1.2rem}
+.admin-header a{color:#4CAF50;text-decoration:none;font-size:0.85rem;margin-left:14px}
+
+/* ── Layout ── */
+.wrap{max-width:1300px;margin:0 auto;padding:0 20px 4rem}
+.tabs{display:flex;background:#fff;border-radius:10px;overflow-x:auto;box-shadow:0 2px 8px rgba(0,0,0,0.07);margin:1.5rem 0 0;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1;min-width:100px;padding:14px 8px;background:none;border:none;font-size:0.85rem;font-weight:700;color:#888;cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s;white-space:nowrap}
+.tab.active{background:#f0fff0;color:#2c5530;border-bottom-color:#4CAF50}
+.panel{background:#fff;border-radius:0 0 10px 10px;padding:2rem;box-shadow:0 4px 16px rgba(0,0,0,0.07);margin-bottom:2rem}
+.panel h2{color:#2c5530;font-size:1.2rem;margin-bottom:0.4rem}
+.panel .sub{color:#888;font-size:0.84rem;margin-bottom:1.5rem}
+
+/* ── Form ── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.form-grid.triple{grid-template-columns:1fr 1fr 1fr}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg.full{grid-column:1/-1}
+.fg label{font-size:0.82rem;font-weight:700;color:#555}
+.fg input,.fg select,.fg textarea{padding:10px 12px;border:2px solid #ddd;border-radius:8px;font-size:0.9rem;font-family:Arial,sans-serif;transition:border-color 0.2s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:#4CAF50;outline:none}
+.fg textarea{resize:vertical;min-height:80px}
+.url-row{display:flex;gap:8px;margin-top:6px}
+.url-row input{flex:1;padding:10px 12px;border:2px solid #ddd;border-radius:8px;font-size:0.88rem}
+.url-row input:focus{border-color:#4CAF50;outline:none}
+.url-row button{padding:10px 16px;background:#4CAF50;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.85rem;white-space:nowrap}
+.url-row button:hover{background:#45a049}
+
+/* ── Images ── */
+.img-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.img-thumb{position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;border:2px solid #ddd;background:#f5f5f5;cursor:pointer}
+.img-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.img-thumb.primary{border-color:#4CAF50}
+.img-thumb .del{position:absolute;top:2px;right:2px;background:rgba(244,67,54,0.9);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:0.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.img-thumb .pb{position:absolute;bottom:0;left:0;right:0;background:rgba(76,175,80,0.85);color:#fff;font-size:0.6rem;font-weight:700;text-align:center;padding:2px}
+.img-hint{font-size:0.75rem;color:#888;margin-top:6px;line-height:1.5}
+
+/* ── Product type pills ── */
+.type-pills{display:flex;gap:8px;flex-wrap:wrap}
+.type-pill{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border:2px solid #ddd;border-radius:8px;cursor:pointer;font-size:0.84rem;font-weight:600;color:#555;transition:all 0.2s;user-select:none}
+.type-pill:has(input:checked){border-color:#4CAF50;background:#f0fff0;color:#2c5530}
+.type-pill input[type=radio]{accent-color:#4CAF50}
+
+/* ── Buttons ── */
+.btn-save{background:#4CAF50;color:#fff;padding:11px 22px;border:none;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;min-height:44px;transition:background 0.2s}
+.btn-save:hover{background:#45a049}
+.btn-clear{background:#f5f5f5;color:#555;padding:11px 22px;border:2px solid #ddd;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;min-height:44px;transition:all 0.2s}
+.btn-clear:hover{border-color:#f44336;color:#f44336}
+.btn-del{background:#fce4e4;color:#c62828;border:1px solid #f44336;border-radius:6px;padding:5px 12px;font-size:0.78rem;font-weight:700;cursor:pointer}
+.btn-edit{background:#fff3e0;color:#e65100;border:1px solid #ffcc02;border-radius:6px;padding:5px 12px;font-size:0.78rem;font-weight:700;cursor:pointer}
+.btn-act{background:#4CAF50;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:0.78rem;font-weight:700;cursor:pointer}
+.btn-actions{display:flex;gap:10px;margin-top:1.5rem;flex-wrap:wrap}
+
+/* ── Messages ── */
+.msg{padding:10px 14px;border-radius:8px;font-size:0.88rem;font-weight:700;margin-top:12px;display:none}
+.msg.ok{background:#d4edda;color:#155724;display:block}
+.msg.err{background:#f8d7da;color:#721c24;display:block}
+
+/* ── Product list ── */
+.prod-item{display:flex;align-items:center;gap:12px;padding:10px;border:1px solid #eee;border-radius:8px;margin-bottom:8px;background:#fafafa}
+.prod-thumb{width:56px;height:56px;object-fit:cover;border-radius:6px;flex-shrink:0;background:#e9ecef}
+.prod-info{flex:1;min-width:0}
+.prod-info strong{display:block;color:#2c5530;font-size:0.9rem}
+.prod-info span{font-size:0.76rem;color:#888;display:block}
+
+/* ── Categories ── */
+.cat-row{background:#fafafa;border:1px solid #eee;border-radius:8px;overflow:hidden;margin-bottom:8px}
+.cat-main{display:flex;align-items:center;gap:10px;padding:10px 12px}
+.cat-name{flex:1;font-weight:700;color:#2c5530;font-size:0.92rem}
+.cat-subs{padding:0 12px 8px 28px;display:flex;flex-wrap:wrap;gap:6px}
+.sub-pill{display:inline-flex;align-items:center;gap:6px;background:#e8f5e9;color:#2c5530;border-radius:20px;padding:3px 10px;font-size:0.78rem;font-weight:700}
+.sub-pill button{background:none;border:none;color:#c62828;cursor:pointer;font-size:0.9rem;line-height:1;padding:0 2px}
+.add-sub{display:flex;gap:6px;padding:4px 12px 10px 28px}
+.add-sub input{flex:1;padding:6px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:0.82rem}
+.add-sub input:focus{border-color:#4CAF50;outline:none}
+.add-sub button{padding:6px 12px;background:#4CAF50;color:#fff;border:none;border-radius:6px;font-size:0.78rem;font-weight:700;cursor:pointer}
+.new-cat{display:flex;gap:8px;margin-top:8px}
+.new-cat input{flex:1;padding:10px 12px;border:2px solid #ddd;border-radius:8px;font-size:0.9rem}
+.new-cat input:focus{border-color:#4CAF50;outline:none}
+
+/* ── Banners ── */
+.banner-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid #e0e0e0;border-radius:8px;margin-bottom:8px;background:#fafafa;flex-wrap:wrap}
+.banner-item.active-banner{border-color:#4CAF50;background:#f0fff0}
+.banner-text{flex:1;font-size:0.88rem;color:#333}
+.type-tag{display:inline-block;font-size:0.7rem;font-weight:700;padding:2px 10px;border-radius:20px}
+.t-ann{background:#e3f2fd;color:#1565c0}
+.t-promo{background:#fff3e0;color:#e65100}
+.t-sale{background:#fce4e4;color:#c62828}
+
+hr.div{border:none;border-top:1px solid #eee;margin:1.5rem 0}
+
+/* ════════════════════════
+   ORDERS TAB
+════════════════════════ */
+.orders-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:1.2rem}
+.orders-toolbar input,.orders-toolbar select{padding:9px 12px;border:2px solid #ddd;border-radius:8px;font-size:0.88rem}
+.orders-toolbar input:focus,.orders-toolbar select:focus{border-color:#4CAF50;outline:none}
+.orders-toolbar input{flex:1;min-width:180px}
+
+/* Stats bar */
+.orders-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1.5rem}
+.stat-card{background:#f8f9fa;border:1px solid #eee;border-radius:10px;padding:14px 16px;text-align:center}
+.stat-card .stat-num{font-size:1.8rem;font-weight:800;color:#2c5530;line-height:1}
+.stat-card .stat-label{font-size:0.72rem;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px}
+
+/* Order cards */
+.order-card{border:1px solid #eee;border-radius:10px;overflow:hidden;margin-bottom:12px;background:#fff;transition:box-shadow 0.2s}
+.order-card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.09)}
+.order-card-head{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#fafafa;border-bottom:1px solid #f0f0f0;flex-wrap:wrap;cursor:pointer;user-select:none}
+.order-ref{font-weight:800;color:#2c5530;font-size:0.95rem}
+.order-customer{font-size:0.85rem;color:#555;flex:1}
+.order-date{font-size:0.75rem;color:#aaa}
+.order-amount{font-weight:700;color:#333;font-size:0.95rem}
+.order-card-body{padding:16px;display:none}
+.order-card-body.open{display:block}
+
+/* Status badges */
+.status-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:0.78rem;font-weight:700}
+.sb-pending          {background:#fff3e0;color:#e65100}
+.sb-confirmed        {background:#e3f2fd;color:#1565c0}
+.sb-payment_received {background:#e8f5e9;color:#2e7d32}
+.sb-processing       {background:#e3f2fd;color:#1565c0}
+.sb-dispatched       {background:#ede7f6;color:#6a1b9a}
+.sb-out_for_delivery {background:#fff8e1;color:#f57f17}
+.sb-delivered        {background:#e8f5e9;color:#2e7d32}
+.sb-collected        {background:#e8f5e9;color:#2e7d32}
+.sb-cancelled        {background:#fce4e4;color:#c62828}
+.sb-refunded         {background:#f3e5f5;color:#6a1b9a}
+
+/* Payment badge */
+.pay-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700}
+.pay-paid     {background:#e8f5e9;color:#2e7d32}
+.pay-pending  {background:#fff3e0;color:#e65100}
+.pay-cancelled{background:#fce4e4;color:#c62828}
+
+/* Order body layout */
+.order-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem}
+@media(max-width:640px){.order-grid{grid-template-columns:1fr}}
+.order-section-title{font-size:0.76rem;font-weight:800;text-transform:uppercase;letter-spacing:0.6px;color:#aaa;margin-bottom:8px}
+.order-detail-row{display:flex;justify-content:space-between;font-size:0.86rem;padding:4px 0;border-bottom:1px solid #f5f5f5}
+.order-detail-row:last-child{border-bottom:none}
+.order-detail-row .lbl{color:#888}
+.order-detail-row .val{font-weight:600;color:#333;text-align:right;max-width:55%}
+
+/* Items table */
+.items-table{width:100%;border-collapse:collapse;font-size:0.84rem;margin-top:6px}
+.items-table th{text-align:left;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;color:#aaa;font-weight:700;padding:4px 0;border-bottom:2px solid #f0f0f0}
+.items-table td{padding:6px 0;border-bottom:1px solid #f5f5f5;color:#333}
+.items-table tr:last-child td{border-bottom:none}
+.items-table .item-name{font-weight:600}
+.items-table .item-total{font-weight:700;color:#2c5530;text-align:right}
+.items-table .item-qty{text-align:center;color:#888}
+
+/* Status update panel */
+.status-update-panel{background:#f8fdf8;border:1.5px solid #d4edda;border-radius:10px;padding:16px;margin-top:14px}
+.status-update-panel h4{color:#2c5530;font-size:0.9rem;margin-bottom:10px;font-weight:800}
+.status-update-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.status-update-row select{flex:1;min-width:160px;padding:9px 12px;border:2px solid #ddd;border-radius:8px;font-size:0.88rem}
+.status-update-row select:focus{border-color:#4CAF50;outline:none}
+.status-update-row input[type=text]{flex:2;min-width:200px;padding:9px 12px;border:2px solid #ddd;border-radius:8px;font-size:0.88rem}
+.status-update-row input:focus{border-color:#4CAF50;outline:none}
+.status-update-row button{padding:9px 18px;background:#2c5530;color:#fff;border:none;border-radius:8px;font-size:0.85rem;font-weight:700;cursor:pointer;white-space:nowrap}
+.status-update-row button:hover{background:#1a3a1e}
+.status-update-row button:disabled{background:#aaa;cursor:not-allowed}
+
+/* Timeline mini */
+.mini-timeline{margin-top:12px;padding-left:20px;position:relative}
+.mini-timeline::before{content:'';position:absolute;left:6px;top:6px;bottom:6px;width:2px;background:#e0e0e0;border-radius:2px}
+.mt-step{position:relative;margin-bottom:10px;font-size:0.82rem}
+.mt-step:last-child{margin-bottom:0}
+.mt-dot{position:absolute;left:-20px;top:3px;width:12px;height:12px;border-radius:50%;background:#4CAF50;border:2px solid #fff;box-shadow:0 0 0 2px #4CAF50}
+.mt-step:last-child .mt-dot{background:#2c5530;box-shadow:0 0 0 2px #2c5530}
+.mt-status{font-weight:700;color:#2c5530}
+.mt-note{color:#888;font-size:0.78rem}
+.mt-time{color:#bbb;font-size:0.72rem}
+
+/* Chevron toggle */
+.chevron{transition:transform 0.25s;margin-left:auto;flex-shrink:0}
+.chevron.open{transform:rotate(180deg)}
+
+/* Filter pill */
+.filter-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem}
+.fp{padding:6px 14px;border:2px solid #ddd;border-radius:20px;font-size:0.78rem;font-weight:700;cursor:pointer;background:#fff;color:#888;transition:all 0.15s}
+.fp.active{border-color:#4CAF50;background:#e8f5e9;color:#2c5530}
+
+@media(max-width:640px){
+  .form-grid,.form-grid.triple{grid-template-columns:1fr}
+  .tabs{flex-wrap:wrap}
+  .tab{font-size:0.76rem;padding:10px 6px}
+  .btn-actions{flex-direction:column}
+  .btn-save,.btn-clear{width:100%}
+  .orders-toolbar{flex-direction:column}
+  .orders-toolbar input,.orders-toolbar select{width:100%}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN GATE -->
+<div id="loginGate">
+  <div class="login-wrap">
+    <h2>Admin Panel</h2>
+    <p>WorthDaGive Wellness Studio — Admin Access Only</p>
+    <input type="email" id="adminEmail" placeholder="Admin email address" style="margin-bottom:10px">
+    <input type="password" id="adminPw" placeholder="Admin password">
+    <button class="btn-save" style="width:100%;margin-top:8px" onclick="doLogin()">Enter Admin Panel</button>
+    <div class="login-error" id="loginErr"></div>
+    <p style="font-size:0.75rem;color:#aaa;margin-top:14px">Access is restricted. All activity is logged.</p>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel" class="hidden">
+
+  <div class="admin-header">
+    <div class="inner">
+      <h1>WorthDaGive Admin</h1>
+      <div>
+        <a href="index.html" target="_blank">View Site</a>
+        <a href="products.html" target="_blank">Products</a>
+        <a href="#" onclick="doLogout();return false" style="color:#f88">Logout</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('orders')">📦 Orders</button>
+      <button class="tab" onclick="showTab('products')">🛍 Products</button>
+      <button class="tab" onclick="showTab('categories')">📂 Categories</button>
+      <button class="tab" onclick="showTab('banners')">📢 Banners</button>
+    </div>
+
+    <!-- ═══════════════════════════════════
+         ORDERS TAB
+    ═══════════════════════════════════ -->
+    <div id="tab-orders" class="panel">
+      <h2>Orders &amp; Deliveries</h2>
+      <p class="sub">Only paid orders are shown by default. Update delivery status here — customers see changes instantly when they track their order.</p>
+
+      <!-- Stats -->
+      <div class="orders-stats" id="ordersStats">
+        <div class="stat-card"><div class="stat-num" id="statTotal">–</div><div class="stat-label">Total Orders</div></div>
+        <div class="stat-card"><div class="stat-num" id="statPaid">–</div><div class="stat-label">Paid</div></div>
+        <div class="stat-card"><div class="stat-num" id="statProcessing">–</div><div class="stat-label">Processing</div></div>
+        <div class="stat-card"><div class="stat-num" id="statDispatched">–</div><div class="stat-label">Dispatched</div></div>
+        <div class="stat-card"><div class="stat-num" id="statDelivered">–</div><div class="stat-label">Delivered</div></div>
+        <div class="stat-card"><div class="stat-num" id="statRevenue">–</div><div class="stat-label">Revenue (R)</div></div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="orders-toolbar">
+        <input type="text" id="orderSearch" placeholder="Search by ref, name or email…" oninput="renderOrders()">
+        <select id="orderStatusFilter" onchange="renderOrders()">
+          <option value="all">All Statuses</option>
+          <option value="payment_received" selected>Paid – New</option>
+          <option value="processing">Processing</option>
+          <option value="dispatched">Dispatched</option>
+          <option value="out_for_delivery">Out for Delivery</option>
+          <option value="delivered">Delivered</option>
+          <option value="collected">Collected</option>
+          <option value="cancelled">Cancelled</option>
+          <option value="pending">Pending (unpaid)</option>
+        </select>
+        <select id="orderPayFilter" onchange="renderOrders()">
+          <option value="all">All Payments</option>
+          <option value="paid" selected>Paid Only</option>
+          <option value="pending">Unpaid</option>
+        </select>
+        <button class="btn-save" style="padding:9px 16px;font-size:0.85rem" onclick="loadOrders()">↻ Refresh</button>
+      </div>
+
+      <div class="msg" id="ordersMsg"></div>
+      <div id="orderListEl"><p style="color:#999;font-size:0.9rem;padding:20px 0">Loading orders…</p></div>
+    </div>
+
+    <!-- ═══════════════════════════════════
+         PRODUCTS TAB
+    ═══════════════════════════════════ -->
+    <div id="tab-products" class="panel hidden">
+      <h2>Manage Products</h2>
+      <p class="sub">All images must be Cloudinary URLs. Add up to 8 images per product — the first is used as the primary/thumbnail. Products saved here are immediately visible to ALL visitors.</p>
+      <div class="form-grid">
+        <div class="fg"><label>Product Name *</label><input type="text" id="pName" placeholder="e.g. Jack The Ripper Sativa"></div>
+        <div class="fg"><label>Price (R) *</label><input type="number" id="pPrice" placeholder="650.00" min="0" step="0.01"></div>
+        <div class="fg"><label>Category *</label><select id="pCategory" onchange="populateSubCatSelect()"><option value="">Loading…</option></select></div>
+        <div class="fg"><label>Sub-Category</label><select id="pSubCategory"><option value="">None</option></select></div>
+        <div class="fg"><label>THC Content</label><input type="text" id="pThc" placeholder="e.g. 22% or Available on request"></div>
+        <div class="fg"><label>CBD Content</label><input type="text" id="pCbd" placeholder="e.g. 1% or Available on request"></div>
+        <div class="fg full"><label>Description</label><textarea id="pDescription" placeholder="Describe the product…"></textarea></div>
+        <div class="fg full">
+          <label>Product Classification *</label>
+          <div class="type-pills">
+            <label class="type-pill"><input type="radio" name="pType" id="ptCannabis" value="cannabis" checked> Cannabis-Infused (18+ label shown)</label>
+            <label class="type-pill"><input type="radio" name="pType" id="ptNonCannabis" value="non-cannabis"> Non-Cannabis / Accessory</label>
+          </div>
+        </div>
+        <div class="fg full">
+          <label>Product Images (Cloudinary URLs) * — Add up to 8, first = primary</label>
+          <div class="url-row">
+            <input type="text" id="pImageUrl" placeholder="https://res.cloudinary.com/…">
+            <button onclick="addImageUrl()">+ Add Image</button>
+          </div>
+          <div class="img-list" id="imgList"></div>
+          <p class="img-hint">Click a thumbnail to set it as the primary image. ✕ to remove. Drag-free — reorder by removing and re-adding.</p>
+        </div>
+        <input type="hidden" id="pEditId">
+      </div>
+      <div class="btn-actions">
+        <button class="btn-save" onclick="saveProduct()">Save Product</button>
+        <button class="btn-clear" onclick="clearProductForm()">Clear Form</button>
+      </div>
+      <div class="msg" id="productMsg"></div>
+      <hr class="div">
+      <h3 style="color:#2c5530;margin-bottom:1rem">Current Products (<span id="productCount">0</span>)</h3>
+      <div id="productListEl"></div>
+    </div>
+
+    <!-- ═══════════════════════════════════
+         CATEGORIES TAB
+    ═══════════════════════════════════ -->
+    <div id="tab-categories" class="panel hidden">
+      <h2>Manage Categories</h2>
+      <p class="sub">Add or remove main categories and sub-categories. Changes apply immediately to the products page filter and product form.</p>
+      <div class="cat-list" id="catListEl"></div>
+      <div class="new-cat">
+        <input type="text" id="newCatInput" placeholder="New category name, e.g. Concentrates">
+        <button class="btn-save" onclick="addCategory()">Add Category</button>
+      </div>
+      <div class="msg" id="catMsg"></div>
+    </div>
+
+    <!-- ═══════════════════════════════════
+         BANNERS TAB
+    ═══════════════════════════════════ -->
+    <div id="tab-banners" class="panel hidden">
+      <h2>Promotions &amp; Announcements</h2>
+      <p class="sub">The active banner shows at the top of ALL pages for ALL visitors immediately. If no active banner is set, the bar is hidden.</p>
+      <div class="form-grid triple">
+        <div class="fg full"><label>Banner Message *</label><input type="text" id="bannerText" placeholder="e.g. Weekend Sale — 20% off Disposables this Saturday!"></div>
+        <div class="fg">
+          <label>Type</label>
+          <select id="bannerType"><option value="announcement">Announcement</option><option value="promo">Promotion</option><option value="sale">Sale</option></select>
+        </div>
+        <div class="fg">
+          <label>Background Colour</label>
+          <select id="bannerColor"><option value="green">Green (default)</option><option value="red">Red (sale)</option><option value="orange">Orange (promo)</option><option value="blue">Blue (info)</option></select>
+        </div>
+        <div class="fg">
+          <label>Expiry Date (optional)</label>
+          <input type="date" id="bannerExpiry">
+          <span style="font-size:0.75rem;color:#888;margin-top:3px">Leave blank = never expires.</span>
+        </div>
+      </div>
+      <div class="btn-actions">
+        <button class="btn-save" onclick="activateBanner()">Activate Banner</button>
+        <button class="btn-clear" onclick="clearBanner()">Clear Banner (Hide for all)</button>
+      </div>
+      <div class="msg" id="bannerMsg"></div>
+      <hr class="div">
+      <h3 style="color:#2c5530;margin-bottom:1rem">Banner History</h3>
+      <div id="bannerListEl"></div>
+    </div>
+
+  </div><!-- /wrap -->
+</div><!-- /adminPanel -->
+
+<script>
+var SUPABASE_URL = "https://tndsmvsuowqdmhtatmie.supabase.co";
+var SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRuZHNtdnN1b3dxZG1odGF0bWllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMzM0MjAsImV4cCI6MjA5MDkwOTQyMH0.KLd3B-MQI1BBJSg98lfFugnqPDqeBBBGuM-cRbI0Eyw";
+// ADMIN_EMAILS: list of email addresses that have admin access.
+// In production, use Supabase RLS + a role column in the profiles table.
+var ADMIN_EMAILS = ['projectsheadway@gmail.com', 'admin@worthdagive.com', 'owner@worthdagive.co.za'];
+var SB;
+
+// ── Init ───────────────────────────────────────────────
+function initSB() {
+  SB = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+}
+
+// ── Login ──────────────────────────────────────────────
+async function doLogin() {
+  var email = (document.getElementById('adminEmail').value || '').trim().toLowerCase();
+  var pw    = document.getElementById('adminPw').value;
+  var errEl = document.getElementById('loginErr');
+  errEl.textContent = '';
+
+  if (!email || !pw) { errEl.textContent = 'Please enter your email and password.'; return; }
+
+  // Static admin login for this admin.html file.
+  // IMPORTANT: this is only suitable for a simple/static admin gate. Anyone who can view
+  // this file's source code can see these details. For production, use Supabase Auth + RLS.
+  var STATIC_ADMIN_EMAIL = 'projectsheadway@gmail.com';
+  var STATIC_ADMIN_PASSWORD = 'Worthd26';
+
+  if (email === STATIC_ADMIN_EMAIL && pw === STATIC_ADMIN_PASSWORD) {
+    initSB();
+    sessionStorage.setItem('adminIn', '1');
+    sessionStorage.setItem('adminEmail', STATIC_ADMIN_EMAIL);
+    showAdminPanel();
+    return;
+  }
+
+  // Supabase login fallback. This still works if you later create the admin user in Supabase.
+  initSB();
+  try {
+    var res = await SB.auth.signInWithPassword({ email: email, password: pw });
+    if (res.error) throw res.error;
+
+    // Check if this user is an admin
+    var profRes = await SB.from('profiles').select('role,email').eq('id', res.data.user.id).single();
+    var isAdmin = (profRes.data && profRes.data.role === 'admin') ||
+                  ADMIN_EMAILS.indexOf(res.data.user.email.toLowerCase()) > -1;
+
+    if (!isAdmin) {
+      await SB.auth.signOut();
+      errEl.textContent = 'Access denied. You do not have admin privileges.';
+      return;
+    }
+
+    sessionStorage.setItem('adminIn', '1');
+    sessionStorage.setItem('adminEmail', res.data.user.email);
+    showAdminPanel();
+  } catch(e) {
+    errEl.textContent = 'Login failed: incorrect email or password.';
+  }
+}
+
+function showAdminPanel() {
+  document.getElementById('loginGate').style.display = 'none';
+  document.getElementById('adminPanel').classList.remove('hidden');
+  loadAll();
+}
+document.getElementById('adminEmail').addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
+document.getElementById('adminPw').addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
+
+function doLogout() {
+  sessionStorage.removeItem('adminIn');
+  sessionStorage.removeItem('adminEmail');
+  if (SB) SB.auth.signOut();
+  document.getElementById('adminPanel').classList.add('hidden');
+  document.getElementById('loginGate').style.display = '';
+  document.getElementById('adminPw').value = '';
+  document.getElementById('adminEmail').value = '';
+}
+
+if (sessionStorage.getItem('adminIn') === '1') {
+  document.getElementById('loginGate').style.display = 'none';
+  document.getElementById('adminPanel').classList.remove('hidden');
+  window.addEventListener('load', function() { initSB(); loadAll(); });
+}
+
+// ── Tabs ──────────────────────────────────────────────
+var TABS = ['orders','products','categories','banners'];
+function showTab(name) {
+  TABS.forEach(function(t) {
+    document.getElementById('tab-' + t).classList.toggle('hidden', t !== name);
+  });
+  document.querySelectorAll('.tab').forEach(function(btn, i) {
+    btn.classList.toggle('active', TABS[i] === name);
+  });
+}
+
+function loadAll() {
+  loadOrders();
+  loadCategories();
+  loadProducts();
+  loadBanners();
+}
+
+// ════════════════════════════════════
+// ORDERS
+// ════════════════════════════════════
+var allOrders = [];
+
+async function loadOrders() {
+  try {
+    var res = await SB.from('orders')
+      .select('*, order_items(*), order_tracking(*)')
+      .order('created_at', { ascending: false });
+    allOrders = res.data || [];
+    updateOrderStats();
+    renderOrders();
+    showMsg('ordersMsg', '', '');
+  } catch(e) {
+    showMsg('ordersMsg', 'Error loading orders: ' + e.message, 'err');
+  }
+}
+
+function updateOrderStats() {
+  var paid = allOrders.filter(function(o){ return o.payment_status === 'paid'; });
+  var processing = allOrders.filter(function(o){ return o.status === 'processing'; });
+  var dispatched = allOrders.filter(function(o){ return ['dispatched','out_for_delivery'].indexOf(o.status) > -1; });
+  var delivered = allOrders.filter(function(o){ return ['delivered','collected'].indexOf(o.status) > -1; });
+  var revenue = paid.reduce(function(sum, o){ return sum + (Number(o.total) || 0); }, 0);
+
+  document.getElementById('statTotal').textContent = allOrders.length;
+  document.getElementById('statPaid').textContent = paid.length;
+  document.getElementById('statProcessing').textContent = processing.length;
+  document.getElementById('statDispatched').textContent = dispatched.length;
+  document.getElementById('statDelivered').textContent = delivered.length;
+  document.getElementById('statRevenue').textContent = 'R' + revenue.toFixed(0);
+}
+
+function renderOrders() {
+  var search = (document.getElementById('orderSearch').value || '').toLowerCase().trim();
+  var statusFilter = document.getElementById('orderStatusFilter').value;
+  var payFilter = document.getElementById('orderPayFilter').value;
+
+  var filtered = allOrders.filter(function(o) {
+    if (statusFilter !== 'all' && o.status !== statusFilter) return false;
+    if (payFilter !== 'all' && o.payment_status !== payFilter) return false;
+    if (search) {
+      var haystack = [o.ref, o.customer_name, o.customer_email, o.id].join(' ').toLowerCase();
+      if (haystack.indexOf(search) === -1) return false;
+    }
+    return true;
+  });
+
+  var el = document.getElementById('orderListEl');
+  if (!filtered.length) {
+    el.innerHTML = '<p style="color:#999;font-size:0.9rem;padding:20px 0">No orders match the current filters.</p>';
+    return;
+  }
+
+  el.innerHTML = filtered.map(function(o) {
+    return buildOrderCard(o);
+  }).join('');
+}
+
+function buildOrderCard(o) {
+  var statusCls = 'sb-' + (o.status || 'pending');
+  var payCls = 'pay-' + (o.payment_status || 'pending');
+  var statusLabel = formatStatus(o.status);
+  var payLabel = (o.payment_status || 'pending').charAt(0).toUpperCase() + (o.payment_status || 'pending').slice(1);
+  var date = o.created_at ? new Date(o.created_at).toLocaleDateString('en-ZA', {day:'2-digit',month:'short',year:'numeric'}) : '';
+  var time = o.created_at ? new Date(o.created_at).toLocaleTimeString('en-ZA', {hour:'2-digit',minute:'2-digit'}) : '';
+
+  // Items
+  var items = o.order_items || [];
+  var itemRows = items.map(function(it) {
+    return '<tr><td class="item-name">' + (it.name || it.product_name || 'Item') + '</td>' +
+      '<td class="item-qty">' + (it.quantity || 1) + '</td>' +
+      '<td>R' + Number(it.price || 0).toFixed(2) + '</td>' +
+      '<td class="item-total">R' + Number((it.price || 0) * (it.quantity || 1)).toFixed(2) + '</td></tr>';
+  }).join('');
+
+  // Timeline
+  var tracking = (o.order_tracking || []).sort(function(a,b){ return new Date(a.created_at) - new Date(b.created_at); });
+  var timelineHtml = tracking.length ? '<div class="mini-timeline">' + tracking.map(function(t,i){
+    var isLast = i === tracking.length - 1;
+    var ts = t.created_at ? new Date(t.created_at).toLocaleString('en-ZA',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+    return '<div class="mt-step' + (isLast ? ' last' : '') + '">' +
+      '<div class="mt-dot"></div>' +
+      '<div class="mt-status">' + formatStatus(t.status) + '</div>' +
+      (t.note ? '<div class="mt-note">' + escHtml(t.note) + '</div>' : '') +
+      '<div class="mt-time">' + ts + '</div>' +
+      '</div>';
+  }).join('') + '</div>' : '<p style="color:#bbb;font-size:0.82rem">No tracking history yet.</p>';
+
+  // Delivery address
+  var addr = [o.address, o.city, o.province].filter(Boolean).join(', ');
+  var deliveryType = o.delivery_type === 'pickup' ? 'Collection / Pick-up' : 'Home Delivery';
+
+  return '<div class="order-card" id="oc-' + o.id + '">' +
+    '<div class="order-card-head" onclick="toggleOrder(\'' + o.id + '\')">' +
+      '<div>' +
+        '<div class="order-ref">' + (o.ref || '#' + o.id) + '</div>' +
+        '<div style="font-size:0.75rem;color:#aaa">' + date + ' ' + time + '</div>' +
+      '</div>' +
+      '<div class="order-customer">' + escHtml(o.customer_name || '—') + '<br><span style="color:#aaa;font-size:0.75rem">' + escHtml(o.customer_email || '') + '</span></div>' +
+      '<div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">' +
+        '<span class="status-badge ' + statusCls + '">' + statusLabel + '</span>' +
+        '<span class="pay-badge ' + payCls + '">💳 ' + payLabel + '</span>' +
+      '</div>' +
+      '<div class="order-amount">R' + Number(o.total || 0).toFixed(2) + '</div>' +
+      '<svg class="chevron" id="chev-' + o.id + '" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
+    '</div>' +
+    '<div class="order-card-body" id="ocb-' + o.id + '">' +
+      '<div class="order-grid">' +
+        '<div>' +
+          '<div class="order-section-title">Customer &amp; Delivery</div>' +
+          '<div class="order-detail-row"><span class="lbl">Name</span><span class="val">' + escHtml(o.customer_name || '—') + '</span></div>' +
+          '<div class="order-detail-row"><span class="lbl">Email</span><span class="val">' + escHtml(o.customer_email || '—') + '</span></div>' +
+          '<div class="order-detail-row"><span class="lbl">Phone</span><span class="val">' + escHtml(o.customer_phone || '—') + '</span></div>' +
+          '<div class="order-detail-row"><span class="lbl">Type</span><span class="val">' + deliveryType + '</span></div>' +
+          (addr ? '<div class="order-detail-row"><span class="lbl">Address</span><span class="val">' + escHtml(addr) + '</span></div>' : '') +
+          '<div class="order-detail-row"><span class="lbl">Payment</span><span class="val">' + (o.payment_gateway || 'PayFast') + ' – ' + payLabel + '</span></div>' +
+          (o.paid_at ? '<div class="order-detail-row"><span class="lbl">Paid At</span><span class="val">' + new Date(o.paid_at).toLocaleString('en-ZA') + '</span></div>' : '') +
+        '</div>' +
+        '<div>' +
+          '<div class="order-section-title">Tracking History</div>' +
+          timelineHtml +
+        '</div>' +
+      '</div>' +
+      (items.length ? '<div style="margin-top:14px"><div class="order-section-title">Order Items</div>' +
+        '<table class="items-table"><thead><tr><th>Product</th><th style="text-align:center">Qty</th><th>Unit Price</th><th style="text-align:right">Subtotal</th></tr></thead><tbody>' +
+        itemRows + '</tbody></table>' +
+        '<div style="text-align:right;font-weight:800;font-size:1rem;color:#2c5530;margin-top:8px;padding-top:8px;border-top:2px solid #eee">Total: R' + Number(o.total || 0).toFixed(2) + '</div>' +
+        '</div>' : '') +
+      buildStatusUpdatePanel(o) +
+    '</div>' +
+  '</div>';
+}
+
+function buildStatusUpdatePanel(o) {
+  // Only allow status updates for paid orders
+  if (o.payment_status !== 'paid') {
+    return '<div style="margin-top:12px;padding:12px;background:#fff8e1;border-radius:8px;font-size:0.84rem;color:#e65100">' +
+      '⚠️ This order has not been paid yet. Status updates are only available after payment is confirmed.' +
+      '</div>';
+  }
+
+  var statuses = [
+    ['payment_received','✅ Payment Received'],
+    ['processing','⚙️ Processing'],
+    ['dispatched','📬 Dispatched'],
+    ['out_for_delivery','🚚 Out for Delivery'],
+    ['delivered','✔ Delivered'],
+    ['collected','🏠 Collected'],
+    ['cancelled','✖ Cancelled'],
+    ['refunded','↩ Refunded']
+  ];
+
+  var opts = statuses.map(function(s) {
+    return '<option value="' + s[0] + '"' + (o.status === s[0] ? ' selected' : '') + '>' + s[1] + '</option>';
+  }).join('');
+
+  return '<div class="status-update-panel">' +
+    '<h4>📝 Update Delivery Status</h4>' +
+    '<div class="status-update-row">' +
+      '<select id="su-status-' + o.id + '">' + opts + '</select>' +
+      '<input type="text" id="su-note-' + o.id + '" placeholder="Optional note to customer (e.g. tracking number, ETA…)">' +
+      '<button onclick="updateOrderStatus(\'' + o.id + '\',\'' + (o.ref || '') + '\')" id="su-btn-' + o.id + '">Update Status</button>' +
+    '</div>' +
+    '<p style="font-size:0.75rem;color:#888;margin-top:6px">The customer will see this update immediately when they track their order.</p>' +
+  '</div>';
+}
+
+function toggleOrder(id) {
+  var body = document.getElementById('ocb-' + id);
+  var chev = document.getElementById('chev-' + id);
+  if (!body) return;
+  var isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  if (chev) chev.classList.toggle('open', !isOpen);
+}
+
+async function updateOrderStatus(orderId, ref) {
+  var statusEl = document.getElementById('su-status-' + orderId);
+  var noteEl   = document.getElementById('su-note-' + orderId);
+  var btn      = document.getElementById('su-btn-' + orderId);
+  if (!statusEl) return;
+
+  var newStatus = statusEl.value;
+  var note      = noteEl ? noteEl.value.trim() : '';
+  if (!newStatus) return;
+
+  btn.disabled = true;
+  btn.textContent = 'Updating…';
+
+  try {
+    // Map delivery status -> order status
+    var payStatus = undefined;
+    if (newStatus === 'cancelled') payStatus = 'cancelled';
+    if (newStatus === 'refunded')  payStatus = 'cancelled';
+
+    var updatePayload = { status: newStatus };
+    if (payStatus) updatePayload.payment_status = payStatus;
+
+    var res = await SB.from('orders').update(updatePayload).eq('id', orderId);
+    if (res.error) throw res.error;
+
+    // Insert tracking entry
+    var trackNote = note || getDefaultNote(newStatus);
+    var trackRes = await SB.from('order_tracking').insert({
+      order_id: orderId,
+      status: newStatus,
+      note: trackNote
+    });
+    if (trackRes.error) throw trackRes.error;
+
+    showMsg('ordersMsg', 'Order ' + (ref || orderId) + ' updated to "' + formatStatus(newStatus) + '" successfully.', 'ok');
+    await loadOrders();
+
+    // Re-open the card
+    setTimeout(function() {
+      var body = document.getElementById('ocb-' + orderId);
+      var chev = document.getElementById('chev-' + orderId);
+      if (body) { body.classList.add('open'); }
+      if (chev) { chev.classList.add('open'); }
+    }, 200);
+
+  } catch(e) {
+    showMsg('ordersMsg', 'Error updating status: ' + e.message, 'err');
+    btn.disabled = false;
+    btn.textContent = 'Update Status';
+  }
+}
+
+function getDefaultNote(status) {
+  var notes = {
+    payment_received: 'Payment confirmed. Order is being prepared.',
+    processing: 'Your order is being processed and packed.',
+    dispatched: 'Your order has been dispatched.',
+    out_for_delivery: 'Your order is out for delivery today.',
+    delivered: 'Your order has been delivered. Enjoy!',
+    collected: 'Order collected successfully.',
+    cancelled: 'Order has been cancelled.',
+    refunded: 'A refund has been issued.'
+  };
+  return notes[status] || '';
+}
+
+function formatStatus(s) {
+  if (!s) return 'Pending';
+  var map = {
+    pending: 'Pending',
+    confirmed: 'Confirmed',
+    payment_received: 'Payment Received',
+    processing: 'Processing',
+    dispatched: 'Dispatched',
+    out_for_delivery: 'Out for Delivery',
+    delivered: 'Delivered',
+    collected: 'Collected',
+    cancelled: 'Cancelled',
+    refunded: 'Refunded'
+  };
+  return map[s] || s.replace(/_/g,' ').replace(/\b\w/g,function(c){ return c.toUpperCase(); });
+}
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ════════════════════════════════════
+// IMAGES
+// ════════════════════════════════════
+var adminImages = [];
+var primaryIdx  = 0;
+
+function addImageUrl() {
+  var url = document.getElementById('pImageUrl').value.trim();
+  if (!url) { showMsg('productMsg', 'Paste a Cloudinary URL first.', 'err'); return; }
+  if (!url.startsWith('http')) { showMsg('productMsg', 'URL must start with https://', 'err'); return; }
+  if (adminImages.length >= 8) { showMsg('productMsg', 'Maximum 8 images per product.', 'err'); return; }
+  adminImages.push(url);
+  document.getElementById('pImageUrl').value = '';
+  renderImages();
+}
+
+function renderImages() {
+  var el = document.getElementById('imgList');
+  el.innerHTML = adminImages.map(function(src, i) {
+    return '<div class="img-thumb' + (i === primaryIdx ? ' primary' : '') + '" onclick="setPrimary(' + i + ')">' +
+      '<img src="' + escHtml(src) + '" loading="lazy" alt="Image ' + (i+1) + '" onerror="this.style.opacity=0.3">' +
+      (i === primaryIdx ? '<div class="pb">PRIMARY</div>' : '') +
+      '<button class="del" onclick="event.stopPropagation();removeImg(' + i + ')" title="Remove">&times;</button>' +
+      '</div>';
+  }).join('') + (adminImages.length > 0 ? '<div style="color:#888;font-size:0.75rem;align-self:center;padding-left:4px">' + adminImages.length + '/8 images</div>' : '');
+}
+
+function setPrimary(i) { primaryIdx = i; renderImages(); }
+function removeImg(i)  { adminImages.splice(i, 1); if (primaryIdx >= adminImages.length) primaryIdx = 0; renderImages(); }
+
+// ════════════════════════════════════
+// CATEGORIES
+// ════════════════════════════════════
+var categories = [];
+
+async function loadCategories() {
+  var res = await SB.from('categories').select('*').order('name');
+  categories = res.data || [];
+  populateCategoryDropdowns();
+  renderCategoryList();
+}
+
+function populateCategoryDropdowns() {
+  var sel = document.getElementById('pCategory');
+  var current = sel.value;
+  sel.innerHTML = '<option value="">Select category</option>';
+  categories.forEach(function(cat) {
+    var opt = document.createElement('option');
+    opt.value = cat.name; opt.textContent = cat.name;
+    if (cat.name === current) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  populateSubCatSelect();
+}
+
+function populateSubCatSelect() {
+  var catName = document.getElementById('pCategory').value;
+  var sub = document.getElementById('pSubCategory');
+  var current = sub.value;
+  sub.innerHTML = '<option value="">None</option>';
+  var cat = categories.find(function(c) { return c.name === catName; });
+  if (cat && cat.subcategories) {
+    cat.subcategories.forEach(function(s) {
+      var opt = document.createElement('option');
+      opt.value = s; opt.textContent = s;
+      if (s === current) opt.selected = true;
+      sub.appendChild(opt);
+    });
+  }
+}
+
+function renderCategoryList() {
+  var el = document.getElementById('catListEl');
+  if (!categories.length) { el.innerHTML = '<p style="color:#999;font-size:0.88rem">No categories yet. Add one below.</p>'; return; }
+  el.innerHTML = categories.map(function(cat) {
+    var sid = String(cat.id);
+    var escaped = sid.replace(/'/g, "\\'");
+    var subPills = (cat.subcategories || []).map(function(sub) {
+      var subEsc = sub.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      return '<span class="sub-pill">' + escHtml(sub) + '<button onclick="removeSub(\'' + escaped + '\',\'' + subEsc + '\')">&times;</button></span>';
+    }).join('');
+    return '<div class="cat-row">' +
+      '<div class="cat-main"><span class="cat-name">' + escHtml(cat.name) + '</span>' +
+      '<button class="btn-del" onclick="deleteCat(\'' + escaped + '\')">Remove</button></div>' +
+      (subPills ? '<div class="cat-subs">' + subPills + '</div>' : '') +
+      '<div class="add-sub">' +
+        '<input type="text" id="subinp_' + sid + '" placeholder="Add sub-category" onkeydown="if(event.key===\'Enter\')addSub(\'' + escaped + '\')">' +
+        '<button onclick="addSub(\'' + escaped + '\')">+ Sub</button>' +
+      '</div>' +
+      '</div>';
+  }).join('');
+}
+
+async function addCategory() {
+  var name = document.getElementById('newCatInput').value.trim();
+  if (!name) return;
+  var res = await SB.from('categories').insert([{ name: name, subcategories: [] }]);
+  if (res.error) { showMsg('catMsg', 'Error: ' + res.error.message, 'err'); return; }
+  document.getElementById('newCatInput').value = '';
+  showMsg('catMsg', '"' + name + '" added.', 'ok');
+  loadCategories();
+}
+
+async function deleteCat(id) {
+  if (!confirm('Remove this category?')) return;
+  await SB.from('categories').delete().eq('id', id);
+  loadCategories();
+}
+
+async function addSub(catId) {
+  var input = document.getElementById('subinp_' + catId);
+  if (!input) return;
+  var val = input.value.trim();
+  if (!val) return;
+  var cat = categories.find(function(c) { return String(c.id) === String(catId); });
+  if (!cat) return;
+  var updated = (cat.subcategories || []).concat([val]);
+  await SB.from('categories').update({ subcategories: updated }).eq('id', catId);
+  loadCategories();
+}
+
+async function removeSub(catId, sub) {
+  var cat = categories.find(function(c) { return String(c.id) === String(catId); });
+  if (!cat) return;
+  var updated = (cat.subcategories || []).filter(function(s) { return s !== sub; });
+  await SB.from('categories').update({ subcategories: updated }).eq('id', catId);
+  loadCategories();
+}
+
+// ════════════════════════════════════
+// PRODUCTS
+// ════════════════════════════════════
+async function loadProducts() {
+  var res = await SB.from('products').select('*').eq('active', true).order('created_at', { ascending: false });
+  var products = res.data || [];
+  document.getElementById('productCount').textContent = products.length;
+  var el = document.getElementById('productListEl');
+  if (!products.length) { el.innerHTML = '<p style="color:#999;font-size:0.88rem">No products yet.</p>'; return; }
+  el.innerHTML = products.map(function(p) {
+    var imgCount = (p.images && p.images.length) ? p.images.length : (p.image_url ? 1 : 0);
+    var thumb = (p.images && p.images[0]) || p.image_url || '';
+    return '<div class="prod-item">' +
+      (thumb ? '<img src="' + escHtml(thumb) + '" class="prod-thumb" loading="lazy" onerror="this.style.display=\'none\'">' :
+               '<div class="prod-thumb" style="display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:#aaa">No img</div>') +
+      '<div class="prod-info"><strong>' + escHtml(p.name) + '</strong>' +
+        '<span>R' + Number(p.price).toFixed(2) + ' &bull; ' + escHtml(p.category || '') + (p.subcategory ? ' › ' + escHtml(p.subcategory) : '') +
+        (imgCount > 1 ? ' &bull; <span style="color:#4CAF50;font-weight:700">' + imgCount + ' photos</span>' : '') + '</span>' +
+      '</div>' +
+      '<button class="btn-edit" onclick="editProduct(\'' + p.id + '\')">Edit</button>' +
+      '<button class="btn-del" onclick="deleteProduct(\'' + p.id + '\')">Delete</button>' +
+      '</div>';
+  }).join('');
+}
+
+async function saveProduct() {
+  var name   = document.getElementById('pName').value.trim();
+  var price  = parseFloat(document.getElementById('pPrice').value);
+  var cat    = document.getElementById('pCategory').value;
+  var sub    = document.getElementById('pSubCategory').value;
+  var thc    = document.getElementById('pThc').value.trim() || 'N/A';
+  var cbd    = document.getElementById('pCbd').value.trim() || 'N/A';
+  var desc   = document.getElementById('pDescription').value.trim();
+  var editId = document.getElementById('pEditId').value;
+  var isCan  = document.getElementById('ptCannabis').checked;
+
+  if (!name || !cat || isNaN(price) || price <= 0) {
+    showMsg('productMsg', 'Name, category and a valid price are required.', 'err'); return;
+  }
+  if (!adminImages.length) {
+    showMsg('productMsg', 'Please add at least one Cloudinary image URL.', 'err'); return;
+  }
+
+  // Ensure primary image is first
+  var images = adminImages.slice();
+  if (primaryIdx > 0) {
+    var primary = images.splice(primaryIdx, 1)[0];
+    images.unshift(primary);
+  }
+  var image_url = images[0];
+
+  var payload = {
+    name: name, price: price, category: cat, subcategory: sub,
+    thc: thc, cbd: cbd, description: desc,
+    image_url: image_url, images: images,
+    is_cannabis: isCan, active: true
+  };
+
+  var res;
+  if (editId) {
+    res = await SB.from('products').update(payload).eq('id', editId).select();
+  } else {
+    res = await SB.from('products').insert([payload]).select();
+  }
+
+  if (res.error) { showMsg('productMsg', 'Error: ' + res.error.message, 'err'); return; }
+  clearProductForm();
+  loadProducts();
+  showMsg('productMsg', editId ? 'Product updated. Visible to all visitors now.' : 'Product added! Visible on ALL devices immediately.', 'ok');
+}
+
+function clearProductForm() {
+  ['pName','pPrice','pThc','pCbd','pDescription','pImageUrl','pEditId'].forEach(function(id) {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('pCategory').value = '';
+  document.getElementById('pSubCategory').innerHTML = '<option value="">None</option>';
+  document.getElementById('ptCannabis').checked = true;
+  adminImages = []; primaryIdx = 0; renderImages();
+}
+
+async function editProduct(id) {
+  var res = await SB.from('products').select('*').eq('id', id).single();
+  var p = res.data;
+  if (!p) return;
+  document.getElementById('pName').value = p.name;
+  document.getElementById('pPrice').value = p.price;
+  document.getElementById('pDescription').value = p.description || '';
+  document.getElementById('pThc').value = p.thc !== 'N/A' ? (p.thc || '') : '';
+  document.getElementById('pCbd').value = p.cbd !== 'N/A' ? (p.cbd || '') : '';
+  document.getElementById('pEditId').value = String(p.id);
+  document.getElementById('pCategory').value = p.category || '';
+  populateSubCatSelect();
+  setTimeout(function() { document.getElementById('pSubCategory').value = p.subcategory || ''; }, 200);
+  document.getElementById('ptCannabis').checked    = p.is_cannabis !== false;
+  document.getElementById('ptNonCannabis').checked = p.is_cannabis === false;
+  adminImages = (p.images && p.images.length) ? p.images.slice() : (p.image_url ? [p.image_url] : []);
+  primaryIdx = 0;
+  renderImages();
+  showTab('products');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function deleteProduct(id) {
+  if (!confirm('Delete this product? It will immediately disappear from the site for all visitors.')) return;
+  await SB.from('products').update({ active: false }).eq('id', id);
+  loadProducts();
+  showMsg('productMsg', 'Product removed from site.', 'ok');
+}
+
+// ════════════════════════════════════
+// BANNERS
+// ════════════════════════════════════
+async function loadBanners() {
+  var res = await SB.from('banners').select('*').order('created_at', { ascending: false }).limit(10);
+  var banners = res.data || [];
+  var el = document.getElementById('bannerListEl');
+  if (!banners.length) { el.innerHTML = '<p style="color:#999;font-size:0.88rem">No banner history.</p>'; return; }
+  el.innerHTML = banners.map(function(b) {
+    var typeClass = b.type === 'sale' ? 't-sale' : (b.type === 'promo' ? 't-promo' : 't-ann');
+    return '<div class="banner-item' + (b.active ? ' active-banner' : '') + '">' +
+      '<span class="type-tag ' + typeClass + '">' + (b.type || 'ANN').toUpperCase() + '</span>' +
+      '<span class="banner-text">' + escHtml(b.text) + (b.expires_at ? ' <em style="color:#999;font-size:0.75rem">(expires ' + b.expires_at + ')</em>' : '') + '</span>' +
+      (b.active ? '<span style="color:#4CAF50;font-size:0.78rem;font-weight:700">ACTIVE</span>' :
+          '<button class="btn-act" onclick="reactivateBanner(\'' + b.id + '\')">Reactivate</button>') +
+      '<button class="btn-del" onclick="deleteBanner(\'' + b.id + '\')">Delete</button>' +
+      '</div>';
+  }).join('');
+}
+
+async function activateBanner() {
+  var text   = document.getElementById('bannerText').value.trim();
+  var type   = document.getElementById('bannerType').value;
+  var color  = document.getElementById('bannerColor').value;
+  var expiry = document.getElementById('bannerExpiry').value;
+  if (!text) { showMsg('bannerMsg', 'Please enter banner text.', 'err'); return; }
+  try {
+    await SB.from('banners').update({ active: false }).neq('id', 0);
+    var row = { text: text, type: type, color: color, active: true };
+    if (expiry && expiry.trim() !== '') row.expires_at = expiry;
+    var res = await SB.from('banners').insert([row]).select();
+    if (res.error) {
+      if (res.error.message && res.error.message.indexOf('expires_at') !== -1) {
+        delete row.expires_at;
+        res = await SB.from('banners').insert([row]).select();
+      }
+      if (res.error) { showMsg('bannerMsg', 'Error: ' + res.error.message, 'err'); return; }
+    }
+    document.getElementById('bannerText').value = '';
+    document.getElementById('bannerExpiry').value = '';
+    showMsg('bannerMsg', 'Banner activated! Visible to ALL visitors immediately.', 'ok');
+    loadBanners();
+  } catch(e) {
+    showMsg('bannerMsg', 'Error: ' + e.message, 'err');
+  }
+}
+
+async function clearBanner() {
+  if (!confirm('This will hide the banner for ALL visitors. Continue?')) return;
+  await SB.from('banners').update({ active: false }).neq('id', 0);
+  showMsg('bannerMsg', 'Banner cleared. No banner will show for any visitor.', 'ok');
+  loadBanners();
+}
+
+async function reactivateBanner(id) {
+  await SB.from('banners').update({ active: false }).neq('id', 0);
+  await SB.from('banners').update({ active: true }).eq('id', id);
+  showMsg('bannerMsg', 'Banner reactivated.', 'ok');
+  loadBanners();
+}
+
+async function deleteBanner(id) {
+  if (!confirm('Delete this banner?')) return;
+  await SB.from('banners').delete().eq('id', id);
+  loadBanners();
+}
+
+// ── Helpers ────────────────────────────────────────────
+function showMsg(id, text, type) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'msg' + (type ? ' ' + type : '');
+  if (type) setTimeout(function() { el.className = 'msg'; }, 6000);
+}
+</script>
+</body>
+</html>
