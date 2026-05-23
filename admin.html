@@ -418,6 +418,11 @@ async function doLogin() {
 
   if (email === STATIC_ADMIN_EMAIL && pw === STATIC_ADMIN_PASSWORD) {
     initSB();
+    // Also sign in to Supabase so RLS policies recognise this as an authenticated session
+    try {
+      var sbRes = await SB.auth.signInWithPassword({ email: STATIC_ADMIN_EMAIL, password: STATIC_ADMIN_PASSWORD });
+      if (sbRes.error) console.warn('Supabase auth sign-in skipped:', sbRes.error.message);
+    } catch(e) { console.warn('Supabase auth unavailable:', e.message); }
     sessionStorage.setItem('adminIn', '1');
     sessionStorage.setItem('adminEmail', STATIC_ADMIN_EMAIL);
     showAdminPanel();
@@ -470,7 +475,23 @@ function doLogout() {
 if (sessionStorage.getItem('adminIn') === '1') {
   document.getElementById('loginGate').style.display = 'none';
   document.getElementById('adminPanel').classList.remove('hidden');
-  window.addEventListener('load', function() { initSB(); loadAll(); });
+  window.addEventListener('load', function() {
+    initSB();
+    // Restore Supabase session so RLS works after page refresh
+    SB.auth.getSession().then(function(r) {
+      if (!r.data || !r.data.session) {
+        // Re-authenticate silently with stored credentials if no session
+        var storedEmail = sessionStorage.getItem('adminEmail') || '';
+        var STATIC_ADMIN_EMAIL = 'projectsheadway@gmail.com';
+        var STATIC_ADMIN_PASSWORD = 'Worthd26';
+        if (storedEmail === STATIC_ADMIN_EMAIL) {
+          SB.auth.signInWithPassword({ email: STATIC_ADMIN_EMAIL, password: STATIC_ADMIN_PASSWORD })
+            .catch(function() {});
+        }
+      }
+    }).catch(function() {});
+    loadAll();
+  });
 }
 
 // ── Tabs ──────────────────────────────────────────────
@@ -792,10 +813,14 @@ function removeImg(i)  { adminImages.splice(i, 1); if (primaryIdx >= adminImages
 var categories = [];
 
 async function loadCategories() {
-  var res = await SB.from('categories').select('*').order('name');
-  categories = res.data || [];
-  populateCategoryDropdowns();
-  renderCategoryList();
+  if (!SB) return;
+  try {
+    var res = await SB.from('categories').select('*').order('name');
+    if (res.error) { showMsg('catMsg', 'Error: ' + res.error.message, 'err'); return; }
+    categories = res.data || [];
+    populateCategoryDropdowns();
+    renderCategoryList();
+  } catch(e) { showMsg('catMsg', 'Error: ' + e.message, 'err'); }
 }
 
 function populateCategoryDropdowns() {
