@@ -1097,3 +1097,221 @@ footer { background:#2c5530; color:#fff; padding:3rem 0 2rem; text-align:center;
     border:1px solid #c8e6c9;
 }
 .cannabis-badge { background:#e8f5e9 !important; color:#2c5530 !important; }
+
+/* ══════════════════════════════════════════════════════
+   WORTHDAGIVE — ADDITIONS (v2)
+   Multi-image badge, cookie consent, T&C modal,
+   auth password reset, orders page
+══════════════════════════════════════════════════════ */
+
+/* ── Multi-image badge on product cards ── */
+.product-image { position: relative; }
+.card-img-count {
+  position: absolute;
+  bottom: 8px; right: 8px;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 20px;
+  pointer-events: none;
+  letter-spacing: 0.3px;
+}
+
+/* ── Cookie Consent Banner ── */
+.cookie-banner {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: #1a2e1c;
+  color: #e8f5e9;
+  z-index: 99998;
+  padding: 1rem 0;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.25);
+  transform: translateY(100%);
+  transition: transform 0.4s ease;
+}
+.cookie-banner.visible { transform: translateY(0); }
+.cookie-banner-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+.cookie-banner-text {
+  flex: 1;
+  min-width: 220px;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: #c8e6c9;
+}
+.cookie-banner-text strong { color: #fff; }
+.cookie-banner-text a { color: #81c784; text-decoration: underline; }
+.cookie-banner-btns { display: flex; gap: 10px; flex-shrink: 0; flex-wrap: wrap; }
+.cookie-accept {
+  padding: 9px 22px;
+  background: #4CAF50;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.cookie-accept:hover { background: #43a047; }
+.cookie-decline {
+  padding: 9px 16px;
+  background: transparent;
+  color: #a5d6a7;
+  border: 1.5px solid #388e3c;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.cookie-decline:hover { border-color: #81c784; color: #c8e6c9; }
+
+/* ── T&C / Legal Modal ── */
+.legal-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.legal-modal-overlay.hidden { display: none; }
+.legal-modal-box {
+  background: #fff;
+  border-radius: 14px;
+  max-width: 780px;
+  width: 100%;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.legal-modal-head {
+  padding: 1.4rem 1.8rem;
+  border-bottom: 2px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+.legal-modal-head h2 { color: #2c5530; font-size: 1.2rem; }
+.legal-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #888;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+.legal-modal-close:hover { background: #f5f5f5; color: #333; }
+.legal-modal-tabs {
+  display: flex;
+  border-bottom: 2px solid #f0f0f0;
+  flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.legal-modal-tabs::-webkit-scrollbar { display: none; }
+.legal-tab {
+  padding: 10px 18px;
+  border: none;
+  background: none;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #888;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.legal-tab.active { color: #2c5530; border-bottom-color: #4CAF50; background: #f9fff9; }
+.legal-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem 1.8rem;
+  font-size: 0.88rem;
+  line-height: 1.8;
+  color: #444;
+}
+.legal-modal-body h3 { color: #2c5530; font-size: 1rem; margin: 1.4rem 0 0.5rem; }
+.legal-modal-body h3:first-child { margin-top: 0; }
+.legal-modal-body p { margin-bottom: 0.8rem; }
+.legal-modal-body ul { padding-left: 1.4rem; margin-bottom: 0.8rem; }
+.legal-modal-body ul li { margin-bottom: 0.3rem; }
+.legal-modal-body .legal-warning {
+  background: #fff3e0;
+  border-left: 4px solid #ff9800;
+  padding: 0.8rem 1rem;
+  border-radius: 0 6px 6px 0;
+  margin: 1rem 0;
+  font-size: 0.85rem;
+  color: #e65100;
+}
+.legal-modal-footer {
+  padding: 1rem 1.8rem;
+  border-top: 2px solid #f0f0f0;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* ── Auth improvements ── */
+.auth-panel-subtitle { color: #888; font-size: 0.85rem; margin-bottom: 1.2rem; }
+.auth-verify-icon { text-align: center; margin-bottom: 1rem; }
+.auth-verify-icon svg { margin: 0 auto; display: block; color: #4CAF50; }
+.auth-msg.success { background: #d4edda; color: #155724; }
+.auth-msg.error   { background: #f8d7da; color: #721c24; }
+
+/* ── Orders page styles ── */
+.orders-page-section { padding: 2.5rem 0 5rem; background: #f8f9fa; min-height: 60vh; }
+.orders-empty {
+  text-align: center; padding: 4rem 1rem;
+  background: #fff; border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  max-width: 480px; margin: 0 auto;
+}
+.orders-empty svg { margin: 0 auto 1rem; display: block; color: #aaa; }
+.orders-empty h3 { color: #555; font-size: 1.1rem; margin-bottom: 0.5rem; }
+.orders-empty p  { color: #888; font-size: 0.9rem; }
+
+.order-history-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  margin-bottom: 1.2rem;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+.order-history-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.11); }
+.order-history-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 1rem 1.4rem;
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+  flex-wrap: wrap;
+  cursor: pointer;
+}
+.order-history-ref { font-weight: 700; color: #2c5530; font-size: 0.95rem; flex: 1; }
+.order-history-date { font-size: 0.78rem; color: #aaa; }
+.order-history-total { font-weight: 700; color: #333; font-size: 0.95rem; }
+.order-history-body { padding: 1.2rem 1.4rem; display: none; }
+.order-history-body.open { display: block; }
