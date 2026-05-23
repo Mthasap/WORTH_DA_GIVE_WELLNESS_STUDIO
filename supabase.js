@@ -30,6 +30,44 @@ async function getDB() {
 
 // ─── AUTH ────────────────────────────────────────────
 
+async function authResetPassword(email) {
+    var db = await getDB();
+    var siteUrl = window.location.origin;
+    var res = await db.auth.resetPasswordForEmail(email, {
+        redirectTo: siteUrl + '/auth-callback.html'
+    });
+    if (res.error) throw res.error;
+    return res.data;
+}
+
+async function authUpdatePassword(newPassword) {
+    var db = await getDB();
+    var res = await db.auth.updateUser({ password: newPassword });
+    if (res.error) throw res.error;
+    return res.data;
+}
+
+async function authSendPhoneOtp(phone) {
+    var db = await getDB();
+    var res = await db.auth.signInWithOtp({ phone: phone });
+    if (res.error) throw res.error;
+    return res.data;
+}
+
+async function authVerifyPhoneOtp(phone, token) {
+    var db = await getDB();
+    var res = await db.auth.verifyOtp({ phone: phone, token: token, type: 'sms' });
+    if (res.error) throw res.error;
+    return res.data;
+}
+
+async function authUpdatePhone(phone) {
+    var db = await getDB();
+    var res = await db.auth.updateUser({ phone: phone });
+    if (res.error) throw res.error;
+    return res.data;
+}
+
 async function authRegister(email, password, fullName, dob) {
     var db = await getDB();
     var res = await db.auth.signUp({
@@ -222,6 +260,11 @@ Object.assign(window.WDG, {
     authGetSession: authGetSession,
     authGetProfile: authGetProfile,
     authOnChange: authOnChange,
+    authResetPassword: authResetPassword,
+    authUpdatePassword: authUpdatePassword,
+    authSendPhoneOtp: authSendPhoneOtp,
+    authVerifyPhoneOtp: authVerifyPhoneOtp,
+    authUpdatePhone: authUpdatePhone,
 
     productsGetAll: dbGetProducts,
     productsSave: dbSaveProduct,
