@@ -21,7 +21,10 @@ function getCart()   { try { return JSON.parse(localStorage.getItem('cart')) || 
 function saveCart(c) { localStorage.setItem('cart', JSON.stringify(c)); }
 
 function updateCartCount() {
-    var n = getCart().reduce(function(s, i) { return s + i.quantity; }, 0);
+    var cart = getCart();
+    var cleaned = cart.filter(function(i) { return i && i.id !== undefined && i.id !== null && i.quantity > 0; });
+    if (cleaned.length !== cart.length) saveCart(cleaned);
+    var n = cleaned.reduce(function(s, i) { return s + i.quantity; }, 0);
     var el = document.getElementById('cartCount');
     if (el) el.textContent = n;
 }
