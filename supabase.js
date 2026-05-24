@@ -284,3 +284,149 @@ Object.assign(window.WDG, {
     ordersGetMine: dbGetCurrentUserOrders,
     ordersGetTracking: dbGetOrderTracking
 });
+
+// ─── WISHLIST ─────────────────────────────────────────
+
+async function dbGetWishlist() {
+    var db = await getDB();
+    var sess = await authGetSession();
+    if (!sess) return [];
+    var res = await db.from('wishlist')
+        .select('*, products(*)')
+        .eq('user_id', sess.user.id)
+        .order('created_at', { ascending: false });
+    if (res.error) return [];
+    return res.data || [];
+}
+
+async function dbAddToWishlist(productId) {
+    var db = await getDB();
+    var sess = await authGetSession();
+    if (!sess) throw new Error('Not logged in');
+    // upsert so it never duplicates
+    var res = await db.from('wishlist')
+        .upsert({ user_id: sess.user.id, product_id: productId }, { onConflict: 'user_id,product_id' })
+        .select().single();
+    if (res.error) throw res.error;
+    return res.data;
+}
+
+async function dbRemoveFromWishlist(productId) {
+    var db = await getDB();
+    var sess = await authGetSession();
+    if (!sess) return;
+    await db.from('wishlist').delete()
+        .eq('user_id', sess.user.id)
+        .eq('product_id', productId);
+}
+
+async function dbIsWishlisted(productId) {
+    var db = await getDB();
+    var sess = await authGetSession();
+    if (!sess) return false;
+    var res = await db.from('wishlist')
+        .select('id').eq('user_id', sess.user.id).eq('product_id', productId).maybeSingle();
+    return !!(res.data);
+}
+
+// ─── REVIEWS (Supabase-persisted) ─────────────────────
+
+async function dbGetReviews() {
+    var db = await getDB();
+    var res = await db.from('reviews')
+        .select('*')
+        .eq('approved', true)
+        .order('created_at', { ascending: false });
+    if (res.error) return [];
+    return res.data || [];
+}
+
+async function dbSubmitReview(reviewData) {
+    var db = await getDB();
+    var res = await db.from('reviews').insert(reviewData).select().single();
+    if (res.error) throw res.error;
+    return res.data;
+}
+
+async function dbRespondToReview(reviewId, responseText) {
+    var db = await getDB();
+    var res = await db.from('reviews')
+        .update({ response: responseText, responded_at: new Date().toISOString() })
+        .eq('id', reviewId).select().single();
+    if (res.error) throw res.error;
+    return res.data;
+}
+
+async function dbGetAllReviewsAdmin() {
+    var db = await getDB();
+    var res = await db.from('reviews')
+        .select('*')
+        .order('created_at', { ascending: false });
+    if (res.error) return [];
+    return res.data || [];
+}
+
+async function dbApproveReview(reviewId, approved) {
+    var db = await getDB();
+    var res = await db.from('reviews')
+        .update({ approved: approved })
+        .eq('id', reviewId);
+    if (res.error) throw res.error;
+}
+
+// ─── HELPLINE / SUPPORT TICKETS ───────────────────────
+
+async function dbSubmitSupportTicket(ticket) {
+    var db = await getDB();
+    var res = await db.from('support_tickets').insert(ticket).select().single();
+    if (res.error) throw res.error;
+    return res.data;
+}
+
+async function dbGetMyTickets() {
+    var db = await getDB();
+    var sess = await authGetSession();
+    if (!sess) return [];
+    var res = await db.from('support_tickets')
+        .select('*')
+        .eq('user_id', sess.user.id)
+        .order('created_at', { ascending: false });
+    if (res.error) return [];
+    return res.data || [];
+}
+
+async function dbGetAllTicketsAdmin() {
+    var db = await getDB();
+    var res = await db.from('support_tickets')
+        .select('*')
+        .order('created_at', { ascending: false });
+    if (res.error) return [];
+    return res.data || [];
+}
+
+async function dbUpdateTicketStatus(ticketId, status, adminNote) {
+    var db = await getDB();
+    var update = { status: status };
+    if (adminNote) update.admin_note = adminNote;
+    var res = await db.from('support_tickets').update(update).eq('id', ticketId);
+    if (res.error) throw res.error;
+}
+
+// Extend WDG object with new functions
+Object.assign(window.WDG, {
+    wishlistGet:        dbGetWishlist,
+    wishlistAdd:        dbAddToWishlist,
+    wishlistRemove:     dbRemoveFromWishlist,
+    wishlistIsIn:       dbIsWishlisted,
+
+    reviewsGet:         dbGetReviews,
+    reviewsSubmit:      dbSubmitReview,
+    reviewsRespond:     dbRespondToReview,
+    reviewsGetAll:      dbGetAllReviewsAdmin,
+    reviewsApprove:     dbApproveReview,
+
+    supportSubmit:      dbSubmitSupportTicket,
+    supportGetMine:     dbGetMyTickets,
+    supportGetAll:      dbGetAllTicketsAdmin,
+    supportUpdateStatus:dbUpdateTicketStatus
+});
