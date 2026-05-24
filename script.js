@@ -414,14 +414,69 @@ function goToSlide(n) {
     });
 }
 
-function initReviews() {
-    allReviews = DEFAULT_REVIEWS.slice();
-    // Merge customer submitted reviews
+// ── GOOGLE PLACES CONFIG ──────────────────────────────
+// Set these to your actual values from Google Cloud Console
+var GOOGLE_PLACE_ID  = '';   // e.g. 'ChIJ...'
+var GOOGLE_API_KEY   = '';   // e.g. 'AIzaSy...'
+
+async function fetchGoogleReviews() {
+    if (!GOOGLE_PLACE_ID || !GOOGLE_API_KEY) return [];
     try {
-        var local = JSON.parse(localStorage.getItem('customerReviews')) || [];
-        allReviews = allReviews.concat(local);
-    } catch(e) {}
-    renderCarousel();
+        var url = 'https://maps.googleapis.com/maps/api/place/details/json' +
+            '?place_id=' + GOOGLE_PLACE_ID +
+            '&fields=reviews,rating,user_ratings_total' +
+            '&key=' + GOOGLE_API_KEY;
+        // Must be called server-side to avoid CORS — use a Vercel function proxy
+        var res = await fetch('/api/google-reviews');
+        if (!res.ok) return [];
+        var data = await res.json();
+        return (data.reviews || []).map(function(r) {
+            return {
+                id: 'g_' + r.time,
+                name: r.author_name,
+                rating: r.rating,
+                text: r.text,
+                date: new Date(r.time * 1000).toISOString().slice(0,10),
+                source: 'google',
+                photo: r.profile_photo_url || ''
+            };
+        });
+    } catch(e) { return []; }
+}
+
+function initReviews() {
+    allReviews = [];
+
+    // Load from Supabase
+    var supabasePromise = (window.WDG && WDG.reviewsGet)
+        ? WDG.reviewsGet().catch(function() { return []; })
+        : Promise.resolve([]);
+
+    // Load Google reviews via proxy
+    var googlePromise = fetchGoogleReviews();
+
+    Promise.all([supabasePromise, googlePromise]).then(function(results) {
+        var dbReviews = results[0] || [];
+        var gReviews  = results[1] || [];
+
+        // Merge: DB reviews first, then Google ones not already in DB
+        var combined = dbReviews.slice();
+        gReviews.forEach(function(gr) {
+            var exists = combined.find(function(r) { return r.source === 'google' && r.id === gr.id; });
+            if (!exists) combined.push(gr);
+        });
+
+        // Also include any old localStorage reviews (backwards compat)
+        try {
+            var local = JSON.parse(localStorage.getItem('customerReviews')) || [];
+            local.forEach(function(lr) {
+                if (!combined.find(function(r) { return r.id === lr.id; })) combined.push(lr);
+            });
+        } catch(e) {}
+
+        allReviews = combined;
+        renderCarousel();
+    });
 
     var prev = document.getElementById('carouselPrev');
     var next = document.getElementById('carouselNext');
@@ -439,13 +494,12 @@ function initReviews() {
         });
     }
 
-    // Auto-advance
     if (carouselInterval) clearInterval(carouselInterval);
     carouselInterval = setInterval(function() {
         goToSlide(currentSlide + 1 < allReviews.length ? currentSlide + 1 : 0);
     }, 5000);
 
-    // Review form
+    // Review form — now saves to Supabase
     var form = document.getElementById('reviewForm');
     var stars = document.querySelectorAll('#starInput .star');
     var ratingInput = document.getElementById('reviewRating');
@@ -472,7 +526,7 @@ function initReviews() {
     });
 
     if (form) {
-        form.addEventListener('submit', function(e) {
+        form.addEventListener('submit', async function(e) {
             e.preventDefault();
             var name   = (document.getElementById('reviewName') || {}).value || '';
             var rating = parseInt(ratingInput ? ratingInput.value : 0);
@@ -481,17 +535,31 @@ function initReviews() {
             if (!name.trim()) { showFormMsg(msgEl, 'Please enter your name.', 'error'); return; }
             if (!rating)       { showFormMsg(msgEl, 'Please select a star rating.', 'error'); return; }
             if (!text)         { showFormMsg(msgEl, 'Please write your review.', 'error'); return; }
-            var review = { id:'c' + Date.now(), name:name.trim(), rating:rating, text:text, date:new Date().toISOString().slice(0,10), response:'Thank you for your review! — WorthDaGive Team' };
-            var stored = [];
-            try { stored = JSON.parse(localStorage.getItem('customerReviews')) || []; } catch(e) {}
-            stored.push(review);
-            localStorage.setItem('customerReviews', JSON.stringify(stored));
-            allReviews.push(review);
-            renderCarousel();
-            goToSlide(allReviews.length - 1);
+
+            var review = {
+                name: name.trim(), rating: rating, text: text,
+                date: new Date().toISOString().slice(0,10),
+                approved: false, // admin must approve
+                source: 'site'
+            };
+
+            // Try to save to Supabase
+            try {
+                if (window.WDG && WDG.reviewsSubmit) {
+                    await WDG.reviewsSubmit(review);
+                }
+            } catch(err) {
+                // fallback to localStorage
+                var stored = [];
+                try { stored = JSON.parse(localStorage.getItem('customerReviews')) || []; } catch(ex) {}
+                review.id = 'c' + Date.now();
+                stored.push(review);
+                localStorage.setItem('customerReviews', JSON.stringify(stored));
+            }
+
             form.reset();
             stars.forEach(function(s) { s.classList.remove('selected'); });
-            showFormMsg(msgEl, 'Review submitted! Thank you.', 'success');
+            showFormMsg(msgEl, '✅ Thank you! Your review is pending approval.', 'success');
         });
     }
 }
