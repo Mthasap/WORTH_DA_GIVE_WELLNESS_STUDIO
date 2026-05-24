@@ -181,7 +181,8 @@ function buildProductCard(p) {
             tag +
             '<div class="product-card-actions">' +
                 '<button class="add-to-cart" onclick="addToCart(\'' + p.id + '\')">Add to Cart</button>' +
-                '<button class="wishlist-heart" onclick="toggleWishlistBtn(\\\'\' + p.id + '\\\'\,this)" title="Wishlist" style="background:none;border:1px solid #ddd;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:1.1rem;line-height:1">&#9825;</button>\' +\n                '<button class="quick-view-btn" onclick="openQuickView(\'' + p.id + '\')">View ' + (images.length > 1 ? '(' + images.length + ' photos)' : 'Details') + '</button>' +
+                '<button class="wishlist-heart" onclick="toggleWishlistBtn(\'' + p.id + '\',this)" title="Add to Wishlist">&#9825;</button>' +
+                '<button class="quick-view-btn" onclick="openQuickView(\'' + p.id + '\')">' + (images.length > 1 ? 'View (' + images.length + ' photos)' : 'View Details') + '</button>' +
             '</div>' +
         '</div>';
     card.querySelector('.product-image').addEventListener('click', function() { openQuickView(p.id); });
