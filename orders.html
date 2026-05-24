@@ -1,506 +1,625 @@
-/* ═══════════════════════════════════════════════════════════
-   WORTHDAGIVE — auth.js
-   Shared authentication state + modal UI used by
-   index.html, products.html, checkout.html
-   Requires: supabase.js loaded first
-   ═══════════════════════════════════════════════════════════ */
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Account &mdash; WorthDaGive Wellness Studio</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
 
-/* ── SVG Icons (professional, no emoji) ── */
-const ICONS = {
-    user:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
-    logout:  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`,
-    orders:  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>`,
-    check:   `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
-    eye:     `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`,
-    eyeOff:  `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`,
-    mail:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`,
-    lock:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
-    warn:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`
-};
+<div id="promoBanner" class="promo-banner" style="display:none">
+  <div class="promo-banner-inner">
+    <span id="promoBannerText"></span>
+    <button class="promo-banner-close" id="promoBannerClose" aria-label="Close">&times;</button>
+  </div>
+</div>
 
-/* ── Current session state ── */
-let _currentSession  = null;
-let _currentProfile  = null;
-let _authReady       = false;
-let _authCallbacks   = [];
+<header>
+  <div class="container">
+    <div class="logo">
+      <a href="index.html">
+        <img src="https://res.cloudinary.com/dbcfzmxzt/image/upload/v1775733144/main_logo_hm6s6w.png" alt="WorthDaGive Wellness Studio" class="logo-img" loading="lazy">
+        <div class="logo-text"><h1>WorthDaGive</h1><span class="tagline">Wellness Studio</span></div>
+      </a>
+    </div>
+    <button class="hamburger" id="hamburgerBtn" aria-label="Toggle navigation"><span></span><span></span><span></span></button>
+    <nav class="main-nav" id="mainNav">
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="products.html">Products</a></li>
+        <li><a href="index.html#about">About</a></li>
+        <li><a href="index.html#contact">Contact</a></li>
+        <li><a href="track.html">Track Order</a></li>
+        <li><a href="#" id="loginBtn" class="nav-icon-link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Login</a></li>
+        <li><a href="#" id="cartBtn" class="nav-icon-link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Cart (<span id="cartCount">0</span>)</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
 
-async function initAuth() {
-    try {
-        _currentSession = await WDG.authGetSession();
-        if (_currentSession) {
-            _currentProfile = await WDG.authGetProfile();
-        }
-    } catch (e) { /* offline / not configured */ }
-    _authReady = true;
-    _authCallbacks.forEach(cb => cb(_currentSession, _currentProfile));
+<section class="page-banner">
+  <div class="container"><h2>My Account</h2><p>Manage your orders, wishlist, and profile</p></div>
+</section>
 
-    try {
-        WDG.authOnChange(async (session) => {
-            _currentSession = session;
-            _currentProfile = session ? await WDG.authGetProfile() : null;
-            updateNavAuth();
-            _authCallbacks.forEach(cb => cb(session, _currentProfile));
+<section class="account-hub-section">
+  <div class="container">
+    <div class="account-hub-wrap">
+
+      <!-- Confirmed email banner (shown when coming from auth-callback) -->
+      <div id="confirmedBanner" class="confirmed-banner" style="display:none">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#155724" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Your email has been confirmed and your account is now active!
+      </div>
+
+      <!-- Not-logged-in gate -->
+      <div id="hubLoginGate" class="hub-login-gate" style="display:none">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 1rem;display:block"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <h3>Sign In to View Your Account</h3>
+        <p>Please sign in to access your orders, wishlist, and profile.</p>
+        <button class="btn-primary" style="padding:12px 32px" onclick="openAuthModal('login')">Sign In</button>
+        &nbsp;
+        <button class="btn-secondary" style="padding:12px 32px;margin-top:8px" onclick="openAuthModal('register')">Create Account</button>
+      </div>
+
+      <!-- Tab bar + panels (shown when logged in) -->
+      <div id="hubContent" style="display:none">
+        <div class="hub-tab-bar">
+          <button class="hub-tab active" data-panel="orders" onclick="switchHubTab('orders')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            My Orders
+          </button>
+          <button class="hub-tab" data-panel="wishlist" onclick="switchHubTab('wishlist')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            Wishlist
+          </button>
+          <button class="hub-tab" data-panel="helpline" onclick="switchHubTab('helpline')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Helpline
+          </button>
+          <button class="hub-tab" data-panel="profile" onclick="switchHubTab('profile')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            My Profile
+          </button>
+        </div>
+
+        <!-- ─── ORDERS PANEL ─────────────────────────────── -->
+        <div id="panel-orders" class="hub-panel active">
+          <div id="ordersMsg" class="hub-msg"></div>
+          <div id="ordersList">
+            <div style="text-align:center;padding:2rem;color:#aaa">
+              <div style="width:32px;height:32px;border:3px solid #e0e0e0;border-top-color:#4CAF50;border-radius:50%;animation:spin 0.9s linear infinite;margin:0 auto 1rem"></div>
+              Loading orders…
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── WISHLIST PANEL ────────────────────────────── -->
+        <div id="panel-wishlist" class="hub-panel">
+          <div id="wishlistMsg" class="hub-msg"></div>
+          <div id="wishlistGrid" class="wishlist-grid">
+            <div style="text-align:center;padding:2rem;color:#aaa;grid-column:1/-1">
+              <div style="width:32px;height:32px;border:3px solid #e0e0e0;border-top-color:#4CAF50;border-radius:50%;animation:spin 0.9s linear infinite;margin:0 auto 1rem"></div>
+              Loading wishlist…
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── HELPLINE PANEL ────────────────────────────── -->
+        <div id="panel-helpline" class="hub-panel">
+          <div class="helpline-contacts">
+            <div class="helpline-contact-card">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.38C1.54 2.19 2.4 1.01 3.58 1H6.6a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.5a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 21.71 16c.01.31 0 .62-.01.92z"/></svg>
+              <div>
+                <div class="helpline-contact-label">Phone</div>
+                <div class="helpline-contact-value"><a href="tel:+27000000000" style="color:inherit;text-decoration:none">+27 000 000 00</a></div>
+              </div>
+            </div>
+            <div class="helpline-contact-card">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              <div>
+                <div class="helpline-contact-label">Email</div>
+                <div class="helpline-contact-value"><a href="mailto:info@worthdagive.co.za" style="color:inherit;text-decoration:none">info@worthdagive.co.za</a></div>
+              </div>
+            </div>
+            <div class="helpline-contact-card">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <div>
+                <div class="helpline-contact-label">WhatsApp</div>
+                <div class="helpline-contact-value"><a href="https://wa.me/27000000000" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Chat with us</a></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Support ticket form -->
+          <div class="ticket-form-wrap">
+            <h3>Submit a Support Request</h3>
+            <div id="ticketFormMsg" class="hub-msg"></div>
+            <div class="ticket-field">
+              <label for="ticketType">Issue Type</label>
+              <select id="ticketType">
+                <option value="">-- Select issue type --</option>
+                <option value="Return - Faulty Product">Return – Faulty Product</option>
+                <option value="Return - Incorrect Order">Return – Incorrect Order</option>
+                <option value="Delivery Issue">Delivery Issue</option>
+                <option value="Payment Issue">Payment Issue</option>
+                <option value="Product Question">Product Question</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="ticket-field">
+              <label for="ticketRef">Order Reference (optional)</label>
+              <input type="text" id="ticketRef" placeholder="e.g. WDG-20260001">
+            </div>
+            <div class="ticket-field">
+              <label for="ticketMsg">Describe your issue</label>
+              <textarea id="ticketMsg" rows="4" placeholder="Please describe your issue in as much detail as possible…"></textarea>
+            </div>
+            <button class="btn-primary" style="padding:12px 28px" onclick="submitTicket()">Submit Request</button>
+          </div>
+
+          <!-- Previous tickets -->
+          <div class="ticket-history">
+            <h3>Previous Support Requests</h3>
+            <div id="ticketList">
+              <div style="text-align:center;padding:1.5rem;color:#aaa;font-size:0.88rem">Loading…</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── PROFILE PANEL ─────────────────────────────── -->
+        <div id="panel-profile" class="hub-panel">
+          <div id="profileMsg" class="hub-msg"></div>
+          <div class="profile-form">
+            <h3 style="color:#2c5530;font-size:1rem;margin-bottom:1.2rem">Personal Information</h3>
+            <div class="profile-2col">
+              <div class="profile-field">
+                <label for="pfFullName">Full Name</label>
+                <input type="text" id="pfFullName" placeholder="Your full name" autocomplete="name">
+              </div>
+              <div class="profile-field">
+                <label for="pfPhone">Phone Number</label>
+                <input type="tel" id="pfPhone" placeholder="+27 000 000 0000" autocomplete="tel">
+              </div>
+            </div>
+            <div class="profile-2col">
+              <div class="profile-field">
+                <label for="pfEmail">Email Address</label>
+                <input type="email" id="pfEmail" placeholder="you@example.com" autocomplete="email" readonly style="background:#f5f5f5;cursor:not-allowed">
+              </div>
+              <div class="profile-field">
+                <label for="pfDob">Date of Birth</label>
+                <input type="date" id="pfDob">
+              </div>
+            </div>
+            <div class="profile-field">
+              <label for="pfAddress">Delivery Address</label>
+              <textarea id="pfAddress" rows="3" placeholder="Street, City, Province, Postal Code" autocomplete="street-address"></textarea>
+            </div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:0.5rem">
+              <button class="btn-primary" style="padding:12px 28px" onclick="saveProfile()">Save Changes</button>
+              <button class="btn-secondary" style="padding:12px 20px" onclick="openAuthModal && openAuthModal('forgot')">Change Password</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- #hubContent -->
+    </div><!-- .account-hub-wrap -->
+  </div><!-- .container -->
+</section>
+
+<!-- Cart modal -->
+<div id="cartModal" class="modal hidden">
+  <div class="modal-content">
+    <button class="close" data-modal="cartModal" aria-label="Close">&times;</button>
+    <h2>Shopping Cart</h2>
+    <div id="cartItems"></div>
+    <div class="cart-total"><p>Total: R<span id="cartTotal">0.00</span></p><button id="checkoutBtn" class="btn-primary">Proceed to Checkout</button></div>
+  </div>
+</div>
+
+<footer>
+  <div class="container">
+    <div class="social-links"><h3>Follow Us</h3>
+      <div class="social-buttons">
+        <a href="#" class="social-btn-facebook">Facebook</a>
+        <a href="https://www.instagram.com/worthdagive?igsh=NjhmaWQ4eXlmeHJu" class="social-btn-instagram">Instagram</a>
+        <a href="#" class="social-btn-twitter">X / Twitter</a>
+        <a href="#" class="social-btn-tiktok">TikTok</a>
+      </div>
+    </div>
+    <div class="footer-legal">
+      <p>All applicable products are cannabis-infused and intended for adults 18+ only.</p>
+      <p>Sold in compliance with the Cannabis for Private Purposes Act 7 of 2024 (South Africa).</p>
+      <p>&copy; 2026 WorthDaGive Wellness Studio. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
+
+<a href="https://wa.me/27000000000" target="_blank" rel="noopener noreferrer" class="whatsapp-float" aria-label="Chat on WhatsApp">
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+  <span class="whatsapp-label">Chat with us</span>
+</a>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<script src="supabase.js"></script>
+<script src="auth.js"></script>
+<script src="cookie-consent.js"></script>
+<script>
+/* ═══════════════════════════════════════════
+   ORDERS.HTML — Account Hub logic
+═══════════════════════════════════════════ */
+
+var _hubInitDone = false;
+
+/* ── Cart (minimal, for header count) ── */
+function getCart() { try { return JSON.parse(localStorage.getItem('cart')) || []; } catch(e) { return []; } }
+function updateCartCount() {
+    var n = getCart().reduce(function(s,i){ return s + (i.quantity||0); }, 0);
+    var el = document.getElementById('cartCount');
+    if (el) el.textContent = n;
+}
+
+/* ── Hamburger ── */
+function initHamburger() {
+    var btn = document.getElementById('hamburgerBtn');
+    var nav = document.getElementById('mainNav');
+    if (!btn || !nav) return;
+    btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        btn.classList.toggle('open');
+        nav.classList.toggle('open');
+    });
+    nav.querySelectorAll('a').forEach(function(a) {
+        a.addEventListener('click', function() {
+            btn.classList.remove('open');
+            nav.classList.remove('open');
         });
-    } catch(e) {}
-
-    updateNavAuth();
-    injectAuthModal();
-}
-
-/** Register a callback that fires when auth state changes */
-function onAuthReady(cb) {
-    if (_authReady) cb(_currentSession, _currentProfile);
-    else _authCallbacks.push(cb);
-}
-
-function isLoggedIn()   { return !!_currentSession; }
-function currentUser()  { return _currentProfile; }
-function currentSession() { return _currentSession; }
-
-/* ── Update nav Login/Account link with dropdown ── */
-function updateNavAuth() {
-    const loginBtn = document.getElementById('loginBtn');
-    if (!loginBtn) return;
-
-    // Remove existing dropdown if present
-    const existingDropdown = document.getElementById('accountDropdown');
-    if (existingDropdown) existingDropdown.remove();
-
-    if (_currentSession && _currentProfile) {
-        const firstName = (_currentProfile.full_name || '').split(' ')[0] || 'Account';
-        loginBtn.innerHTML = ICONS.user + ' ' + firstName + ' <span style="font-size:0.7rem;opacity:0.7">▾</span>';
-        loginBtn.href = '#';
-        loginBtn.onclick = (e) => { e.preventDefault(); toggleAccountDropdown(loginBtn); };
-
-        // Inject dropdown menu
-        const dropdown = document.createElement('div');
-        dropdown.id = 'accountDropdown';
-        dropdown.className = 'account-dropdown hidden';
-        dropdown.innerHTML = `
-            <div class="account-dropdown-header">
-                <div class="account-dropdown-name">${_currentProfile.full_name || 'My Account'}</div>
-                <div class="account-dropdown-email">${_currentProfile.email || ''}</div>
-            </div>
-            <a href="orders.html" class="account-dropdown-item">
-                ${ICONS.orders} My Orders
-            </a>
-            <a href="orders.html#wishlist" class="account-dropdown-item">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                Wishlist
-            </a>
-            <a href="orders.html#helpline" class="account-dropdown-item">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                Helpline
-            </a>
-            <a href="orders.html#profile" class="account-dropdown-item">
-                ${ICONS.user} My Profile
-            </a>
-            <div class="account-dropdown-divider"></div>
-            <a href="#" class="account-dropdown-item account-dropdown-logout" onclick="window.authLogout();return false;">
-                ${ICONS.logout} Sign Out
-            </a>`;
-        // Insert after the loginBtn's parent <li>
-        const li = loginBtn.closest('li') || loginBtn.parentNode;
-        li.style.position = 'relative';
-        li.appendChild(dropdown);
-
-        // Close when clicking outside
-        setTimeout(() => {
-            document.addEventListener('click', closeDropdownOutside);
-        }, 10);
-    } else {
-        loginBtn.innerHTML = ICONS.user + ' Login';
-        loginBtn.href = '#';
-        loginBtn.onclick = (e) => { e.preventDefault(); openAuthModal('login'); };
-    }
-}
-
-function toggleAccountDropdown(btn) {
-    const d = document.getElementById('accountDropdown');
-    if (!d) return;
-    d.classList.toggle('hidden');
-}
-
-function closeDropdownOutside(e) {
-    const d = document.getElementById('accountDropdown');
-    const btn = document.getElementById('loginBtn');
-    if (d && !d.contains(e.target) && btn && !btn.contains(e.target)) {
-        d.classList.add('hidden');
-        document.removeEventListener('click', closeDropdownOutside);
-    }
-}
-window.closeDropdownOutside = closeDropdownOutside;
-
-/* ════════════════════════════════════════
-   AUTH MODAL  (Login + Register)
-════════════════════════════════════════ */
-function injectAuthModal() {
-    if (document.getElementById('authModal')) return;
-
-    const modal = document.createElement('div');
-    modal.id = 'authModal';
-    modal.className = 'modal hidden';
-    modal.innerHTML = `
-        <div class="modal-content auth-modal-content">
-            <button class="auth-modal-close" id="authModalClose" aria-label="Close">&times;</button>
-
-            <div class="auth-tab-bar" id="authTabBar">
-                <button class="auth-tab active" data-tab="login" onclick="switchAuthTab('login')">Sign In</button>
-                <button class="auth-tab" data-tab="register" onclick="switchAuthTab('register')">Register</button>
-            </div>
-
-            <!-- ── LOGIN ── -->
-            <div id="authLoginPanel" class="auth-panel">
-                <p class="auth-panel-subtitle">Welcome back. Sign in to continue.</p>
-                <form id="authLoginForm" novalidate>
-                    <div class="auth-field">
-                        <label for="authEmail">${ICONS.mail} Email Address</label>
-                        <input type="email" id="authEmail" placeholder="you@example.com" autocomplete="email" required>
-                    </div>
-                    <div class="auth-field">
-                        <label for="authPassword">${ICONS.lock} Password</label>
-                        <div class="auth-pw-wrap">
-                            <input type="password" id="authPassword" placeholder="Your password" autocomplete="current-password" required>
-                            <button type="button" class="auth-pw-toggle" onclick="togglePw('authPassword',this)" tabindex="-1">${ICONS.eye}</button>
-                        </div>
-                    </div>
-                    <div id="authLoginMsg" class="auth-msg hidden"></div>
-                    <button type="submit" class="btn-primary auth-submit" id="authLoginBtn">
-                        <span class="auth-btn-text">Sign In</span>
-                        <span class="auth-btn-spinner hidden"></span>
-                    </button>
-                </form>
-                <p class="auth-switch-link"><a href="#" onclick="switchAuthTab('forgot');return false;">Forgot your password?</a></p>
-                <p class="auth-switch-link"><a href="#" onclick="switchAuthTab('register');return false;">Don't have an account? Register here</a></p>
-            </div>
-
-            <!-- ── FORGOT PASSWORD ── -->
-            <div id="authForgotPanel" class="auth-panel hidden">
-                <p class="auth-panel-subtitle">Enter your email to receive a password reset link.</p>
-                <form id="authForgotForm" novalidate>
-                    <div class="auth-field">
-                        <label for="forgotEmail">${ICONS.mail} Email Address</label>
-                        <input type="email" id="forgotEmail" placeholder="you@example.com" autocomplete="email" required>
-                    </div>
-                    <div id="authForgotMsg" class="auth-msg hidden"></div>
-                    <button type="submit" class="btn-primary auth-submit" id="authForgotBtn">
-                        <span class="auth-btn-text">Send Reset Link</span>
-                        <span class="auth-btn-spinner hidden"></span>
-                    </button>
-                </form>
-                <p class="auth-switch-link"><a href="#" onclick="switchAuthTab('login');return false;">Back to Sign In</a></p>
-            </div>
-
-            <!-- ── REGISTER ── -->
-            <div id="authRegisterPanel" class="auth-panel hidden">
-                <p class="auth-panel-subtitle">Create your account. Takes less than a minute.</p>
-                <form id="authRegisterForm" novalidate>
-                    <div class="auth-field">
-                        <label>${ICONS.user} Full Name</label>
-                        <input type="text" id="regFullName" placeholder="e.g. Thabo Khumalo" maxlength="80" autocomplete="name" required>
-                    </div>
-                    <div class="auth-field">
-                        <label>${ICONS.mail} Email Address</label>
-                        <input type="email" id="regEmail" placeholder="you@example.com" autocomplete="email" required>
-                    </div>
-                    <div class="auth-field">
-                        <label>${ICONS.lock} Password</label>
-                        <div class="auth-pw-wrap">
-                            <input type="password" id="regPassword" placeholder="Minimum 8 characters" autocomplete="new-password" required>
-                            <button type="button" class="auth-pw-toggle" onclick="togglePw('regPassword',this)" tabindex="-1">${ICONS.eye}</button>
-                        </div>
-                    </div>
-                    <div class="auth-field">
-                        <label>${ICONS.lock} Confirm Password</label>
-                        <div class="auth-pw-wrap">
-                            <input type="password" id="regPassword2" placeholder="Repeat password" autocomplete="new-password" required>
-                            <button type="button" class="auth-pw-toggle" onclick="togglePw('regPassword2',this)" tabindex="-1">${ICONS.eye}</button>
-                        </div>
-                    </div>
-
-                    <!-- Phone (optional, for SMS OTP) -->
-                    <div class="auth-field">
-                        <label>📱 Mobile Number <span style="font-size:0.75rem;color:#888;font-weight:400">(optional — for SMS updates)</span></label>
-                        <input type="tel" id="regPhone" placeholder="+27 81 234 5678" autocomplete="tel">
-                    </div>
-
-                    <!-- Date of birth -->
-                    <div class="auth-field reg-age-block">
-                        <label class="reg-age-label">Date of Birth <span class="reg-required">*</span></label>
-                        <input type="date" id="regDob" class="reg-dob-input" required>
-                        <p class="reg-age-hint">You must be 18 or older. Required by South African law.</p>
-                    </div>
-
-                    <!-- Age confirm -->
-                    <div class="reg-checkbox-group">
-                        <input type="checkbox" id="regAge18">
-                        <label for="regAge18">I confirm I am <strong>18 years of age or older</strong> and my date of birth above is accurate and truthful.</label>
-                    </div>
-
-                    <!-- Legal warning -->
-                    <div class="reg-consequences-box">
-                        <div class="reg-warn-head">${ICONS.warn} Warning — False Information</div>
-                        <p>Providing false or misleading information about your age when registering may constitute a criminal offence under the <em>Electronic Communications and Transactions Act 25 of 2002</em>, the <em>Drugs and Drug Trafficking Act 140 of 1992</em>, and the <em>Cannabis for Private Purposes Act 7 of 2024</em>. WorthDaGive reserves the right to verify your age and report fraudulent registrations to the SAPS.</p>
-                    </div>
-
-                    <!-- Terms -->
-                    <div class="reg-checkbox-group">
-                        <input type="checkbox" id="regTerms">
-                        <label for="regTerms">I accept the <a href="index.html#legal-full" target="_blank">Legal Notice</a> and confirm I am purchasing for private use in a lawful jurisdiction.</label>
-                    </div>
-
-                    <div id="authRegMsg" class="auth-msg hidden"></div>
-                    <button type="submit" class="btn-primary auth-submit" id="authRegBtn">
-                        <span class="auth-btn-text">Create Account</span>
-                        <span class="auth-btn-spinner hidden"></span>
-                    </button>
-                </form>
-                <p class="auth-switch-link"><a href="#" onclick="switchAuthTab('login');return false;">Already have an account? Sign in</a></p>
-            </div>
-
-            <!-- ── VERIFY EMAIL ── -->
-            <div id="authVerifyPanel" class="auth-panel hidden">
-                <div class="auth-verify-icon">${ICONS.mail}</div>
-                <h3>Check your email</h3>
-                <p>We've sent a verification link to <strong id="authVerifyEmail"></strong>. Click the link in the email to activate your account, then return here and sign in.</p>
-                <div id="authOtpBlock" class="hidden" style="margin-top:1.2rem;padding:1rem;background:#f0f9ff;border-radius:10px;border:1px solid #bae6fd">
-                    <p style="font-size:0.85rem;color:#0369a1;margin-bottom:0.8rem">📱 Enter the SMS code sent to your phone:</p>
-                    <div style="display:flex;gap:8px">
-                        <input type="text" id="otpInput" maxlength="6" placeholder="6-digit code" style="flex:1;padding:10px 12px;border:2px solid #ddd;border-radius:8px;font-size:1rem;letter-spacing:4px;text-align:center">
-                        <button onclick="verifyPhoneOtp()" style="padding:10px 16px;background:#4CAF50;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer">Verify</button>
-                    </div>
-                    <div id="otpMsg" class="auth-msg hidden" style="margin-top:8px"></div>
-                </div>
-                <button class="btn-primary" style="width:100%;margin-top:1rem;" onclick="switchAuthTab('login')">Go to Sign In</button>
-            </div>
-        </div>`;
-
-    document.body.appendChild(modal);
-
-    document.getElementById('authModalClose').addEventListener('click', closeAuthModal);
-    modal.addEventListener('click', (e) => { if (e.target === modal) closeAuthModal(); });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAuthModal(); });
-
-    document.getElementById('authLoginForm').addEventListener('submit', handleLogin);
-    document.getElementById('authRegisterForm').addEventListener('submit', handleRegister);
-    document.getElementById('authForgotForm').addEventListener('submit', handleForgotPassword);
-}
-
-function openAuthModal(tab, onSuccess) {
-    _authSuccessCallback = onSuccess || null;
-    const modal = document.getElementById('authModal');
-    if (!modal) { injectAuthModal(); }
-    switchAuthTab(tab || 'login');
-    document.getElementById('authModal').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeAuthModal() {
-    const modal = document.getElementById('authModal');
-    if (modal) modal.classList.add('hidden');
-    document.body.style.overflow = '';
-    _authSuccessCallback = null;
-}
-
-let _authSuccessCallback = null;
-
-function switchAuthTab(tab) {
-    const panels = ['login','register','verify','forgot','reset'];
-    panels.forEach(t => {
-        const el = document.getElementById('auth' + t.charAt(0).toUpperCase() + t.slice(1) + 'Panel');
-        if (el) el.classList.toggle('hidden', t !== tab);
     });
-    document.querySelectorAll('#authTabBar .auth-tab').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.tab === tab);
+    document.addEventListener('click', function(e) {
+        if (!nav.contains(e.target) && !btn.contains(e.target)) {
+            btn.classList.remove('open');
+            nav.classList.remove('open');
+        }
     });
 }
 
-function togglePw(inputId, btn) {
-    const inp = document.getElementById(inputId);
-    if (!inp) return;
-    const show = inp.type === 'password';
-    inp.type = show ? 'text' : 'password';
-    btn.innerHTML = show ? ICONS.eyeOff : ICONS.eye;
+/* ── Cart modal ── */
+function initCartModal() {
+    var cartBtn   = document.getElementById('cartBtn');
+    var cartModal = document.getElementById('cartModal');
+    if (cartBtn) cartBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (cartModal) cartModal.classList.remove('hidden');
+    });
+    document.querySelectorAll('.close[data-modal]').forEach(function(b) {
+        b.addEventListener('click', function() {
+            var t = document.getElementById(b.dataset.modal);
+            if (t) t.classList.add('hidden');
+        });
+    });
+    window.addEventListener('click', function(e) {
+        if (e.target === cartModal) cartModal.classList.add('hidden');
+    });
+    var checkoutBtn = document.getElementById('checkoutBtn');
+    if (checkoutBtn) checkoutBtn.addEventListener('click', function() {
+        window.location.href = 'checkout.html';
+    });
 }
 
-function setSubmitting(btnId, submitting) {
-    const btn     = document.getElementById(btnId);
-    if (!btn) return;
-    const text    = btn.querySelector('.auth-btn-text');
-    const spinner = btn.querySelector('.auth-btn-spinner');
-    btn.disabled  = submitting;
-    if (text)    text.classList.toggle('hidden', submitting);
-    if (spinner) spinner.classList.toggle('hidden', !submitting);
+/* ── Promo banner ── */
+async function initPromoBanner() {
+    var banner = document.getElementById('promoBanner');
+    var textEl = document.getElementById('promoBannerText');
+    var closeBtn = document.getElementById('promoBannerClose');
+    if (!banner) return;
+    if (closeBtn) closeBtn.addEventListener('click', function() { banner.style.display = 'none'; });
+    try {
+        var data = await WDG.bannersGetActive();
+        if (data && data.text) {
+            if (textEl) textEl.textContent = data.text;
+            var colorMap = { green:'#2c5530', red:'#c62828', orange:'#e65100', blue:'#1565c0' };
+            banner.style.background = colorMap[data.color] || '#2c5530';
+            banner.style.display = '';
+        }
+    } catch(e) { banner.style.display = 'none'; }
 }
 
-function showAuthMsg(elId, text, type) {
-    const el = document.getElementById(elId);
+/* ═══════════════ TAB SWITCHING ═══════════════ */
+function switchHubTab(name) {
+    document.querySelectorAll('.hub-tab').forEach(function(t) {
+        t.classList.toggle('active', t.dataset.panel === name);
+    });
+    document.querySelectorAll('.hub-panel').forEach(function(p) {
+        p.classList.toggle('active', p.id === 'panel-' + name);
+    });
+    // Lazy-load tab content
+    if (name === 'orders')   loadOrders();
+    if (name === 'wishlist') loadWishlist();
+    if (name === 'helpline') loadTickets();
+    if (name === 'profile')  loadProfile();
+    window.location.hash = name;
+}
+window.switchHubTab = switchHubTab;
+
+/* ═══════════════ ORDERS ═══════════════════════ */
+var _ordersLoaded = false;
+async function loadOrders() {
+    if (_ordersLoaded) return;
+    _ordersLoaded = true;
+    var el = document.getElementById('ordersList');
     if (!el) return;
-    el.textContent = text;
-    el.className   = 'auth-msg ' + type;
-    el.classList.remove('hidden');
-}
-
-/* ── Login handler ── */
-async function handleLogin(e) {
-    e.preventDefault();
-    const email    = document.getElementById('authEmail').value.trim();
-    const password = document.getElementById('authPassword').value;
-    const msgEl    = 'authLoginMsg';
-
-    if (!email || !password) { showAuthMsg(msgEl, 'Please enter your email and password.', 'error'); return; }
-
-    setSubmitting('authLoginBtn', true);
     try {
-        await WDG.authLogin(email, password);
-        _currentSession = await WDG.authGetSession();
-        _currentProfile = await WDG.authGetProfile();
-        updateNavAuth();
-        closeAuthModal();
-        if (_authSuccessCallback) _authSuccessCallback();
-        else showToastGlobal('Welcome back, ' + (_currentProfile?.full_name?.split(' ')[0] || 'there') + '!', 'success');
-    } catch (err) {
-        const msg = err.message || 'Login failed.';
-        showAuthMsg(msgEl, msg.includes('Invalid') ? 'Incorrect email or password.' : msg, 'error');
-    } finally {
-        setSubmitting('authLoginBtn', false);
-    }
-}
-
-/* ── Register handler ── */
-async function handleRegister(e) {
-    e.preventDefault();
-    const fullName  = document.getElementById('regFullName').value.trim();
-    const email     = document.getElementById('regEmail').value.trim();
-    const password  = document.getElementById('regPassword').value;
-    const password2 = document.getElementById('regPassword2').value;
-    const dob       = document.getElementById('regDob').value;
-    const age18     = document.getElementById('regAge18').checked;
-    const terms     = document.getElementById('regTerms').checked;
-    const msgEl     = 'authRegMsg';
-
-    if (!fullName)  { showAuthMsg(msgEl, 'Full name is required.', 'error'); return; }
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showAuthMsg(msgEl, 'Please enter a valid email address.', 'error'); return; }
-    if (!password || password.length < 8) { showAuthMsg(msgEl, 'Password must be at least 8 characters.', 'error'); return; }
-    if (password !== password2) { showAuthMsg(msgEl, 'Passwords do not match.', 'error'); return; }
-    if (!dob) { showAuthMsg(msgEl, 'Please enter your date of birth.', 'error'); return; }
-
-    /* Age check */
-    const birth = new Date(dob);
-    const today = new Date();
-    let age = today.getFullYear() - birth.getFullYear();
-    const m = today.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-    if (age < 18) { showAuthMsg(msgEl, 'You must be 18 or older to register. This is required by South African law.', 'error'); return; }
-
-    if (!age18) { showAuthMsg(msgEl, 'Please confirm you are 18 years of age or older.', 'error'); return; }
-    if (!terms)  { showAuthMsg(msgEl, 'You must accept the legal notice to register.', 'error'); return; }
-
-    setSubmitting('authRegBtn', true);
-    try {
-        await WDG.authRegister(email, password, fullName, dob);
-        const phone = (document.getElementById('regPhone') || {}).value || '';
-        document.getElementById('authVerifyEmail').textContent = email;
-
-        // If phone number provided, send SMS OTP
-        const phoneBlock = document.getElementById('authOtpBlock');
-        if (phone && phone.trim().length >= 10) {
-            const cleaned = phone.trim().replace(/\s/g, '');
-            _pendingPhone = cleaned;
-            try {
-                await WDG.authSendPhoneOtp(cleaned);
-                if (phoneBlock) phoneBlock.classList.remove('hidden');
-            } catch(phoneErr) {
-                // Phone OTP failed silently — don't block registration
-                console.warn('SMS OTP failed:', phoneErr.message);
-                if (phoneBlock) phoneBlock.classList.add('hidden');
+        var orders = await WDG.ordersGetMine();
+        if (!orders || !orders.length) {
+            el.innerHTML = '<div class="orders-empty">' +
+                '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>' +
+                '<h3>No orders yet</h3>' +
+                '<p>When you place an order, it will appear here.</p>' +
+                '<a href="products.html" class="btn-primary" style="display:inline-block;margin-top:1.2rem;text-decoration:none;padding:11px 24px">Shop Now</a>' +
+                '</div>';
+            return;
+        }
+        el.innerHTML = orders.map(function(o) {
+            var statusClass = 'status-' + (o.status || 'pending').replace(/\s+/g, '_');
+            var statusLabel = (o.status || 'Pending').replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});
+            var itemsHtml = '';
+            if (o.order_items && o.order_items.length) {
+                itemsHtml = '<div style="margin-top:8px"><strong style="font-size:0.82rem;color:#555">Items:</strong><ul style="margin:6px 0 0;padding-left:1.2rem">' +
+                    o.order_items.map(function(i) {
+                        return '<li style="font-size:0.83rem;color:#555;margin-bottom:2px">' + (i.name || i.product_name || 'Item') + ' &times; ' + (i.quantity||1) + ' — R' + Number(i.price||0).toFixed(2) + '</li>';
+                    }).join('') + '</ul></div>';
             }
-        } else {
-            if (phoneBlock) phoneBlock.classList.add('hidden');
-        }
-        switchAuthTab('verify');
-    } catch (err) {
-        const msg = err.message || 'Registration failed.';
-        showAuthMsg(msgEl, msg.includes('already registered') ? 'This email is already registered. Please sign in.' : msg, 'error');
-    } finally {
-        setSubmitting('authRegBtn', false);
+            return '<div class="hub-order-card" id="order-' + o.id + '">' +
+                '<div class="hub-order-head" onclick="toggleOrderCard(\'' + o.id + '\')">' +
+                    '<span class="hub-order-ref">Ref: ' + (o.ref || o.id.slice(0,8).toUpperCase()) + '</span>' +
+                    '<span class="hub-order-date">' + new Date(o.created_at).toLocaleDateString('en-ZA', {day:'2-digit',month:'short',year:'numeric'}) + '</span>' +
+                    '<span class="hub-order-total">R' + Number(o.total||0).toFixed(2) + '</span>' +
+                    '<span class="hub-order-status ' + statusClass + '">' + statusLabel + '</span>' +
+                    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
+                '</div>' +
+                '<div class="hub-order-body" id="body-' + o.id + '">' +
+                    itemsHtml +
+                    '<div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap">' +
+                    '<a href="track.html?ref=' + (o.ref || '') + '" class="btn-secondary" style="font-size:0.82rem;padding:8px 16px;text-decoration:none">Track Order</a>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+    } catch(e) {
+        var msg = document.getElementById('ordersMsg');
+        if (msg) { msg.textContent = 'Could not load orders: ' + (e.message||'unknown error'); msg.className = 'hub-msg err'; }
     }
 }
 
-/* ── Forgot Password handler ── */
-async function handleForgotPassword(e) {
-    e.preventDefault();
-    const email  = document.getElementById('forgotEmail').value.trim();
-    const msgEl  = 'authForgotMsg';
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        showAuthMsg(msgEl, 'Please enter a valid email address.', 'error'); return;
-    }
-    setSubmitting('authForgotBtn', true);
-    try {
-        await WDG.authResetPassword(email);
-        showAuthMsg(msgEl, '✅ Reset link sent! Check your email inbox (and spam folder).', 'success');
-        document.getElementById('forgotEmail').value = '';
-    } catch(err) {
-        showAuthMsg(msgEl, err.message || 'Could not send reset email. Please try again.', 'error');
-    } finally {
-        setSubmitting('authForgotBtn', false);
-    }
-}
-
-/* ── Phone OTP verification (called from verify panel) ── */
-let _pendingPhone = '';
-async function verifyPhoneOtp() {
-    const token  = (document.getElementById('otpInput') || {}).value || '';
-    const msgEl  = document.getElementById('otpMsg');
-    if (!token || token.length < 4) {
-        if (msgEl) { msgEl.textContent = 'Enter the 6-digit code from your SMS.'; msgEl.className = 'auth-msg error'; msgEl.classList.remove('hidden'); }
-        return;
-    }
-    try {
-        await WDG.authVerifyPhoneOtp(_pendingPhone, token);
-        if (msgEl) { msgEl.textContent = '✅ Phone verified!'; msgEl.className = 'auth-msg success'; msgEl.classList.remove('hidden'); }
-        // Update profile with verified phone
-        const db = await WDG.getDB();
-        const sess = await WDG.authGetSession();
-        if (sess) {
-            await db.from('profiles').update({ phone: _pendingPhone }).eq('id', sess.user.id);
-        }
-        setTimeout(() => switchAuthTab('login'), 1500);
-    } catch(err) {
-        if (msgEl) { msgEl.textContent = 'Invalid code. Please try again.'; msgEl.className = 'auth-msg error'; msgEl.classList.remove('hidden'); }
-    }
-}
-window.verifyPhoneOtp = verifyPhoneOtp;
-
-/* ── Global toast (used across pages) ── */
-function showToastGlobal(msg, type) {
-    const old = document.querySelector('.toast');
-    if (old) old.remove();
-    const t = document.createElement('div');
-    t.className = 'toast' + (type === 'success' ? ' toast-success' : '');
-    t.textContent = msg;
-    document.body.appendChild(t);
-    requestAnimationFrame(() => t.classList.add('toast-show'));
-    setTimeout(() => {
-        t.classList.remove('toast-show');
-        setTimeout(() => t.remove(), 300);
-    }, 3000);
-}
-
-/* Expose globally */
-window.openAuthModal   = openAuthModal;
-window.closeAuthModal  = closeAuthModal;
-window.switchAuthTab   = switchAuthTab;
-window.togglePw        = togglePw;
-window.isLoggedIn      = isLoggedIn;
-window.currentUser     = currentUser;
-window.currentSession  = currentSession;
-window.onAuthReady     = onAuthReady;
-window.authLogout      = async function() {
-    await WDG.authLogout();
-    _currentSession = null;
-    _currentProfile = null;
-    updateNavAuth();
-    window.location.href = 'index.html';
+window.toggleOrderCard = function(id) {
+    var body = document.getElementById('body-' + id);
+    if (body) body.classList.toggle('open');
 };
-window.showToastGlobal = showToastGlobal;
+
+/* ═══════════════ WISHLIST ═════════════════════ */
+var _wishlistLoaded = false;
+async function loadWishlist() {
+    if (_wishlistLoaded) return;
+    _wishlistLoaded = true;
+    var grid = document.getElementById('wishlistGrid');
+    if (!grid) return;
+    try {
+        var items = await WDG.wishlistGet();
+        if (!items || !items.length) {
+            grid.innerHTML = '<div style="text-align:center;padding:3rem 1rem;color:#aaa;grid-column:1/-1">' +
+                '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ddd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 0.8rem;display:block"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
+                '<p style="font-size:0.9rem">Your wishlist is empty.</p>' +
+                '<a href="products.html" class="btn-primary" style="display:inline-block;margin-top:1rem;text-decoration:none;padding:10px 22px;font-size:0.87rem">Browse Products</a>' +
+                '</div>';
+            return;
+        }
+        grid.innerHTML = items.map(function(item) {
+            var p = item.products || {};
+            var imgUrl = '';
+            if (p.images && p.images.length) imgUrl = p.images[0];
+            else if (p.image_url) imgUrl = p.image_url;
+            if (imgUrl && imgUrl.includes('cloudinary.com') && imgUrl.includes('/upload/')) {
+                imgUrl = imgUrl.replace('/upload/', '/upload/w_400,q_auto,f_auto/');
+            }
+            return '<div class="wishlist-item" id="wl-' + p.id + '">' +
+                (imgUrl
+                    ? '<img src="' + imgUrl + '" alt="' + (p.name||'') + '" loading="lazy">'
+                    : '<div class="wishlist-item-no-img">No image</div>') +
+                '<div class="wishlist-item-body">' +
+                    '<div class="wishlist-item-name">' + (p.name||'Unknown product') + '</div>' +
+                    '<div class="wishlist-item-price">R' + Number(p.price||0).toFixed(2) + '</div>' +
+                    '<div class="wishlist-item-actions">' +
+                        '<a href="products.html" class="wishlist-add-btn">Shop</a>' +
+                        '<button class="wishlist-remove-btn" onclick="removeWishlistItem(\'' + p.id + '\')">Remove</button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+    } catch(e) {
+        var msg = document.getElementById('wishlistMsg');
+        if (msg) { msg.textContent = 'Could not load wishlist.'; msg.className = 'hub-msg err'; }
+    }
+}
+
+window.removeWishlistItem = async function(productId) {
+    try {
+        await WDG.wishlistRemove(productId);
+        var card = document.getElementById('wl-' + productId);
+        if (card) card.remove();
+        var grid = document.getElementById('wishlistGrid');
+        if (grid && !grid.querySelector('.wishlist-item')) {
+            grid.innerHTML = '<div style="text-align:center;padding:3rem 1rem;color:#aaa;grid-column:1/-1"><p style="font-size:0.9rem">Your wishlist is empty.</p><a href="products.html" class="btn-primary" style="display:inline-block;margin-top:1rem;text-decoration:none;padding:10px 22px;font-size:0.87rem">Browse Products</a></div>';
+        }
+    } catch(e) {
+        var msg = document.getElementById('wishlistMsg');
+        if (msg) { msg.textContent = 'Could not remove item.'; msg.className = 'hub-msg err'; }
+    }
+};
+
+/* ═══════════════ HELPLINE / TICKETS ═══════════ */
+var _ticketsLoaded = false;
+async function loadTickets() {
+    if (_ticketsLoaded) return;
+    _ticketsLoaded = true;
+    var el = document.getElementById('ticketList');
+    if (!el) return;
+    try {
+        var tickets = await WDG.supportGetMine();
+        if (!tickets || !tickets.length) {
+            el.innerHTML = '<p style="color:#aaa;font-size:0.88rem;text-align:center;padding:1rem">No previous support requests.</p>';
+            return;
+        }
+        el.innerHTML = tickets.map(function(t) {
+            var statusClass = 'ticket-status-' + (t.status || 'open');
+            var statusLabel = (t.status || 'Open').replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+            return '<div class="ticket-item">' +
+                '<div class="ticket-item-head">' +
+                    '<span class="ticket-item-type">' + (t.type||'Support') + '</span>' +
+                    '<span class="ticket-item-date">' + new Date(t.created_at).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'}) + '</span>' +
+                    '<span class="ticket-item-status ' + statusClass + '">' + statusLabel + '</span>' +
+                '</div>' +
+                (t.order_ref ? '<div style="font-size:0.78rem;color:#888;margin-top:4px">Ref: ' + t.order_ref + '</div>' : '') +
+                '<div class="ticket-item-msg">' + t.message + '</div>' +
+                (t.admin_note ? '<div class="ticket-admin-note">&#128226; ' + t.admin_note + '</div>' : '') +
+            '</div>';
+        }).join('');
+    } catch(e) {
+        el.innerHTML = '<p style="color:#aaa;font-size:0.88rem">Could not load tickets.</p>';
+    }
+}
+
+window.submitTicket = async function() {
+    var type = document.getElementById('ticketType').value;
+    var ref  = document.getElementById('ticketRef').value.trim();
+    var msg  = document.getElementById('ticketMsg').value.trim();
+    var msgEl = document.getElementById('ticketFormMsg');
+
+    function showMsg(text, cls) {
+        if (!msgEl) return;
+        msgEl.textContent = text; msgEl.className = 'hub-msg ' + cls;
+    }
+    if (!type) { showMsg('Please select an issue type.', 'err'); return; }
+    if (!msg)  { showMsg('Please describe your issue.', 'err'); return; }
+
+    try {
+        var sess = await WDG.authGetSession();
+        await WDG.supportSubmit({
+            user_id:   sess ? sess.user.id : null,
+            type:      type,
+            order_ref: ref || null,
+            message:   msg,
+            status:    'open'
+        });
+        showMsg('✅ Your request has been submitted. We will be in touch shortly.', 'ok');
+        document.getElementById('ticketType').value = '';
+        document.getElementById('ticketRef').value  = '';
+        document.getElementById('ticketMsg').value  = '';
+        _ticketsLoaded = false;  // reset so history reloads
+        loadTickets();
+    } catch(e) {
+        showMsg('Could not submit: ' + (e.message||'please try again.'), 'err');
+    }
+};
+
+/* ═══════════════ PROFILE ══════════════════════ */
+var _profileLoaded = false;
+async function loadProfile() {
+    if (_profileLoaded) return;
+    _profileLoaded = true;
+    try {
+        var profile = await WDG.authGetProfile();
+        if (!profile) return;
+        var f = function(id, val) { var el = document.getElementById(id); if (el) el.value = val || ''; };
+        f('pfFullName', profile.full_name);
+        f('pfEmail',    profile.email);
+        f('pfPhone',    profile.phone);
+        f('pfDob',      profile.dob);
+        f('pfAddress',  profile.address);
+    } catch(e) {}
+}
+
+window.saveProfile = async function() {
+    var msgEl = document.getElementById('profileMsg');
+    function showMsg(text, cls) { if (!msgEl) return; msgEl.textContent = text; msgEl.className = 'hub-msg ' + cls; }
+
+    var fullName = document.getElementById('pfFullName').value.trim();
+    var phone    = document.getElementById('pfPhone').value.trim();
+    var dob      = document.getElementById('pfDob').value;
+    var address  = document.getElementById('pfAddress').value.trim();
+
+    if (!fullName) { showMsg('Please enter your full name.', 'err'); return; }
+
+    try {
+        var db = await WDG.getDB();
+        var sess = await WDG.authGetSession();
+        if (!sess) { showMsg('You are not signed in.', 'err'); return; }
+
+        var update = { full_name: fullName, phone: phone || null, dob: dob || null, address: address || null, updated_at: new Date().toISOString() };
+        var res = await db.from('profiles').update(update).eq('id', sess.user.id);
+        if (res.error) throw res.error;
+
+        showMsg('✅ Profile saved successfully!', 'ok');
+    } catch(e) {
+        showMsg('Could not save: ' + (e.message||'please try again.'), 'err');
+    }
+};
+
+/* ═══════════════ PAGE BOOT ════════════════════ */
+document.addEventListener('DOMContentLoaded', async function() {
+    updateCartCount();
+    initHamburger();
+    initCartModal();
+    initPromoBanner();
+
+    // Detect hash routing
+    var hashTab = (window.location.hash || '').replace('#','') || 'orders';
+    if (!['orders','wishlist','helpline','profile'].includes(hashTab)) hashTab = 'orders';
+
+    // Show confirmed banner if coming from email verification
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('confirmed') === 'true') {
+        var cb = document.getElementById('confirmedBanner');
+        if (cb) cb.style.display = 'flex';
+    }
+
+    // Wait for auth to boot
+    await window._dbReady;
+    if (typeof initAuth === 'function') await initAuth().catch(function(){});
+
+    var sess = typeof currentSession === 'function' ? currentSession() : null;
+
+    if (sess) {
+        document.getElementById('hubContent').style.display = 'block';
+        // Activate correct tab
+        switchHubTab(hashTab);
+        // If just confirmed, open orders tab and optionally trigger login modal re-check
+        if (params.get('confirmed') === 'true') switchHubTab('orders');
+    } else {
+        // Not logged in — show gate but also open the login modal if confirmed=true
+        document.getElementById('hubLoginGate').style.display = 'block';
+        if (params.get('confirmed') === 'true') {
+            setTimeout(function() {
+                if (typeof openAuthModal === 'function') openAuthModal('login');
+            }, 400);
+        }
+    }
+
+    // Listen for auth state changes (user logs in from this page)
+    if (typeof onAuthReady === 'function') {
+        onAuthReady(function(session, profile) {
+            if (session && !_hubInitDone) {
+                _hubInitDone = true;
+                document.getElementById('hubLoginGate').style.display = 'none';
+                document.getElementById('hubContent').style.display = 'block';
+                switchHubTab(hashTab);
+            }
+        });
+    }
+});
+</script>
+</body>
+</html>
