@@ -1315,3 +1315,27 @@ footer { background:#2c5530; color:#fff; padding:3rem 0 2rem; text-align:center;
 .order-history-total { font-weight: 700; color: #333; font-size: 0.95rem; }
 .order-history-body { padding: 1.2rem 1.4rem; display: none; }
 .order-history-body.open { display: block; }
+
+/* ════════════════════════════════════════
+   ACCOUNT DROPDOWN (Takealot-style)
+════════════════════════════════════════ */
+.account-dropdown {
+    position:absolute; top:calc(100% + 6px); right:0; min-width:220px;
+    background:#fff; border-radius:12px; box-shadow:0 8px 32px rgba(0,0,0,0.14);
+    z-index:9999; border:1px solid #e8f5e9; overflow:hidden; animation:dropIn 0.15s ease;
+}
+@keyframes dropIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+.account-dropdown-header {
+    padding:14px 16px 12px; background:#f0f9f0; border-bottom:1px solid #e8f5e9;
+}
+.account-dropdown-name  { font-weight:800; color:#2c5530; font-size:0.92rem; }
+.account-dropdown-email { color:#888; font-size:0.78rem; margin-top:2px; word-break:break-all; }
+.account-dropdown-item {
+    display:flex; align-items:center; gap:10px; padding:11px 16px;
+    color:#333; text-decoration:none; font-size:0.88rem; font-weight:600;
+    transition:background 0.15s; border:none; background:none; width:100%; cursor:pointer; text-align:left;
+}
+.account-dropdown-item:hover { background:#f0f9f0; color:#2c5530; }
+.account-dropdown-divider { height:1px; background:#f0f0f0; margin:4px 0; }
+.account-dropdown-logout { color:#c62828 !important; }
+.account-dropdown-logout:hover { background:#fff5f5 !important; }
