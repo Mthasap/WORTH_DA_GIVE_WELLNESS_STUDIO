@@ -3,23 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reset Password — WorthDaGive</title>
+<title>Account — WorthDaGive</title>
 <link rel="stylesheet" href="styles.css">
 <style>
-.reset-wrap{max-width:440px;margin:80px auto;background:#fff;border-radius:14px;padding:2.5rem;box-shadow:0 6px 24px rgba(0,0,0,0.1);text-align:center}
-.reset-wrap h2{color:#2c5530;margin-bottom:0.5rem}
-.reset-wrap p{color:#888;font-size:0.9rem;margin-bottom:1.5rem}
-.reset-field{text-align:left;margin-bottom:1rem}
-.reset-field label{display:block;font-size:0.82rem;font-weight:700;color:#555;margin-bottom:5px}
-.reset-field input{width:100%;padding:12px;border:2px solid #ddd;border-radius:8px;font-size:1rem;transition:border-color 0.2s}
-.reset-field input:focus{border-color:#4CAF50;outline:none}
-.reset-msg{padding:10px 14px;border-radius:8px;font-size:0.88rem;font-weight:700;margin-bottom:12px;display:none}
-.reset-msg.ok{background:#d4edda;color:#155724;display:block}
-.reset-msg.err{background:#f8d7da;color:#721c24;display:block}
+.callback-wrap{max-width:440px;margin:80px auto;background:#fff;border-radius:14px;
+  padding:2.5rem;box-shadow:0 6px 24px rgba(0,0,0,0.1);text-align:center}
+.callback-wrap h2{color:#2c5530;margin-bottom:0.5rem}
+.callback-wrap p{color:#888;font-size:0.9rem;margin-bottom:1.5rem}
+.cb-msg{padding:12px 16px;border-radius:8px;font-size:0.9rem;font-weight:700;margin-bottom:14px;display:none}
+.cb-msg.ok{background:#d4edda;color:#155724;display:block}
+.cb-msg.err{background:#f8d7da;color:#721c24;display:block}
+.spinner{width:40px;height:40px;border:3px solid #e0e0e0;border-top-color:#4CAF50;
+  border-radius:50%;animation:spin 0.9s linear infinite;margin:0 auto 1.2rem}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body style="background:#f8f9fa;min-height:100vh">
-
 <header>
   <div class="container">
     <div class="logo">
@@ -31,26 +30,62 @@
   </div>
 </header>
 
-<div class="reset-wrap">
-  <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 1rem;display:block"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
-  <h2>Set New Password</h2>
-  <p>Enter your new password below. Make it strong — at least 8 characters.</p>
+<div class="callback-wrap">
+  <div id="loadingState">
+    <div class="spinner"></div>
+    <h2>Just a moment…</h2>
+    <p>We're confirming your account.</p>
+  </div>
 
-  <div id="resetMsg" class="reset-msg"></div>
+  <div id="successState" style="display:none">
+    <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="1.5"
+      stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 1rem;display:block">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+      <polyline points="22 4 12 14.01 9 11.01"/>
+    </svg>
+    <h2>Email Confirmed!</h2>
+    <p>Your WorthDaGive account is now active. You're being signed in…</p>
+    <div class="cb-msg ok" id="successMsg">Account activated successfully!</div>
+    <button class="btn-primary" style="width:100%;padding:13px" onclick="window.location.href='orders.html?confirmed=true'">
+      Go to My Account
+    </button>
+  </div>
 
-  <div id="resetForm">
-    <div class="reset-field">
-      <label>New Password</label>
-      <input type="password" id="newPw" placeholder="Minimum 8 characters" autocomplete="new-password">
+  <div id="resetState" style="display:none">
+    <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="1.5"
+      stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 1rem;display:block">
+      <rect x="3" y="11" width="18" height="11" rx="2"/>
+      <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+    </svg>
+    <h2>Set New Password</h2>
+    <p>Enter your new password below.</p>
+    <div id="resetMsg" class="cb-msg"></div>
+    <div style="text-align:left;margin-bottom:1rem">
+      <label style="display:block;font-size:0.82rem;font-weight:700;color:#555;margin-bottom:5px">New Password</label>
+      <input type="password" id="newPw" placeholder="Minimum 8 characters" autocomplete="new-password"
+        style="width:100%;padding:12px;border:2px solid #ddd;border-radius:8px;font-size:1rem">
     </div>
-    <div class="reset-field">
-      <label>Confirm New Password</label>
-      <input type="password" id="newPw2" placeholder="Repeat password" autocomplete="new-password">
+    <div style="text-align:left;margin-bottom:1.2rem">
+      <label style="display:block;font-size:0.82rem;font-weight:700;color:#555;margin-bottom:5px">Confirm Password</label>
+      <input type="password" id="newPw2" placeholder="Repeat password" autocomplete="new-password"
+        style="width:100%;padding:12px;border:2px solid #ddd;border-radius:8px;font-size:1rem">
     </div>
     <button class="btn-primary" style="width:100%;padding:13px" onclick="doReset()" id="resetBtn">Update Password</button>
   </div>
 
-  <p style="margin-top:1.2rem;font-size:0.82rem"><a href="index.html" style="color:#4CAF50">← Back to home</a></p>
+  <div id="errorState" style="display:none">
+    <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#f44336" stroke-width="1.5"
+      stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 1rem;display:block">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="15" y1="9" x2="9" y2="15"/>
+      <line x1="9" y1="9" x2="15" y2="15"/>
+    </svg>
+    <h2>Link Expired</h2>
+    <p id="errorMsg">This link may have expired or already been used.</p>
+    <a href="index.html" class="btn-primary" style="display:inline-block;text-decoration:none;padding:12px 28px;margin-top:0.5rem">
+      Back to Home
+    </a>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -58,35 +93,112 @@
 var SUPABASE_URL = "https://tndsmvsuowqdmhtatmie.supabase.co";
 var SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRuZHNtdnN1b3dxZG1odGF0bWllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMzM0MjAsImV4cCI6MjA5MDkwOTQyMH0.KLd3B-MQI1BBJSg98lfFugnqPDqeBBBGuM-cRbI0Eyw";
 
-function showMsg(msg, type) {
-  var el = document.getElementById('resetMsg');
-  el.textContent = msg;
-  el.className = 'reset-msg ' + type;
-}
+function show(id){ ['loadingState','successState','resetState','errorState'].forEach(function(s){ document.getElementById(s).style.display = s===id ? 'block' : 'none'; }); }
 
+window.addEventListener('load', async function() {
+  var SB = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // Supabase passes tokens as hash fragments on the URL
+  var hash = window.location.hash.substring(1);
+  var params = new URLSearchParams(hash);
+
+  var type       = params.get('type');
+  var tokenHash  = params.get('token_hash') || params.get('access_token');
+  var errorCode  = params.get('error_code') || params.get('error');
+
+  // Also check query string (Supabase sometimes uses both)
+  var qParams    = new URLSearchParams(window.location.search);
+  if (!type)      type      = qParams.get('type');
+  if (!tokenHash) tokenHash = qParams.get('token_hash');
+  if (!errorCode) errorCode = qParams.get('error_code');
+
+  if (errorCode) {
+    document.getElementById('errorMsg').textContent = params.get('error_description') || 'This link has expired or is invalid.';
+    show('errorState');
+    return;
+  }
+
+  // PASSWORD RECOVERY
+  if (type === 'recovery') {
+    // Supabase handles session internally from URL hash
+    try {
+      var sessRes = await SB.auth.getSession();
+      if (sessRes.data && sessRes.data.session) {
+        show('resetState');
+      } else {
+        // Try exchanging token
+        var exRes = await SB.auth.exchangeCodeForSession(tokenHash || '');
+        if (exRes.error) throw exRes.error;
+        show('resetState');
+      }
+    } catch(e) {
+      document.getElementById('errorMsg').textContent = 'Reset link expired. Please request a new one.';
+      show('errorState');
+    }
+    return;
+  }
+
+  // EMAIL CONFIRMATION (signup or email change)
+  if (type === 'signup' || type === 'email_change' || type === 'magiclink' || !type) {
+    try {
+      // Exchange token hash for session
+      var exRes2;
+      if (tokenHash && type) {
+        exRes2 = await SB.auth.verifyOtp({ token_hash: tokenHash, type: type });
+      } else {
+        // Let Supabase pick up the session from hash automatically
+        exRes2 = await SB.auth.getSession();
+      }
+      if (exRes2.error) throw exRes2.error;
+
+      // Ensure profile row exists
+      var sessData = exRes2.data.session || (exRes2.data && exRes2.data.session);
+      if (sessData && sessData.user) {
+        var user = sessData.user;
+        await SB.from('profiles').upsert({
+          id:         user.id,
+          email:      user.email,
+          full_name:  (user.user_metadata && user.user_metadata.full_name) || '',
+          dob:        (user.user_metadata && user.user_metadata.dob) || null,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
+      }
+
+      show('successState');
+      // Auto-redirect after 2.5s
+      setTimeout(function(){ window.location.href = 'orders.html?confirmed=true'; }, 2500);
+    } catch(e) {
+      document.getElementById('errorMsg').textContent = e.message || 'Email confirmation failed. The link may have expired.';
+      show('errorState');
+    }
+    return;
+  }
+
+  show('errorState');
+});
+
+// Password reset handler
 async function doReset() {
   var pw  = document.getElementById('newPw').value;
   var pw2 = document.getElementById('newPw2').value;
-  if (!pw || pw.length < 8) { showMsg('Password must be at least 8 characters.', 'err'); return; }
-  if (pw !== pw2)           { showMsg('Passwords do not match.', 'err'); return; }
-
+  var msg = document.getElementById('resetMsg');
+  function showR(t,cls){ msg.textContent=t; msg.className='cb-msg '+cls; }
+  if (!pw || pw.length < 8){ showR('Password must be at least 8 characters.','err'); return; }
+  if (pw !== pw2)           { showR('Passwords do not match.','err'); return; }
   var btn = document.getElementById('resetBtn');
-  btn.disabled = true;
-  btn.textContent = 'Updating…';
-
+  btn.disabled = true; btn.textContent = 'Updating…';
   try {
     var SB = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     var res = await SB.auth.updateUser({ password: pw });
     if (res.error) throw res.error;
-    showMsg('✅ Password updated successfully! Redirecting to sign in…', 'ok');
-    document.getElementById('resetForm').style.display = 'none';
-    setTimeout(function() { window.location.href = 'index.html'; }, 2500);
+    showR('✅ Password updated! Redirecting to sign in…','ok');
+    setTimeout(function(){ window.location.href = 'index.html'; }, 2200);
   } catch(e) {
-    showMsg('Error: ' + (e.message || 'Could not update password. The reset link may have expired.'), 'err');
-    btn.disabled = false;
-    btn.textContent = 'Update Password';
+    showR('Error: ' + (e.message||'Could not update. Link may have expired.'),'err');
+    btn.disabled = false; btn.textContent = 'Update Password';
   }
 }
+window.doReset = doReset;
 </script>
 </body>
 </html>
