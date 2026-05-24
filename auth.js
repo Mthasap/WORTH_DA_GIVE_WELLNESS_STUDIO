@@ -57,20 +57,79 @@ function isLoggedIn()   { return !!_currentSession; }
 function currentUser()  { return _currentProfile; }
 function currentSession() { return _currentSession; }
 
-/* ── Update nav Login/Account link ── */
+/* ── Update nav Login/Account link with dropdown ── */
 function updateNavAuth() {
     const loginBtn = document.getElementById('loginBtn');
     if (!loginBtn) return;
+
+    // Remove existing dropdown if present
+    const existingDropdown = document.getElementById('accountDropdown');
+    if (existingDropdown) existingDropdown.remove();
+
     if (_currentSession && _currentProfile) {
-        loginBtn.innerHTML = ICONS.user + ' ' + (_currentProfile.full_name.split(' ')[0] || 'Account');
-        loginBtn.href = 'orders.html';
-        loginBtn.onclick = null;
+        const firstName = (_currentProfile.full_name || '').split(' ')[0] || 'Account';
+        loginBtn.innerHTML = ICONS.user + ' ' + firstName + ' <span style="font-size:0.7rem;opacity:0.7">▾</span>';
+        loginBtn.href = '#';
+        loginBtn.onclick = (e) => { e.preventDefault(); toggleAccountDropdown(loginBtn); };
+
+        // Inject dropdown menu
+        const dropdown = document.createElement('div');
+        dropdown.id = 'accountDropdown';
+        dropdown.className = 'account-dropdown hidden';
+        dropdown.innerHTML = `
+            <div class="account-dropdown-header">
+                <div class="account-dropdown-name">${_currentProfile.full_name || 'My Account'}</div>
+                <div class="account-dropdown-email">${_currentProfile.email || ''}</div>
+            </div>
+            <a href="orders.html" class="account-dropdown-item">
+                ${ICONS.orders} My Orders
+            </a>
+            <a href="orders.html#wishlist" class="account-dropdown-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                Wishlist
+            </a>
+            <a href="orders.html#helpline" class="account-dropdown-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Helpline
+            </a>
+            <a href="orders.html#profile" class="account-dropdown-item">
+                ${ICONS.user} My Profile
+            </a>
+            <div class="account-dropdown-divider"></div>
+            <a href="#" class="account-dropdown-item account-dropdown-logout" onclick="window.authLogout();return false;">
+                ${ICONS.logout} Sign Out
+            </a>`;
+        // Insert after the loginBtn's parent <li>
+        const li = loginBtn.closest('li') || loginBtn.parentNode;
+        li.style.position = 'relative';
+        li.appendChild(dropdown);
+
+        // Close when clicking outside
+        setTimeout(() => {
+            document.addEventListener('click', closeDropdownOutside);
+        }, 10);
     } else {
         loginBtn.innerHTML = ICONS.user + ' Login';
         loginBtn.href = '#';
         loginBtn.onclick = (e) => { e.preventDefault(); openAuthModal('login'); };
     }
 }
+
+function toggleAccountDropdown(btn) {
+    const d = document.getElementById('accountDropdown');
+    if (!d) return;
+    d.classList.toggle('hidden');
+}
+
+function closeDropdownOutside(e) {
+    const d = document.getElementById('accountDropdown');
+    const btn = document.getElementById('loginBtn');
+    if (d && !d.contains(e.target) && btn && !btn.contains(e.target)) {
+        d.classList.add('hidden');
+        document.removeEventListener('click', closeDropdownOutside);
+    }
+}
+window.closeDropdownOutside = closeDropdownOutside;
 
 /* ════════════════════════════════════════
    AUTH MODAL  (Login + Register)
