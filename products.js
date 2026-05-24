@@ -181,7 +181,7 @@ function buildProductCard(p) {
             tag +
             '<div class="product-card-actions">' +
                 '<button class="add-to-cart" onclick="addToCart(\'' + p.id + '\')">Add to Cart</button>' +
-                '<button class="quick-view-btn" onclick="openQuickView(\'' + p.id + '\')">View ' + (images.length > 1 ? '(' + images.length + ' photos)' : 'Details') + '</button>' +
+                '<button class="wishlist-heart" onclick="toggleWishlistBtn(\\\'\' + p.id + '\\\'\,this)" title="Wishlist" style="background:none;border:1px solid #ddd;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:1.1rem;line-height:1">&#9825;</button>\' +\n                '<button class="quick-view-btn" onclick="openQuickView(\'' + p.id + '\')">View ' + (images.length > 1 ? '(' + images.length + ' photos)' : 'Details') + '</button>' +
             '</div>' +
         '</div>';
     card.querySelector('.product-image').addEventListener('click', function() { openQuickView(p.id); });
@@ -496,3 +496,32 @@ async function bootPage() {
     updateCartCount(); // Re-render count after validation
     if (typeof initAuth === 'function') initAuth().catch(function() {});
 }
+
+// ─── WISHLIST TOGGLE (on product cards) ──────────────
+async function toggleWishlistBtn(productId, btn) {
+    if (!window.WDG) return;
+    var sess = await WDG.authGetSession().catch(function(){ return null; });
+    if (!sess) {
+        if (typeof openAuthModal === 'function') openAuthModal('login');
+        return;
+    }
+    try {
+        var isIn = await WDG.wishlistIsIn(productId);
+        if (isIn) {
+            await WDG.wishlistRemove(productId);
+            btn.innerHTML = '&#9825;';
+            btn.style.color = '#888';
+            btn.style.borderColor = '#ddd';
+            btn.title = 'Add to Wishlist';
+        } else {
+            await WDG.wishlistAdd(productId);
+            btn.innerHTML = '&#9829;';
+            btn.style.color = '#e53935';
+            btn.style.borderColor = '#e53935';
+            btn.title = 'Remove from Wishlist';
+        }
+    } catch(e) {
+        console.warn('Wishlist error:', e.message);
+    }
+}
+window.toggleWishlistBtn = toggleWishlistBtn;
