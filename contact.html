@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact Us &mdash; WorthDaGive Wellness Studio</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+/* ── Page layout ── */
+.contact-page { background:#f8f9fa; min-height:100vh; }
+.contact-hero { background:linear-gradient(135deg,#2c5530,#4CAF50); color:#fff; padding:3rem 0 2.5rem; text-align:center; }
+.contact-hero h2 { font-size:2rem; margin-bottom:0.4rem; }
+.contact-hero p  { opacity:0.88; font-size:1rem; }
+
+.contact-wrap {
+    max-width:960px; margin:0 auto; padding:2.5rem 20px 4rem;
+    display:grid; grid-template-columns:1fr 1.6fr; gap:2rem;
+}
+@media(max-width:700px){ .contact-wrap { grid-template-columns:1fr; } }
+
+/* ── Info card ── */
+.contact-info-card {
+    background:#fff; border-radius:14px;
+    box-shadow:0 4px 18px rgba(0,0,0,0.07); padding:2rem;
+    height:fit-content;
+}
+.contact-info-card h3 { color:#2c5530; font-size:1.1rem; margin-bottom:1.4rem; }
+.contact-info-item {
+    display:flex; align-items:flex-start; gap:12px;
+    margin-bottom:1.2rem; font-size:0.9rem; color:#555;
+}
+.contact-info-icon {
+    width:38px; height:38px; border-radius:50%; background:#e8f5e9;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    color:#2c5530;
+}
+.contact-info-item strong { display:block; color:#333; font-size:0.82rem; font-weight:700; margin-bottom:2px; }
+.contact-info-item a { color:#4CAF50; text-decoration:none; font-weight:600; }
+.contact-info-item a:hover { text-decoration:underline; }
+
+.contact-hours { margin-top:1.5rem; padding-top:1.2rem; border-top:1px solid #eee; }
+.contact-hours h4 { color:#2c5530; font-size:0.9rem; margin-bottom:0.8rem; font-weight:700; }
+.contact-hours-row { display:flex; justify-content:space-between; font-size:0.85rem; color:#555; margin-bottom:5px; }
+.contact-hours-row span:last-child { font-weight:600; color:#333; }
+
+.contact-social { margin-top:1.5rem; padding-top:1.2rem; border-top:1px solid #eee; }
+.contact-social h4 { color:#2c5530; font-size:0.9rem; margin-bottom:0.8rem; font-weight:700; }
+.contact-social-links { display:flex; gap:10px; flex-wrap:wrap; }
+.contact-social-link {
+    padding:7px 14px; border-radius:20px; font-size:0.8rem; font-weight:700;
+    text-decoration:none; transition:opacity 0.2s;
+}
+.contact-social-link:hover { opacity:0.8; }
+.cs-whatsapp { background:#25d366; color:#fff; }
+.cs-instagram { background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); color:#fff; }
+.cs-facebook  { background:#1877f2; color:#fff; }
+
+/* ── Form card ── */
+.contact-form-card {
+    background:#fff; border-radius:14px;
+    box-shadow:0 4px 18px rgba(0,0,0,0.07); padding:2rem;
+}
+.contact-form-card h3 { color:#2c5530; font-size:1.1rem; margin-bottom:0.3rem; }
+.contact-form-card > p { color:#888; font-size:0.88rem; margin-bottom:1.6rem; }
+
+.cf-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+@media(max-width:500px){ .cf-row { grid-template-columns:1fr; } }
+
+.cf-field { margin-bottom:14px; }
+.cf-field label {
+    display:block; font-size:0.82rem; font-weight:700; color:#555; margin-bottom:6px;
+}
+.cf-field input,
+.cf-field select,
+.cf-field textarea {
+    width:100%; padding:11px 14px; border:2px solid #ddd;
+    border-radius:8px; font-size:0.92rem; outline:none; font-family:inherit;
+    transition:border-color 0.2s; box-sizing:border-box;
+}
+.cf-field input:focus,
+.cf-field select:focus,
+.cf-field textarea:focus { border-color:#4CAF50; }
+.cf-field textarea { resize:vertical; min-height:120px; }
+.cf-field select { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; padding-right:36px; }
+
+.cf-submit {
+    width:100%; padding:14px; background:#4CAF50; color:#fff; border:none;
+    border-radius:8px; font-size:1rem; font-weight:700; cursor:pointer;
+    transition:background 0.2s; display:flex; align-items:center; justify-content:center; gap:10px;
+    margin-top:0.5rem;
+}
+.cf-submit:hover:not(:disabled) { background:#388e3c; }
+.cf-submit:disabled { opacity:0.65; cursor:not-allowed; }
+
+.cf-msg {
+    padding:12px 16px; border-radius:8px; font-size:0.9rem;
+    font-weight:600; margin-bottom:1rem; display:none;
+}
+.cf-msg.ok  { background:#d4edda; color:#155724; display:block; }
+.cf-msg.err { background:#f8d7da; color:#721c24; display:block; }
+
+.cf-spinner {
+    width:18px; height:18px; border:2px solid rgba(255,255,255,0.4);
+    border-top-color:#fff; border-radius:50%; animation:cfSpin 0.8s linear infinite;
+}
+@keyframes cfSpin { to{transform:rotate(360deg)} }
+
+/* ── Map placeholder ── */
+.contact-map-section { max-width:960px; margin:0 auto 3rem; padding:0 20px; }
+.contact-map-section h3 { color:#2c5530; margin-bottom:1rem; font-size:1rem; }
+.contact-map-frame {
+    width:100%; height:280px; border-radius:14px; overflow:hidden;
+    border:none; box-shadow:0 4px 18px rgba(0,0,0,0.08);
+}
+</style>
+</head>
+<body class="contact-page">
+
+<div id="promoBanner" class="promo-banner" style="display:none">
+  <div class="promo-banner-inner">
+    <span id="promoBannerText"></span>
+    <button class="promo-banner-close" id="promoBannerClose" aria-label="Close">&times;</button>
+  </div>
+</div>
+
+<header>
+  <div class="container">
+    <div class="logo">
+      <a href="index.html">
+        <img src="https://res.cloudinary.com/dbcfzmxzt/image/upload/v1775733144/main_logo_hm6s6w.png"
+             alt="WorthDaGive Wellness Studio" class="logo-img" loading="lazy">
+        <div class="logo-text"><h1>WorthDaGive</h1><span class="tagline">Wellness Studio</span></div>
+      </a>
+    </div>
+    <button class="hamburger" id="hamburgerBtn" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="main-nav" id="mainNav">
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="products.html">Products</a></li>
+        <li><a href="index.html#about">About</a></li>
+        <li><a href="contact.html" class="active">Contact</a></li>
+        <li><a href="track.html">Track Order</a></li>
+        <li><a href="#" id="loginBtn" class="nav-icon-link">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Login
+        </a></li>
+        <li><a href="#" id="cartBtn" class="nav-icon-link">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          Cart (<span id="cartCount">0</span>)
+        </a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<div class="contact-hero">
+  <div class="container">
+    <h2>Get in Touch</h2>
+    <p>We'd love to hear from you. Send us a message and we'll respond within 24 hours.</p>
+  </div>
+</div>
+
+<div class="contact-wrap">
+
+  <!-- Left: Contact info -->
+  <div class="contact-info-card">
+    <h3>Contact Information</h3>
+
+    <div class="contact-info-item">
+      <div class="contact-info-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      </div>
+      <div>
+        <strong>Email</strong>
+        <a href="mailto:hello@worthdagive.co.za">hello@worthdagive.co.za</a>
+      </div>
+    </div>
+
+    <div class="contact-info-item">
+      <div class="contact-info-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6.16 6.16l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+      </div>
+      <div>
+        <strong>WhatsApp / Phone</strong>
+        <a href="https://wa.me/27000000000" target="_blank" rel="noopener">+27 000 000 0000</a>
+      </div>
+    </div>
+
+    <div class="contact-info-item">
+      <div class="contact-info-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      </div>
+      <div>
+        <strong>Location</strong>
+        <span>Johannesburg, Gauteng, South Africa</span>
+      </div>
+    </div>
+
+    <div class="contact-hours">
+      <h4>Business Hours</h4>
+      <div class="contact-hours-row"><span>Monday – Friday</span><span>9:00 – 18:00</span></div>
+      <div class="contact-hours-row"><span>Saturday</span><span>9:00 – 15:00</span></div>
+      <div class="contact-hours-row"><span>Sunday</span><span>Closed</span></div>
+    </div>
+
+    <div class="contact-social">
+      <h4>Follow Us</h4>
+      <div class="contact-social-links">
+        <a href="https://wa.me/27000000000" target="_blank" rel="noopener" class="contact-social-link cs-whatsapp">WhatsApp</a>
+        <a href="https://www.instagram.com/worthdagive?igsh=NjhmaWQ4eXlmeHJu" target="_blank" rel="noopener" class="contact-social-link cs-instagram">Instagram</a>
+        <a href="#" class="contact-social-link cs-facebook">Facebook</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Contact form -->
+  <div class="contact-form-card">
+    <h3>Send Us a Message</h3>
+    <p>Fill in the form below and we'll get back to you as soon as possible.</p>
+
+    <div id="cfMsg" class="cf-msg"></div>
+
+    <div class="cf-row">
+      <div class="cf-field">
+        <label for="cfFirstName">First Name *</label>
+        <input type="text" id="cfFirstName" placeholder="Thabo" autocomplete="given-name" required>
+      </div>
+      <div class="cf-field">
+        <label for="cfLastName">Last Name *</label>
+        <input type="text" id="cfLastName" placeholder="Khumalo" autocomplete="family-name" required>
+      </div>
+    </div>
+
+    <div class="cf-row">
+      <div class="cf-field">
+        <label for="cfEmail">Email Address *</label>
+        <input type="email" id="cfEmail" placeholder="you@example.com" autocomplete="email" required>
+      </div>
+      <div class="cf-field">
+        <label for="cfPhone">Phone / WhatsApp</label>
+        <input type="tel" id="cfPhone" placeholder="+27 81 234 5678" autocomplete="tel">
+      </div>
+    </div>
+
+    <div class="cf-field">
+      <label for="cfSubject">Subject *</label>
+      <select id="cfSubject" required>
+        <option value="">— Select a topic —</option>
+        <option value="order">Order Enquiry</option>
+        <option value="product">Product Question</option>
+        <option value="delivery">Delivery / Tracking</option>
+        <option value="return">Return / Refund</option>
+        <option value="wholesale">Wholesale / Bulk</option>
+        <option value="partnership">Partnership / Collaboration</option>
+        <option value="complaint">Complaint</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+
+    <div class="cf-field" id="orderRefField" style="display:none">
+      <label for="cfOrderRef">Order Reference (e.g. WDG-XXXXX)</label>
+      <input type="text" id="cfOrderRef" placeholder="WDG-XXXXX" style="text-transform:uppercase">
+    </div>
+
+    <div class="cf-field">
+      <label for="cfMessage">Message *</label>
+      <textarea id="cfMessage" placeholder="Tell us how we can help you…" required></textarea>
+    </div>
+
+    <div class="cf-field" style="display:flex;align-items:flex-start;gap:10px;font-size:0.84rem;color:#555">
+      <input type="checkbox" id="cfPopia" style="margin-top:3px;flex-shrink:0;width:16px;height:16px">
+      <label for="cfPopia">I consent to WorthDaGive processing my personal information to respond to my enquiry, in accordance with the <a href="index.html#legal-full" target="_blank" style="color:#4CAF50;font-weight:600">POPIA Privacy Notice</a>.</label>
+    </div>
+
+    <button class="cf-submit" id="cfSubmitBtn" onclick="submitContactForm()">
+      <span id="cfBtnText">Send Message</span>
+      <span id="cfBtnSpinner" class="cf-spinner" style="display:none"></span>
+    </button>
+  </div>
+</div>
+
+<!-- WhatsApp float -->
+<a href="https://wa.me/27000000000" target="_blank" rel="noopener noreferrer" class="whatsapp-float" aria-label="Chat on WhatsApp">
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+  <span class="whatsapp-label">Chat with us</span>
+</a>
+
+<footer>
+  <div class="container">
+    <div class="social-links"><h3>Follow Us</h3>
+      <div class="social-buttons">
+        <a href="#" class="social-btn-facebook">Facebook</a>
+        <a href="https://www.instagram.com/worthdagive?igsh=NjhmaWQ4eXlmeHJu" class="social-btn-instagram">Instagram</a>
+        <a href="#" class="social-btn-twitter">X / Twitter</a>
+        <a href="#" class="social-btn-tiktok">TikTok</a>
+      </div>
+    </div>
+    <div class="footer-legal">
+      <p>All applicable products are cannabis-infused and intended for adults 18+ only.</p>
+      <p>Sold in compliance with the Cannabis for Private Purposes Act 7 of 2024 (South Africa).</p>
+      <p>&copy; 2026 WorthDaGive Wellness Studio. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
+
+<!-- Cart modal -->
+<div id="cartModal" class="modal hidden">
+  <div class="modal-content">
+    <button class="close" data-modal="cartModal" aria-label="Close">&times;</button>
+    <h2>Shopping Cart</h2>
+    <div id="cartItems"></div>
+    <div class="cart-total">
+      <p>Total: R<span id="cartTotal">0.00</span></p>
+      <button id="checkoutBtn" class="btn-primary">Proceed to Checkout</button>
+    </div>
+  </div>
+</div>
+
+<script src="supabase.js"></script>
+<script src="auth.js"></script>
+<script src="cookie-consent.js"></script>
+<script>
+/* ── Hamburger ── */
+document.addEventListener('DOMContentLoaded', function() {
+    var btn = document.getElementById('hamburgerBtn');
+    var nav = document.getElementById('mainNav');
+    if (btn && nav) btn.addEventListener('click', function() { nav.classList.toggle('open'); });
+
+    /* ── Cart modal ── */
+    var cartBtn   = document.getElementById('cartBtn');
+    var cartModal = document.getElementById('cartModal');
+    if (cartBtn) cartBtn.addEventListener('click', function(e) { e.preventDefault(); if (cartModal) cartModal.classList.remove('hidden'); });
+    document.querySelectorAll('.close[data-modal]').forEach(function(b) {
+        b.addEventListener('click', function() { var t = document.getElementById(b.dataset.modal); if (t) t.classList.add('hidden'); });
+    });
+    window.addEventListener('click', function(e) { if (e.target === cartModal) cartModal.classList.add('hidden'); });
+    var checkoutBtn = document.getElementById('checkoutBtn');
+    if (checkoutBtn) checkoutBtn.addEventListener('click', function() { window.location.href = 'checkout.html'; });
+
+    /* ── Show order ref field when subject is order/delivery ── */
+    var subjectEl = document.getElementById('cfSubject');
+    var refField  = document.getElementById('orderRefField');
+    if (subjectEl) subjectEl.addEventListener('change', function() {
+        var show = ['order','delivery','return'].includes(this.value);
+        if (refField) refField.style.display = show ? 'block' : 'none';
+    });
+
+    /* ── Pre-fill form if user is logged in ── */
+    if (typeof onAuthReady === 'function') {
+        onAuthReady(function(session, profile) {
+            if (!profile) return;
+            var parts = (profile.full_name || '').split(' ');
+            var fn = document.getElementById('cfFirstName');
+            var ln = document.getElementById('cfLastName');
+            var em = document.getElementById('cfEmail');
+            var ph = document.getElementById('cfPhone');
+            if (fn && !fn.value) fn.value = parts[0] || '';
+            if (ln && !ln.value) ln.value = parts.slice(1).join(' ') || '';
+            if (em && !em.value) em.value = profile.email || '';
+            if (ph && !ph.value) ph.value = profile.phone || '';
+        });
+    }
+});
+
+/* ── Contact form submission ── */
+window.submitContactForm = async function() {
+    var msg     = document.getElementById('cfMsg');
+    var btn     = document.getElementById('cfSubmitBtn');
+    var btnText = document.getElementById('cfBtnText');
+    var spinner = document.getElementById('cfBtnSpinner');
+
+    function showMsg(text, cls) {
+        msg.textContent = text;
+        msg.className   = 'cf-msg ' + cls;
+        msg.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
+    function setLoading(on) {
+        btn.disabled         = on;
+        btnText.style.display = on ? 'none' : '';
+        spinner.style.display = on ? 'block' : 'none';
+    }
+
+    var firstName = document.getElementById('cfFirstName').value.trim();
+    var lastName  = document.getElementById('cfLastName').value.trim();
+    var email     = document.getElementById('cfEmail').value.trim();
+    var phone     = document.getElementById('cfPhone').value.trim();
+    var subject   = document.getElementById('cfSubject').value;
+    var orderRef  = document.getElementById('cfOrderRef').value.trim().toUpperCase();
+    var message   = document.getElementById('cfMessage').value.trim();
+    var popia     = document.getElementById('cfPopia').checked;
+
+    if (!firstName)            { showMsg('Please enter your first name.',            'err'); return; }
+    if (!lastName)             { showMsg('Please enter your last name.',             'err'); return; }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showMsg('Please enter a valid email address.', 'err'); return; }
+    if (!subject)              { showMsg('Please select a subject.',                 'err'); return; }
+    if (!message || message.length < 10) { showMsg('Please enter a message (at least 10 characters).', 'err'); return; }
+    if (!popia)                { showMsg('Please consent to our POPIA privacy notice.', 'err'); return; }
+
+    setLoading(true);
+
+    try {
+        var db   = await WDG.getDB();
+        var sess = typeof currentSession === 'function' ? currentSession() : null;
+
+        var ticket = {
+            user_id:    sess ? sess.user.id : null,
+            name:       firstName + ' ' + lastName,
+            email:      email,
+            phone:      phone || null,
+            subject:    subject,
+            order_ref:  orderRef || null,
+            message:    message,
+            status:     'open',
+            source:     'contact_form'
+        };
+
+        /* Try support_tickets table first (matches existing Supabase schema) */
+        var res = await db.from('support_tickets').insert(ticket);
+
+        if (res.error) {
+            /* Fallback: try a generic contact_messages table */
+            res = await db.from('contact_messages').insert(ticket);
+            if (res.error) throw res.error;
+        }
+
+        showMsg('✅ Thank you! Your message has been sent. We\'ll respond within 24 hours.', 'ok');
+
+        /* Clear form */
+        ['cfFirstName','cfLastName','cfEmail','cfPhone','cfMessage','cfOrderRef'].forEach(function(id) {
+            var el = document.getElementById(id); if (el) el.value = '';
+        });
+        document.getElementById('cfSubject').value = '';
+        document.getElementById('cfPopia').checked  = false;
+        document.getElementById('orderRefField').style.display = 'none';
+
+    } catch(e) {
+        console.error('Contact form error:', e);
+        showMsg('Could not send message. Please email us directly at hello@worthdagive.co.za', 'err');
+    } finally {
+        setLoading(false);
+    }
+};
+</script>
+</body>
+</html>
