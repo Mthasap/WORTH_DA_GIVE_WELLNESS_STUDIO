@@ -52,7 +52,7 @@
         <div class="container">
             <div class="logo">
                 <a href="index.html">
-                    <img src="media/main_logo.png" alt="WorthDaGive Wellness Studio" class="logo-img" loading="lazy">
+                    <img src="https://res.cloudinary.com/dbcfzmxzt/image/upload/v1775733144/main_logo_hm6s6w.png" alt="WorthDaGive Wellness Studio" class="logo-img" loading="lazy">
                     <div class="logo-text"><h1>WorthDaGive</h1><span class="tagline">Wellness Studio</span></div>
                 </a>
             </div>
@@ -182,12 +182,12 @@
                         <h2>3. Payment Method</h2>
                         <div class="payment-methods">
 
-                            <!-- PayFast Secure Checkout -->
-                            <button class="payment-method-btn active" data-method="payfast" onclick="selectPayment(this)">
-                                <div style="width:44px;height:26px;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;background:#e8f5e9;border-radius:6px;color:#2c5530;font-weight:800;font-size:0.75rem;">
-                                    PF
+                            <!-- YOCO Secure Checkout -->
+                            <button class="payment-method-btn active" data-method="yoco" onclick="selectPayment(this)">
+                                <div style="width:44px;height:26px;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;background:#fff3e0;border-radius:6px;font-weight:900;font-size:0.8rem;color:#e65100;">
+                                    YOCO
                                 </div>
-                                <span style="font-size:0.78rem;font-weight:700;color:#333;">PayFast</span>
+                                <span style="font-size:0.78rem;font-weight:700;color:#333;">Card (YOCO)</span>
                             </button>
 
                             <!-- Cash on Delivery -->
@@ -199,11 +199,11 @@
                             </button>
                         </div>
 
-                        <!-- PayFast panel -->
-                        <div id="payPayfast" class="payment-detail-panel">
+                        <!-- YOCO panel -->
+                        <div id="payYoco" class="payment-detail-panel">
                             <div style="background:#f8f9fa;border-radius:8px;padding:1rem;border:1px solid #e0e0e0;">
-                                <p style="font-weight:700;color:#2c5530;margin-bottom:4px;">Secure PayFast Checkout</p>
-                                <p style="font-size:0.88rem;color:#555;line-height:1.6;">You will be redirected to PayFast to complete payment by card, Instant EFT, QR or any method enabled on the merchant account. We do not collect or store card details on this website.</p>
+                                <p style="font-weight:700;color:#e65100;margin-bottom:4px;">Secure YOCO Card Payment</p>
+                                <p style="font-size:0.88rem;color:#555;line-height:1.6;">You will be redirected to YOCO's secure hosted checkout to complete payment by card, Instant EFT, QR or any method enabled on the merchant account. We do not collect or store card details on this website.</p>
                             </div>
                         </div>
 
@@ -307,7 +307,7 @@
     }
 
     let isDelivery     = true;
-    let selectedPayment = 'payfast';
+    let selectedPayment = 'yoco';
     let currentDeliveryFee = 0;
 
     /* ── Province change → zone fee ── */
@@ -344,7 +344,7 @@
         document.querySelectorAll('.payment-method-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         selectedPayment = btn.dataset.method;
-        ['payfast','cod'].forEach(m => {
+        ['yoco','cod'].forEach(m => {
             const el = document.getElementById('pay' + m.charAt(0).toUpperCase() + m.slice(1));
             if (el) el.classList.toggle('hidden', m !== selectedPayment);
         });
@@ -427,47 +427,30 @@
         return null;
     }
 
-    function buildPayFastPayload(order, total) {
-        return {
-            order_id: order.id,
-            ref: order.ref,
-            amount: Number(total).toFixed(2),
-            item_name: 'WorthDaGive Order ' + order.ref,
-            name_first: document.getElementById('coFirstName').value.trim(),
-            name_last: document.getElementById('coLastName').value.trim(),
-            email_address: document.getElementById('coEmail').value.trim()
+    // buildPayFastPayload removed (now using YOCO)
+
+    // YOCO Checkout
+    async function startYocoCheckout(order, total) {
+        const payload = {
+            order_id:      order.id,
+            ref:           order.ref,
+            amount:        total,
+            item_name:     'WorthDaGive Order ' + order.ref,
+            name_first:    order.first_name  || '',
+            name_last:     order.last_name   || '',
+            email_address: order.email       || ''
         };
-    }
-
-    function submitPayFastForm(actionUrl, fields) {
-        const old = document.getElementById('payfastRedirectForm');
-        if (old) old.remove();
-        const form = document.createElement('form');
-        form.id = 'payfastRedirectForm';
-        form.method = 'post';
-        form.action = actionUrl;
-        Object.keys(fields).forEach(key => {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = key;
-            input.value = fields[key] == null ? '' : String(fields[key]);
-            form.appendChild(input);
-        });
-        document.body.appendChild(form);
-        form.submit();
-    }
-
-    async function startPayFastCheckout(order, total) {
-        const res = await fetch('/api/payfast-create', {
+        const res = await fetch('/api/yoco-create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(buildPayFastPayload(order, total))
+            body: JSON.stringify(payload)
         });
         const data = await res.json();
-        if (!res.ok || !data.actionUrl || !data.fields) {
-            throw new Error(data.error || 'Could not start PayFast checkout.');
+        if (!res.ok || !data.redirectUrl) {
+            throw new Error(data.error || 'Could not start YOCO checkout.');
         }
-        submitPayFastForm(data.actionUrl, data.fields);
+        // Redirect user to YOCO hosted payment page
+        window.location.href = data.redirectUrl;
     }
 
     /* ── Place order ── */
@@ -484,7 +467,7 @@
 
         const btn = document.getElementById('placeOrderBtn');
         btn.disabled     = true;
-        btn.textContent  = selectedPayment === 'payfast' ? 'Redirecting to PayFast...' : 'Placing order...';
+        btn.textContent  = selectedPayment === 'yoco' ? 'Redirecting to YOCO...' : 'Placing order...';
 
         const cart        = getCart();
         const session     = currentSession ? currentSession() : null;
@@ -532,8 +515,8 @@
         try {
             const order = await dbCreateOrder(orderPayload, items);
 
-            if (selectedPayment === 'payfast') {
-                await startPayFastCheckout(order, total);
+            if (selectedPayment === 'yoco') {
+                await startYocoCheckout(order, total);
                 return;
             }
 
