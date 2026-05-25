@@ -29,7 +29,7 @@
         <li><a href="index.html">Home</a></li>
         <li><a href="products.html">Products</a></li>
         <li><a href="index.html#about">About</a></li>
-        <li><a href="index.html#contact">Contact</a></li>
+        <li><a href="contact.html">Contact</a></li>
         <li><a href="track.html">Track Order</a></li>
         <li><a href="#" id="loginBtn" class="nav-icon-link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Login</a></li>
         <li><a href="#" id="cartBtn" class="nav-icon-link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Cart (<span id="cartCount">0</span>)</a></li>
@@ -200,6 +200,27 @@
               <button class="btn-primary" style="padding:12px 28px" onclick="saveProfile()">Save Changes</button>
               <button class="btn-secondary" style="padding:12px 20px" onclick="openAuthModal && openAuthModal('forgot')">Change Password</button>
             </div>
+          </div>
+
+          <!-- Account Danger Zone -->
+          <div class="profile-danger-zone" style="margin-top:2rem;padding:1.5rem;border:2px solid #fee2e2;border-radius:12px;background:#fff8f8">
+            <h3 style="color:#c0392b;font-size:1rem;margin-bottom:0.4rem;display:flex;align-items:center;gap:8px">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c0392b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              Account Management
+            </h3>
+            <p style="font-size:0.85rem;color:#888;margin-bottom:1.2rem">These actions affect your account access. Please read carefully before proceeding.</p>
+
+            <div style="display:flex;gap:12px;flex-wrap:wrap">
+              <button onclick="confirmDeactivateAccount()" style="padding:10px 20px;background:#fff;border:2px solid #e65100;color:#e65100;border-radius:8px;font-weight:700;font-size:0.88rem;cursor:pointer;transition:all 0.2s"
+                onmouseover="this.style.background='#fff3e0'" onmouseout="this.style.background='#fff'">
+                Deactivate Account
+              </button>
+              <button onclick="confirmDeleteAccount()" style="padding:10px 20px;background:#fff;border:2px solid #c0392b;color:#c0392b;border-radius:8px;font-weight:700;font-size:0.88rem;cursor:pointer;transition:all 0.2s"
+                onmouseover="this.style.background='#fff0f0'" onmouseout="this.style.background='#fff'">
+                Delete Account
+              </button>
+            </div>
+            <div id="dangerMsg" style="margin-top:0.8rem"></div>
           </div>
         </div>
 
@@ -620,6 +641,94 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 });
+
+/* ═══════════════ ACCOUNT DEACTIVATION / DELETION ════════════ */
+
+window.confirmDeactivateAccount = function() {
+    var msg = document.getElementById('dangerMsg');
+    function show(t,c){msg.innerHTML='<div style="padding:10px 14px;border-radius:8px;font-size:0.88rem;font-weight:600;background:'+(c==='err'?'#f8d7da':'#fff3e0')+';color:'+(c==='err'?'#721c24':'#e65100')+'">'+t+'</div>';}
+
+    var confirmed = window.confirm(
+        'Deactivate your account?\n\n' +
+        'Your account will be disabled. You will not be able to log in until you contact us to reactivate it.\n\n' +
+        'Your order history and data will be preserved.\n\n' +
+        'Click OK to deactivate.'
+    );
+    if (!confirmed) return;
+
+    (async function() {
+        try {
+            var db = await WDG.getDB();
+            var sess = await WDG.authGetSession();
+            if (!sess) { show('You are not signed in.', 'err'); return; }
+            // Mark profile as deactivated
+            var res = await db.from('profiles').update({
+                deactivated: true,
+                deactivated_at: new Date().toISOString()
+            }).eq('id', sess.user.id);
+            if (res.error) throw res.error;
+            // Sign out
+            await WDG.authLogout();
+            alert('Your account has been deactivated. Contact us at hello@worthdagive.co.za to reactivate it.');
+            window.location.href = 'index.html';
+        } catch(e) {
+            show('Could not deactivate: ' + (e.message || 'please try again.'), 'err');
+        }
+    })();
+};
+
+window.confirmDeleteAccount = function() {
+    var msg = document.getElementById('dangerMsg');
+    function show(t,c){msg.innerHTML='<div style="padding:10px 14px;border-radius:8px;font-size:0.88rem;font-weight:600;background:'+(c==='err'?'#f8d7da':'#d4edda')+';color:'+(c==='err'?'#721c24':'#155724')+'">'+t+'</div>';}
+
+    var confirmed = window.confirm(
+        'DELETE your account permanently?\n\n' +
+        '⚠️ This cannot be undone.\n\n' +
+        'Your profile, wishlist, and personal data will be permanently deleted. ' +
+        'Order records may be retained for legal and accounting purposes as required by law.\n\n' +
+        'Click OK to permanently delete your account.'
+    );
+    if (!confirmed) return;
+
+    // Second confirmation with typed phrase
+    var typed = window.prompt('Type DELETE to confirm permanent account deletion:');
+    if (!typed || typed.trim().toUpperCase() !== 'DELETE') {
+        show('Account deletion cancelled.', 'ok');
+        return;
+    }
+
+    (async function() {
+        try {
+            var db = await WDG.getDB();
+            var sess = await WDG.authGetSession();
+            if (!sess) { show('You are not signed in.', 'err'); return; }
+            var userId = sess.user.id;
+
+            // Delete personal data from profiles, wishlist, support_tickets
+            await db.from('wishlist').delete().eq('user_id', userId);
+            await db.from('support_tickets').update({ user_id: null }).eq('user_id', userId);
+            // Anonymise orders (keep for legal/accounting, remove personal link)
+            await db.from('orders').update({
+                user_id: null,
+                first_name: 'Deleted',
+                last_name: 'User',
+                email: null,
+                phone: null,
+                address: null
+            }).eq('user_id', userId);
+            // Delete profile row
+            await db.from('profiles').delete().eq('id', userId);
+
+            // Sign out before Supabase auth deletion
+            await WDG.authLogout();
+
+            show('Your account and personal data have been permanently deleted.', 'ok');
+            setTimeout(function() { window.location.href = 'index.html'; }, 2000);
+        } catch(e) {
+            show('Could not delete account: ' + (e.message || 'please contact us directly.'), 'err');
+        }
+    })();
+};
 </script>
 </body>
 </html>
