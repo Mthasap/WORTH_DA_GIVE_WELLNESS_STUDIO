@@ -109,7 +109,34 @@ async function authGetProfile() {
     var sess = await authGetSession();
     if (!sess) return null;
     var res = await db.from('profiles').select('*').eq('id', sess.user.id).single();
-    return res.data || null;
+    var profile = res.data || null;
+
+    // If profile row exists but full_name is blank, pull it from auth user_metadata
+    // This fixes cases where the profile row was created without a name
+    if (profile && !profile.full_name) {
+        var meta = (sess.user && sess.user.user_metadata) || {};
+        var nameFromMeta = meta.full_name || meta.name || '';
+        if (nameFromMeta) {
+            profile.full_name = nameFromMeta;
+            // Backfill the profiles table so it's fixed permanently
+            await db.from('profiles').update({ full_name: nameFromMeta }).eq('id', sess.user.id);
+        }
+    }
+
+    // If no profile row at all, build one from session data
+    if (!profile && sess.user) {
+        var meta = (sess.user.user_metadata) || {};
+        profile = {
+            id:        sess.user.id,
+            email:     sess.user.email,
+            full_name: meta.full_name || meta.name || '',
+            dob:       meta.dob || null
+        };
+        // Create the missing profile row
+        await db.from('profiles').upsert(profile, { onConflict: 'id' });
+    }
+
+    return profile;
 }
 
 async function authOnChange(cb) {
