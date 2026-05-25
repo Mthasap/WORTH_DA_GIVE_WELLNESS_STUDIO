@@ -19,6 +19,145 @@ const ICONS = {
 };
 
 /* ── Current session state ── */
+/* -- Inject account dropdown + auth modal styles (self-contained, no styles.css needed) -- */
+(function injectAuthStyles() {
+    if (document.getElementById('wdg-auth-styles')) return;
+    var s = document.createElement('style');
+    s.id = 'wdg-auth-styles';
+    s.textContent = `
+      .hidden { display: none !important; }
+
+      /* Account dropdown */
+      .account-dropdown {
+        position: absolute; top: calc(100% + 10px); right: 0;
+        min-width: 230px; background: #fff; border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.18); border: 1px solid #e8e8e8;
+        z-index: 9999; overflow: hidden; animation: wdgDropIn 0.18s ease;
+      }
+      @keyframes wdgDropIn {
+        from { opacity:0; transform:translateY(-8px); }
+        to   { opacity:1; transform:translateY(0); }
+      }
+      .account-dropdown-header {
+        padding: 14px 16px 12px;
+        background: linear-gradient(135deg,#2c5530,#4CAF50); color:#fff;
+      }
+      .account-dropdown-name  { font-weight:700; font-size:0.95rem; margin-bottom:2px; }
+      .account-dropdown-email { font-size:0.78rem; opacity:0.85; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .account-dropdown-item {
+        display:flex; align-items:center; gap:10px;
+        padding:11px 16px; color:#333; text-decoration:none;
+        font-size:0.88rem; font-weight:500; transition:background 0.15s; cursor:pointer;
+      }
+      .account-dropdown-item:hover { background:#f0f7f0; color:#2c5530; }
+      .account-dropdown-divider { height:1px; background:#eee; margin:4px 0; }
+      .account-dropdown-logout { color:#c0392b !important; }
+      .account-dropdown-logout:hover { background:#fff0f0 !important; }
+      #loginBtn { display:flex; align-items:center; gap:5px; white-space:nowrap; }
+
+      /* Modal overlay */
+      .modal {
+        position:fixed; inset:0; background:rgba(0,0,0,0.55);
+        z-index:10000; display:flex; align-items:center; justify-content:center; padding:16px;
+      }
+      .modal-content {
+        background:#fff; border-radius:16px; padding:2rem;
+        width:100%; max-width:420px; position:relative;
+        box-shadow:0 12px 48px rgba(0,0,0,0.22); animation:wdgModalIn 0.2s ease;
+      }
+      @keyframes wdgModalIn {
+        from { opacity:0; transform:scale(0.95); }
+        to   { opacity:1; transform:scale(1); }
+      }
+      .modal-content .close {
+        position:absolute; top:14px; right:16px; background:none; border:none;
+        font-size:1.5rem; cursor:pointer; color:#888; line-height:1; padding:4px;
+      }
+      .modal-content .close:hover { color:#333; }
+
+      /* Auth tabs */
+      .auth-tabs { display:flex; border-bottom:2px solid #eee; margin-bottom:1.4rem; }
+      .auth-tab {
+        flex:1; padding:10px; text-align:center; font-weight:700; font-size:0.95rem;
+        color:#999; cursor:pointer; border-bottom:2px solid transparent;
+        margin-bottom:-2px; transition:color 0.2s,border-color 0.2s;
+      }
+      .auth-tab.active { color:#2c5530; border-bottom-color:#4CAF50; }
+      .auth-panel { display:none; }
+      .auth-panel.active { display:block; }
+      .auth-panel-subtitle { color:#888; font-size:0.88rem; margin-bottom:1.2rem; }
+
+      /* Form fields */
+      .auth-field { margin-bottom:1rem; }
+      .auth-field label {
+        display:flex; align-items:center; gap:6px;
+        font-size:0.82rem; font-weight:700; color:#555; margin-bottom:6px;
+      }
+      .auth-field input {
+        width:100%; padding:11px 14px; border:2px solid #ddd;
+        border-radius:8px; font-size:0.95rem; outline:none;
+        transition:border-color 0.2s; box-sizing:border-box;
+      }
+      .auth-field input:focus { border-color:#4CAF50; }
+      .auth-pw-wrap { position:relative; }
+      .auth-pw-wrap input { padding-right:42px; }
+      .auth-pw-toggle {
+        position:absolute; right:12px; top:50%; transform:translateY(-50%);
+        background:none; border:none; cursor:pointer; color:#aaa; padding:0; display:flex;
+      }
+      .auth-pw-toggle:hover { color:#555; }
+
+      /* Buttons */
+      .btn-auth-primary {
+        width:100%; padding:13px; background:#4CAF50; color:#fff;
+        border:none; border-radius:8px; font-size:1rem; font-weight:700;
+        cursor:pointer; transition:background 0.2s;
+        display:flex; align-items:center; justify-content:center; gap:8px; margin-top:0.5rem;
+      }
+      .btn-auth-primary:hover:not(:disabled) { background:#388e3c; }
+      .btn-auth-primary:disabled { opacity:0.65; cursor:not-allowed; }
+      .btn-primary {
+        display:inline-block; padding:12px 28px; background:#4CAF50; color:#fff;
+        border:none; border-radius:8px; font-size:1rem; font-weight:700;
+        cursor:pointer; text-decoration:none; transition:background 0.2s;
+      }
+      .btn-primary:hover { background:#388e3c; }
+
+      /* Spinner */
+      .auth-btn-spinner {
+        width:18px; height:18px; border:2px solid rgba(255,255,255,0.4);
+        border-top-color:#fff; border-radius:50%; animation:wdgSpin 0.8s linear infinite;
+      }
+      @keyframes wdgSpin { to { transform:rotate(360deg); } }
+
+      /* Messages */
+      .auth-msg { padding:10px 14px; border-radius:8px; font-size:0.88rem; font-weight:600; margin-bottom:1rem; }
+      .auth-msg.ok  { background:#d4edda; color:#155724; }
+      .auth-msg.err { background:#f8d7da; color:#721c24; }
+
+      /* Links */
+      .auth-link {
+        color:#4CAF50; background:none; border:none; cursor:pointer;
+        font-size:0.88rem; font-weight:600; padding:0; text-decoration:underline;
+      }
+      .auth-link:hover { color:#2c5530; }
+      .auth-footer { text-align:center; margin-top:1rem; font-size:0.88rem; color:#888; }
+
+      /* Toast */
+      .wdg-toast {
+        position:fixed; bottom:24px; left:50%;
+        transform:translateX(-50%) translateY(20px);
+        background:#2c5530; color:#fff; padding:12px 24px;
+        border-radius:30px; font-size:0.9rem; font-weight:600;
+        z-index:99999; opacity:0; transition:opacity 0.3s,transform 0.3s;
+        pointer-events:none; max-width:90vw; text-align:center;
+      }
+      .wdg-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+      .wdg-toast.err  { background:#c0392b; }
+    \`;
+    document.head.appendChild(s);
+})();
+
 let _currentSession  = null;
 let _currentProfile  = null;
 let _authReady       = false;
@@ -67,7 +206,11 @@ function updateNavAuth() {
     if (existingDropdown) existingDropdown.remove();
 
     if (_currentSession && _currentProfile) {
-        const firstName = (_currentProfile.full_name || '').split(' ')[0] || 'Account';
+        // Use full_name, fall back to email prefix, then 'Account'
+        const rawName   = (_currentProfile && _currentProfile.full_name) ? _currentProfile.full_name : '';
+        const emailName = (_currentSession && _currentSession.user && _currentSession.user.email)
+                            ? _currentSession.user.email.split('@')[0] : '';
+        const firstName = rawName.split(' ')[0] || emailName || 'Account';
         loginBtn.innerHTML = ICONS.user + ' ' + firstName + ' <span style="font-size:0.7rem;opacity:0.7">▾</span>';
         loginBtn.href = '#';
         loginBtn.onclick = (e) => { e.preventDefault(); toggleAccountDropdown(loginBtn); };
@@ -78,8 +221,8 @@ function updateNavAuth() {
         dropdown.className = 'account-dropdown hidden';
         dropdown.innerHTML = `
             <div class="account-dropdown-header">
-                <div class="account-dropdown-name">${_currentProfile.full_name || 'My Account'}</div>
-                <div class="account-dropdown-email">${_currentProfile.email || ''}</div>
+                <div class="account-dropdown-name">${(_currentProfile.full_name || (_currentSession && _currentSession.user && _currentSession.user.email ? _currentSession.user.email.split('@')[0] : 'My Account'))}</div>
+                <div class="account-dropdown-email">${_currentProfile.email || (_currentSession && _currentSession.user ? _currentSession.user.email : '')}</div>
             </div>
             <a href="orders.html" class="account-dropdown-item">
                 ${ICONS.orders} My Orders
@@ -358,7 +501,14 @@ async function handleLogin(e) {
         updateNavAuth();
         closeAuthModal();
         if (_authSuccessCallback) _authSuccessCallback();
-        else showToastGlobal('Welcome back, ' + (_currentProfile?.full_name?.split(' ')[0] || 'there') + '!', 'success');
+        else {
+            var displayName = (_currentProfile && _currentProfile.full_name)
+                ? _currentProfile.full_name.split(' ')[0]
+                : (_currentSession && _currentSession.user && _currentSession.user.email)
+                    ? _currentSession.user.email.split('@')[0]
+                    : 'there';
+            showToastGlobal('Welcome back, ' + displayName + '!', 'success');
+        }
     } catch (err) {
         const msg = err.message || 'Login failed.';
         showAuthMsg(msgEl, msg.includes('Invalid') ? 'Incorrect email or password.' : msg, 'error');
