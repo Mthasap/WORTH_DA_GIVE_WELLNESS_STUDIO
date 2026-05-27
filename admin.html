@@ -125,6 +125,34 @@ hr.div{border:none;border-top:1px solid #eee;margin:1.5rem 0}
 .stat-card{background:#f8f9fa;border:1px solid #eee;border-radius:10px;padding:14px 16px;text-align:center}
 .stat-card .stat-num{font-size:1.8rem;font-weight:800;color:#2c5530;line-height:1}
 .stat-card .stat-label{font-size:0.72rem;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px}
+.masked-field{cursor:pointer;background:#f0f0f0;border-radius:4px;padding:2px 8px;font-size:0.85rem;color:#999;user-select:none;letter-spacing:2px;transition:all 0.2s}
+.masked-field:hover{background:#e8f5e9;color:#2c5530}
+.pay-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:700;letter-spacing:0.3px}
+.pay-badge-paid{background:#d4edda;color:#155724}
+.pay-badge-unpaid{background:#f8d7da;color:#721c24}
+.force-paid-btn{padding:6px 14px;background:#2c5530;color:#fff;border:none;border-radius:6px;font-size:0.78rem;font-weight:700;cursor:pointer;margin-top:6px;transition:background 0.2s}
+.force-paid-btn:hover{background:#4CAF50}
+.review-card{background:#f8f9fa;border:1px solid #eee;border-radius:10px;padding:1rem;margin-bottom:1rem}
+.review-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem}
+.review-stars{color:#f59e0b;font-size:1rem;letter-spacing:2px}
+.review-author{font-weight:700;font-size:0.88rem;color:#333}
+.review-date{font-size:0.75rem;color:#aaa}
+.review-text{font-size:0.88rem;color:#555;line-height:1.5;margin-bottom:0.8rem}
+.review-status-badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:0.72rem;font-weight:700}
+.review-status-approved{background:#d4edda;color:#155724}
+.review-status-pending{background:#fff3cd;color:#856404}
+.review-response{background:#e8f5e9;border-left:3px solid #4CAF50;padding:8px 12px;border-radius:0 6px 6px 0;font-size:0.84rem;color:#2c5530;margin-top:0.5rem}
+.review-response-form{margin-top:0.8rem}
+.review-response-form textarea{width:100%;padding:8px 10px;border:2px solid #ddd;border-radius:6px;font-size:0.85rem;resize:vertical;min-height:70px;box-sizing:border-box;font-family:inherit}
+.review-response-form textarea:focus{border-color:#4CAF50;outline:none}
+.review-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:0.6rem}
+.review-btn{padding:6px 12px;border:none;border-radius:6px;font-size:0.78rem;font-weight:700;cursor:pointer;transition:background 0.2s}
+.review-btn-approve{background:#4CAF50;color:#fff}
+.review-btn-approve:hover{background:#388e3c}
+.review-btn-reject{background:#f8d7da;color:#721c24}
+.review-btn-reject:hover{background:#f5c6cb}
+.review-btn-respond{background:#2c5530;color:#fff}
+.review-btn-respond:hover{background:#4CAF50}
 
 /* Order cards */
 .order-card{border:1px solid #eee;border-radius:10px;overflow:hidden;margin-bottom:12px;background:#fff;transition:box-shadow 0.2s}
@@ -237,24 +265,38 @@ hr.div{border:none;border-top:1px solid #eee;margin:1.5rem 0}
 
   <div class="admin-header">
     <div class="inner">
-      <div style="display:flex;align-items:center;gap:10px">
-        <img src="https://res.cloudinary.com/dbcfzmxzt/image/upload/v1775733144/main_logo_hm6s6w.png" alt="WorthDaGive" style="height:36px;width:auto;border-radius:4px" loading="lazy">
-        <h1>WorthDaGive Admin</h1>
-      </div>
+      <h1>WorthDaGive Admin</h1>
       <div>
-        <a href="index.html" target="_blank">View Site</a>
-        <a href="products.html" target="_blank">Products</a>
-        <a href="#" onclick="doLogout();return false" style="color:#f88">Logout</a>
+        <a href="index.html" target="_blank">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>View Site
+        </a>
+        <a href="products.html" target="_blank">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>Products
+        </a>
+        <a href="#" onclick="doLogout();return false" style="color:#f88">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Logout
+        </a>
       </div>
     </div>
   </div>
 
   <div class="wrap">
     <div class="tabs">
-      <button class="tab active" onclick="showTab('orders')">📦 Orders</button>
-      <button class="tab" onclick="showTab('products')">🛍 Products</button>
-      <button class="tab" onclick="showTab('categories')">📂 Categories</button>
-      <button class="tab" onclick="showTab('banners')">📢 Banners</button>
+      <button class="tab active" onclick="showTab('orders')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><rect x="1" y="3" width="15" height="13"/><path d="M16 8h6l3 8H16V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Orders
+      </button>
+      <button class="tab" onclick="showTab('products')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Products
+      </button>
+      <button class="tab" onclick="showTab('categories')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Categories
+      </button>
+      <button class="tab" onclick="showTab('banners')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M22 2H2v20l4-4h16V2z"/></svg>Banners
+      </button>
+      <button class="tab" onclick="showTab('reviews')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Reviews
+      </button>
     </div>
 
     <!-- ═══════════════════════════════════
@@ -309,6 +351,7 @@ hr.div{border:none;border-top:1px solid #eee;margin:1.5rem 0}
       <div class="form-grid">
         <div class="fg"><label>Product Name *</label><input type="text" id="pName" placeholder="e.g. Jack The Ripper Sativa"></div>
         <div class="fg"><label>Price (R) *</label><input type="number" id="pPrice" placeholder="650.00" min="0" step="0.01"></div>
+        <div class="fg"><label>Stock Quantity</label><input type="number" id="pStockQty" placeholder="e.g. 50" min="0" step="1"><span style="font-size:0.74rem;color:#888;margin-top:3px;display:block">Leave blank = unlimited / not tracked</span></div>
         <div class="fg"><label>Category *</label><select id="pCategory" onchange="populateSubCatSelect()"><option value="">Loading…</option></select></div>
         <div class="fg"><label>Sub-Category</label><select id="pSubCategory"><option value="">None</option></select></div>
         <div class="fg"><label>THC Content</label><input type="text" id="pThc" placeholder="e.g. 22% or Available on request"></div>
@@ -388,6 +431,19 @@ hr.div{border:none;border-top:1px solid #eee;margin:1.5rem 0}
       <div id="bannerListEl"></div>
     </div>
 
+    <!-- REVIEWS TAB -->
+    <div id="tab-reviews" class="panel hidden">
+      <h2>Customer Reviews</h2>
+      <p class="sub">Approve or reject reviews before they appear publicly on the site. Respond on behalf of WorthDaGive Wellness Studio.</p>
+      <div style="display:flex;gap:10px;margin-bottom:1.2rem;flex-wrap:wrap">
+        <button class="btn-save" style="padding:8px 18px;font-size:0.84rem" onclick="loadReviews('all')">All</button>
+        <button class="btn-clear" style="padding:8px 18px;font-size:0.84rem" onclick="loadReviews('pending')">Pending</button>
+        <button class="btn-clear" style="padding:8px 18px;font-size:0.84rem" onclick="loadReviews('approved')">Approved</button>
+      </div>
+      <div class="msg" id="reviewsMsg"></div>
+      <div id="reviewsList"></div>
+    </div>
+
   </div><!-- /wrap -->
 </div><!-- /adminPanel -->
 
@@ -413,26 +469,8 @@ async function doLogin() {
 
   if (!email || !pw) { errEl.textContent = 'Please enter your email and password.'; return; }
 
-  // Static admin login for this admin.html file.
-  // IMPORTANT: this is only suitable for a simple/static admin gate. Anyone who can view
-  // this file's source code can see these details. For production, use Supabase Auth + RLS.
-  var STATIC_ADMIN_EMAIL = 'projectsheadway@gmail.com';
-  var STATIC_ADMIN_PASSWORD = 'Worthd26';
-
-  if (email === STATIC_ADMIN_EMAIL && pw === STATIC_ADMIN_PASSWORD) {
-    initSB();
-    // Also sign in to Supabase so RLS policies recognise this as an authenticated session
-    try {
-      var sbRes = await SB.auth.signInWithPassword({ email: STATIC_ADMIN_EMAIL, password: STATIC_ADMIN_PASSWORD });
-      if (sbRes.error) console.warn('Supabase auth sign-in skipped:', sbRes.error.message);
-    } catch(e) { console.warn('Supabase auth unavailable:', e.message); }
-    sessionStorage.setItem('adminIn', '1');
-    sessionStorage.setItem('adminEmail', STATIC_ADMIN_EMAIL);
-    showAdminPanel();
-    return;
-  }
-
-  // Supabase login fallback. This still works if you later create the admin user in Supabase.
+  // ── SECURE AUTH: Supabase-only login. No hardcoded credentials.
+  // Admin access requires: valid Supabase credentials + profile.role = 'admin' OR email in ADMIN_EMAILS
   initSB();
   try {
     var res = await SB.auth.signInWithPassword({ email: email, password: pw });
@@ -480,17 +518,15 @@ if (sessionStorage.getItem('adminIn') === '1') {
   document.getElementById('adminPanel').classList.remove('hidden');
   window.addEventListener('load', function() {
     initSB();
-    // Restore Supabase session so RLS works after page refresh
+    // Restore Supabase session — no hardcoded credentials
+    // If session expired, admin must log in again
     SB.auth.getSession().then(function(r) {
       if (!r.data || !r.data.session) {
-        // Re-authenticate silently with stored credentials if no session
-        var storedEmail = sessionStorage.getItem('adminEmail') || '';
-        var STATIC_ADMIN_EMAIL = 'projectsheadway@gmail.com';
-        var STATIC_ADMIN_PASSWORD = 'Worthd26';
-        if (storedEmail === STATIC_ADMIN_EMAIL) {
-          SB.auth.signInWithPassword({ email: STATIC_ADMIN_EMAIL, password: STATIC_ADMIN_PASSWORD })
-            .catch(function() {});
-        }
+        // Session expired — redirect to login
+        sessionStorage.removeItem('adminIn');
+        sessionStorage.removeItem('adminEmail');
+        document.getElementById('adminPanel').classList.add('hidden');
+        document.getElementById('adminLogin').style.display = 'flex';
       }
     }).catch(function() {});
     loadAll();
@@ -498,7 +534,7 @@ if (sessionStorage.getItem('adminIn') === '1') {
 }
 
 // ── Tabs ──────────────────────────────────────────────
-var TABS = ['orders','products','categories','banners'];
+var TABS = ['orders','products','categories','banners','reviews'];
 function showTab(name) {
   TABS.forEach(function(t) {
     document.getElementById('tab-' + t).classList.toggle('hidden', t !== name);
@@ -546,7 +582,12 @@ function updateOrderStats() {
   document.getElementById('statProcessing').textContent = processing.length;
   document.getElementById('statDispatched').textContent = dispatched.length;
   document.getElementById('statDelivered').textContent = delivered.length;
-  document.getElementById('statRevenue').textContent = 'R' + revenue.toFixed(0);
+  var revEl = document.getElementById('statRevenue');
+  revEl.textContent = '••••';
+  revEl.dataset.val  = 'R' + revenue.toFixed(0);
+  revEl.title = 'Click to reveal';
+  revEl.style.cursor = 'pointer';
+  revEl.onclick = function(){ this.textContent = this.dataset.val; this.onclick = null; this.title=''; };
 }
 
 function renderOrders() {
@@ -627,12 +668,21 @@ function buildOrderCard(o) {
       '<div class="order-grid">' +
         '<div>' +
           '<div class="order-section-title">Customer &amp; Delivery</div>' +
-          '<div class="order-detail-row"><span class="lbl">Name</span><span class="val">' + escHtml(o.customer_name || '—') + '</span></div>' +
-          '<div class="order-detail-row"><span class="lbl">Email</span><span class="val">' + escHtml(o.customer_email || '—') + '</span></div>' +
-          '<div class="order-detail-row"><span class="lbl">Phone</span><span class="val">' + escHtml(o.customer_phone || '—') + '</span></div>' +
+          '<div class="order-detail-row"><span class="lbl">Name</span>' +
+          '<span class="val masked-field" data-val="' + escHtml(o.customer_name || '—') + '" onclick="revealField(this)" title="Click to reveal">••••••••</span>' +
+          '</div>' +
+          '<div class="order-detail-row"><span class="lbl">Email</span>' +
+          '<span class="val masked-field" data-val="' + escHtml(o.customer_email || '—') + '" onclick="revealField(this)" title="Click to reveal">••••••••</span>' +
+          '</div>' +
+          '<div class="order-detail-row"><span class="lbl">Phone</span>' +
+          '<span class="val masked-field" data-val="' + escHtml(o.customer_phone || '—') + '" onclick="revealField(this)" title="Click to reveal">••••••••</span>' +
+          '</div>' +
           '<div class="order-detail-row"><span class="lbl">Type</span><span class="val">' + deliveryType + '</span></div>' +
           (addr ? '<div class="order-detail-row"><span class="lbl">Address</span><span class="val">' + escHtml(addr) + '</span></div>' : '') +
-          '<div class="order-detail-row"><span class="lbl">Payment</span><span class="val">' + (o.payment_gateway || 'PayFast') + ' – ' + payLabel + '</span></div>' +
+          '<div class="order-detail-row"><span class="lbl">Payment</span>' +
+          '<span class="val pay-badge ' + (o.payment_status === 'paid' ? 'pay-badge-paid' : 'pay-badge-unpaid') + '">' +
+          (o.payment_status === 'paid' ? 'Paid' : 'Unpaid') +
+          '</span></div>' +
           (o.paid_at ? '<div class="order-detail-row"><span class="lbl">Paid At</span><span class="val">' + new Date(o.paid_at).toLocaleString('en-ZA') + '</span></div>' : '') +
         '</div>' +
         '<div>' +
@@ -651,22 +701,27 @@ function buildOrderCard(o) {
 }
 
 function buildStatusUpdatePanel(o) {
-  // Only allow status updates for paid orders
+  // For unpaid orders: allow force-paid option (COD/cash/EFT), then status updates
   if (o.payment_status !== 'paid') {
     return '<div style="margin-top:12px;padding:12px;background:#fff8e1;border-radius:8px;font-size:0.84rem;color:#e65100">' +
-      '⚠️ This order has not been paid yet. Status updates are only available after payment is confirmed.' +
+      '<strong>Payment not yet confirmed.</strong> If the customer paid via cash, EFT, or COD, you can mark it as paid manually:' +
+      '<br><div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">' +
+      '<button class="force-paid-btn" onclick="forcePaidStatus('' + o.id + '','' + (o.ref||'') + '','cash')">Mark as Paid — Cash</button>' +
+      '<button class="force-paid-btn" onclick="forcePaidStatus('' + o.id + '','' + (o.ref||'') + '','eft')">Mark as Paid — EFT</button>' +
+      '<button class="force-paid-btn" onclick="forcePaidStatus('' + o.id + '','' + (o.ref||'') + '','cod')">Mark as Paid — COD</button>' +
+      '</div>' +
       '</div>';
   }
 
   var statuses = [
-    ['payment_received','✅ Payment Received'],
-    ['processing','⚙️ Processing'],
-    ['dispatched','📬 Dispatched'],
-    ['out_for_delivery','🚚 Out for Delivery'],
-    ['delivered','✔ Delivered'],
-    ['collected','🏠 Collected'],
-    ['cancelled','✖ Cancelled'],
-    ['refunded','↩ Refunded']
+    ['payment_received','Payment Received'],
+    ['processing','Processing'],
+    ['dispatched','Dispatched'],
+    ['out_for_delivery','Out for Delivery'],
+    ['delivered','Delivered'],
+    ['collected','Collected'],
+    ['cancelled','Cancelled'],
+    ['refunded','Refunded']
   ];
 
   var opts = statuses.map(function(s) {
@@ -674,7 +729,7 @@ function buildStatusUpdatePanel(o) {
   }).join('');
 
   return '<div class="status-update-panel">' +
-    '<h4>📝 Update Delivery Status</h4>' +
+    '<h4>Update Delivery Status</h4>' +
     '<div class="status-update-row">' +
       '<select id="su-status-' + o.id + '">' + opts + '</select>' +
       '<input type="text" id="su-note-' + o.id + '" placeholder="Optional note to customer (e.g. tracking number, ETA…)">' +
@@ -964,11 +1019,14 @@ async function saveProduct() {
   }
   var image_url = images[0];
 
+  var stockRaw = document.getElementById('pStockQty') ? document.getElementById('pStockQty').value : '';
+  var stockQty = stockRaw !== '' ? parseInt(stockRaw, 10) : null;
   var payload = {
     name: name, price: price, category: cat, subcategory: sub,
     thc: thc, cbd: cbd, description: desc,
     image_url: image_url, images: images,
-    is_cannabis: isCan, active: true
+    is_cannabis: isCan, active: true,
+    stock_qty: stockQty
   };
 
   var res;
@@ -985,7 +1043,7 @@ async function saveProduct() {
 }
 
 function clearProductForm() {
-  ['pName','pPrice','pThc','pCbd','pDescription','pImageUrl','pEditId'].forEach(function(id) {
+  ['pName','pPrice','pStockQty','pThc','pCbd','pDescription','pImageUrl','pEditId'].forEach(function(id) {
     document.getElementById(id).value = '';
   });
   document.getElementById('pCategory').value = '';
@@ -1000,6 +1058,7 @@ async function editProduct(id) {
   if (!p) return;
   document.getElementById('pName').value = p.name;
   document.getElementById('pPrice').value = p.price;
+  if (document.getElementById('pStockQty')) document.getElementById('pStockQty').value = p.stock_qty !== null && p.stock_qty !== undefined ? p.stock_qty : '';
   document.getElementById('pDescription').value = p.description || '';
   document.getElementById('pThc').value = p.thc !== 'N/A' ? (p.thc || '') : '';
   document.getElementById('pCbd').value = p.cbd !== 'N/A' ? (p.cbd || '') : '';
@@ -1097,6 +1156,147 @@ function showMsg(id, text, type) {
   el.textContent = text;
   el.className = 'msg' + (type ? ' ' + type : '');
   if (type) setTimeout(function() { el.className = 'msg'; }, 6000);
+}
+
+/* ═══════════════════════════════════════════
+   REVEAL FIELD (click-to-view sensitive data)
+═══════════════════════════════════════════ */
+function revealField(el) {
+  if (!el.dataset.val) return;
+  el.textContent = el.dataset.val;
+  el.classList.remove('masked-field');
+  el.style.cursor = 'default';
+  el.title = '';
+  el.onclick = null;
+}
+
+/* ═══════════════════════════════════════════
+   FORCE PAID STATUS (COD / Cash / EFT)
+═══════════════════════════════════════════ */
+async function forcePaidStatus(orderId, ref, method) {
+  if (!confirm('Mark order ' + ref + ' as PAID via ' + method.toUpperCase() + '?')) return;
+  try {
+    var res = await SB.from('orders').update({
+      payment_status: 'paid',
+      payment_gateway: method,
+      status: 'payment_received',
+      paid_at: new Date().toISOString()
+    }).eq('id', orderId);
+    if (res.error) throw res.error;
+    await SB.from('order_tracking').insert({
+      order_id: orderId,
+      status: 'payment_received',
+      note: 'Payment confirmed manually by admin (' + method.toUpperCase() + ').'
+    });
+    showMsg('ordersMsg', 'Order ' + ref + ' marked as paid (' + method.toUpperCase() + ').', 'ok');
+    await loadOrders();
+  } catch(e) {
+    showMsg('ordersMsg', 'Error: ' + e.message, 'err');
+  }
+}
+
+/* ═══════════════════════════════════════════
+   REVIEWS MANAGEMENT (Admin Respond)
+═══════════════════════════════════════════ */
+var _allReviews = [];
+
+async function loadReviews(filter) {
+  filter = filter || 'all';
+  var listEl = document.getElementById('reviewsList');
+  if (listEl) listEl.innerHTML = '<p style="color:#aaa;padding:1rem">Loading reviews…</p>';
+  try {
+    var res = await SB.from('reviews').select('*').order('created_at', { ascending: false });
+    if (res.error) throw res.error;
+    _allReviews = res.data || [];
+
+    var filtered = _allReviews.filter(function(r) {
+      if (filter === 'pending')  return !r.approved;
+      if (filter === 'approved') return  r.approved;
+      return true;
+    });
+
+    if (!filtered.length) {
+      listEl.innerHTML = '<p style="color:#aaa;padding:1rem">No reviews found.</p>';
+      return;
+    }
+
+    listEl.innerHTML = filtered.map(function(r) {
+      var stars = '';
+      for (var i = 0; i < 5; i++) stars += i < (r.rating||5) ? '★' : '☆';
+      var responseHtml = r.response
+        ? '<div class="review-response"><strong>WorthDaGive:</strong> ' + escHtml(r.response) + '</div>'
+        : '';
+      return '<div class="review-card" id="review-card-' + r.id + '">' +
+        '<div class="review-card-header">' +
+          '<div>' +
+            '<span class="review-author">' + escHtml(r.reviewer_name || 'Anonymous') + '</span>' +
+            '<span class="review-stars" style="margin-left:8px">' + stars + '</span>' +
+          '</div>' +
+          '<div style="display:flex;align-items:center;gap:8px">' +
+            '<span class="review-status-badge ' + (r.approved ? 'review-status-approved' : 'review-status-pending') + '">' +
+              (r.approved ? 'Approved' : 'Pending') +
+            '</span>' +
+            '<span class="review-date">' + new Date(r.created_at).toLocaleDateString('en-ZA') + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="review-text">' + escHtml(r.review_text || r.comment || '') + '</div>' +
+        responseHtml +
+        '<div class="review-response-form">' +
+          '<textarea id="resp-' + r.id + '" placeholder="Write your response as WorthDaGive Wellness Studio…">' + escHtml(r.response || '') + '</textarea>' +
+        '</div>' +
+        '<div class="review-actions">' +
+          (!r.approved ? '<button class="review-btn review-btn-approve" onclick="approveReview('' + r.id + '',true)">Approve</button>' : '') +
+          (r.approved  ? '<button class="review-btn review-btn-reject"  onclick="approveReview('' + r.id + '',false)">Unapprove</button>' : '') +
+          '<button class="review-btn review-btn-respond" onclick="respondToReview('' + r.id + '')">Save Response</button>' +
+          '<button class="review-btn" style="background:#eee;color:#555" onclick="deleteReview('' + r.id + '')">Delete</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+  } catch(e) {
+    if (listEl) listEl.innerHTML = '<p style="color:#c0392b">Error loading reviews: ' + e.message + '</p>';
+  }
+}
+
+async function approveReview(reviewId, approved) {
+  try {
+    var res = await SB.from('reviews').update({ approved: approved }).eq('id', reviewId);
+    if (res.error) throw res.error;
+    showMsg('reviewsMsg', 'Review ' + (approved ? 'approved' : 'unapproved') + '.', 'ok');
+    await loadReviews('all');
+  } catch(e) {
+    showMsg('reviewsMsg', 'Error: ' + e.message, 'err');
+  }
+}
+
+async function respondToReview(reviewId) {
+  var textarea = document.getElementById('resp-' + reviewId);
+  if (!textarea) return;
+  var text = textarea.value.trim();
+  if (!text) { showMsg('reviewsMsg', 'Please enter a response.', 'err'); return; }
+  try {
+    var res = await SB.from('reviews').update({
+      response: text,
+      responded_at: new Date().toISOString()
+    }).eq('id', reviewId);
+    if (res.error) throw res.error;
+    showMsg('reviewsMsg', 'Response saved and visible on site.', 'ok');
+    await loadReviews('all');
+  } catch(e) {
+    showMsg('reviewsMsg', 'Error: ' + e.message, 'err');
+  }
+}
+
+async function deleteReview(reviewId) {
+  if (!confirm('Permanently delete this review?')) return;
+  try {
+    var res = await SB.from('reviews').delete().eq('id', reviewId);
+    if (res.error) throw res.error;
+    showMsg('reviewsMsg', 'Review deleted.', 'ok');
+    await loadReviews('all');
+  } catch(e) {
+    showMsg('reviewsMsg', 'Error: ' + e.message, 'err');
+  }
 }
 </script>
 </body>
