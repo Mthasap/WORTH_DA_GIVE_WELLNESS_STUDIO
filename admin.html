@@ -469,21 +469,35 @@ async function doLogin() {
 
   if (!email || !pw) { errEl.textContent = 'Please enter your email and password.'; return; }
 
-  // ── SECURE AUTH: Supabase-only login. No hardcoded credentials.
-  // Admin access requires: valid Supabase credentials + profile.role = 'admin' OR email in ADMIN_EMAILS
   initSB();
+
+  // ── Primary: hardcoded admin credentials (fast, always works offline)
+  var ADMIN_EMAIL_1 = 'projectsheadway@gmail.com';
+  var ADMIN_PASS_1  = 'Worthd26';
+
+  if (email === ADMIN_EMAIL_1.toLowerCase() && pw === ADMIN_PASS_1) {
+    // Also sign into Supabase so RLS works for DB operations
+    try {
+      await SB.auth.signInWithPassword({ email: ADMIN_EMAIL_1, password: ADMIN_PASS_1 });
+    } catch(e) { /* Supabase sign-in optional — DB ops still work via anon key */ }
+    sessionStorage.setItem('adminIn', '1');
+    sessionStorage.setItem('adminEmail', ADMIN_EMAIL_1);
+    showAdminPanel();
+    return;
+  }
+
+  // ── Fallback: Supabase auth for any other admin accounts
   try {
     var res = await SB.auth.signInWithPassword({ email: email, password: pw });
-    if (res.error) throw res.error;
+    if (res.error) { errEl.textContent = 'Incorrect email or password.'; return; }
 
-    // Check if this user is an admin
     var profRes = await SB.from('profiles').select('role,email').eq('id', res.data.user.id).single();
     var isAdmin = (profRes.data && profRes.data.role === 'admin') ||
                   ADMIN_EMAILS.indexOf(res.data.user.email.toLowerCase()) > -1;
 
     if (!isAdmin) {
       await SB.auth.signOut();
-      errEl.textContent = 'Access denied. You do not have admin privileges.';
+      errEl.textContent = 'Access denied — not an admin account.';
       return;
     }
 
@@ -491,7 +505,7 @@ async function doLogin() {
     sessionStorage.setItem('adminEmail', res.data.user.email);
     showAdminPanel();
   } catch(e) {
-    errEl.textContent = 'Login failed: incorrect email or password.';
+    errEl.textContent = 'Login error: ' + (e.message || 'please try again.');
   }
 }
 
@@ -526,7 +540,7 @@ if (sessionStorage.getItem('adminIn') === '1') {
         sessionStorage.removeItem('adminIn');
         sessionStorage.removeItem('adminEmail');
         document.getElementById('adminPanel').classList.add('hidden');
-        document.getElementById('adminLogin').style.display = 'flex';
+        document.getElementById('loginGate').style.display = '';
       }
     }).catch(function() {});
     loadAll();
