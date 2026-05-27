@@ -158,7 +158,9 @@ function updateNavAuth() {
         const emailName = (_currentSession && _currentSession.user && _currentSession.user.email)
                             ? _currentSession.user.email.split('@')[0] : '';
         const firstName = rawName.split(' ')[0] || emailName || 'Account';
-        loginBtn.innerHTML = ICONS.user + ' ' + firstName + ' <span style="font-size:0.7rem;opacity:0.7">▾</span>';
+        // Escape firstName to prevent XSS via crafted profile names
+        var safeFirst = firstName.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        loginBtn.innerHTML = ICONS.user + ' ' + safeFirst + ' <span style="font-size:0.7rem;opacity:0.7">▾</span>';
         loginBtn.href = '#';
         loginBtn.onclick = (e) => { e.preventDefault(); toggleAccountDropdown(loginBtn); };
 
