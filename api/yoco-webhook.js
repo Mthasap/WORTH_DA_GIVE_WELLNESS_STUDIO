@@ -98,28 +98,28 @@ async function updateSupabase(orderId, orderRef, paymentStatus, yocoPaymentId) {
   return data.id;
 }
 
-// ── Optional: send WhatsApp notification (see yoco-whatsapp.js for setup)
+// ── Send order notification to Make.com webhook
+// Make.com then forwards a WhatsApp message to the admin via WhatsApp Business
 async function notifyAdminWhatsApp(orderId, orderRef, total) {
   try {
-    const twilioSid    = process.env.TWILIO_ACCOUNT_SID;
-    const twilioToken  = process.env.TWILIO_AUTH_TOKEN;
-    const fromNumber   = process.env.TWILIO_WHATSAPP_FROM;  // e.g. whatsapp:+14155238886
-    const adminNumber  = process.env.ADMIN_WHATSAPP_NUMBER; // e.g. whatsapp:+27XXXXXXXXX
+    const makeWebhookUrl = process.env.MAKE_WEBHOOK_URL;
+    if (!makeWebhookUrl) return; // skip if not configured
 
-    if (!twilioSid || !twilioToken || !fromNumber || !adminNumber) return; // skip if not configured
+    const payload = {
+      orderId:   String(orderId),
+      orderRef:  orderRef,
+      total:     'R' + (total / 100).toFixed(2),
+      adminUrl:  (process.env.SITE_URL || '') + '/admin.html',
+      timestamp: new Date().toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg' })
+    };
 
-    const message = `🛒 *New WorthDaGive Order!*\n\nRef: ${orderRef}\nOrder ID: ${orderId}\nTotal: R${(total / 100).toFixed(2)}\n\nView in admin: ${process.env.SITE_URL}/admin.html`;
-
-    await fetch(`https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`, {
-      method: 'POST',
-      headers: {
-        'Content-Type':  'application/x-www-form-urlencoded',
-        'Authorization': 'Basic ' + Buffer.from(`${twilioSid}:${twilioToken}`).toString('base64')
-      },
-      body: new URLSearchParams({ From: fromNumber, To: adminNumber, Body: message }).toString()
+    await fetch(makeWebhookUrl, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload)
     });
   } catch (e) {
-    console.warn('WhatsApp notification failed (non-critical):', e.message);
+    console.warn('Make.com notification failed (non-critical):', e.message);
   }
 }
 
@@ -137,7 +137,12 @@ module.exports = async function handler(req, res) {
       return res.status(401).send('Invalid signature');
     }
 
-    const event = JSON.parse(rawBody.toString('utf8'));
+    const raw = JSON.parse(rawBody.toString('utf8'));
+    // Sanitise against prototype pollution
+    const event = Object.create(null);
+    Object.assign(event, raw);
+    if (event.__proto__ !== undefined) delete event.__proto__;
+    if (event.constructor !== undefined && typeof event.constructor !== 'function') delete event.constructor;
     console.log('YOCO webhook event:', event.type, event.id);
 
     // Only process payment events
