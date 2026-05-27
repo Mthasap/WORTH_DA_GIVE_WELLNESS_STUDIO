@@ -11,13 +11,24 @@
 
 module.exports = async function handler(req, res) {
   // ── CORS headers (allow your site origin)
-  const allowedOrigin = process.env.SITE_URL || '*';
+  // Lock CORS to your domain only — never allow wildcard in production
+  const allowedOrigin = process.env.SITE_URL || 'https://worthdagive.co.za';
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  // Validate request origin — only accept calls from our own site
+  const origin  = req.headers['origin'] || '';
+  const referer = req.headers['referer'] || '';
+  const siteUrl = process.env.SITE_URL || 'https://worthdagive.co.za';
+  const validOrigin = origin.startsWith(siteUrl) || referer.startsWith(siteUrl);
+  // In production, reject requests from unknown origins
+  if (process.env.NODE_ENV === 'production' && !validOrigin && origin !== '') {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
 
   try {
     const secretKey = process.env.YOCO_SECRET_KEY;
@@ -28,7 +39,8 @@ module.exports = async function handler(req, res) {
       return res.status(500).json({ error: 'Payment gateway not configured.' });
     }
 
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const rawParsed = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const body = Object.assign(Object.create(null), rawParsed); // guard against prototype pollution
 
     // Validate required fields
     const amount = Number(body.amount);     // Amount in RANDS (e.g. 150.00)
