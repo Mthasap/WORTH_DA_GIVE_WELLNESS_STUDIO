@@ -1,70 +1,30 @@
 // ═══════════════════════════════════════════════════════════════
 //  Vercel Serverless Function: /api/whatsapp-order
-//  Called by Twilio Studio when a customer confirms a WhatsApp order.
-//  Matches the customer's phone number to their Supabase profile,
-//  creates the order, and returns a confirmation message.
+//  Called by Make.com when a customer confirms a WhatsApp order.
+//  Make.com handles the WhatsApp Business conversation flow and
+//  calls this endpoint with the order details as JSON.
 //
 //  Environment variables required:
-//    TWILIO_AUTH_TOKEN         — for request signature verification
+//    MAKE_WEBHOOK_SECRET       — a secret string you set in both
+//                                Make.com and Vercel to verify calls
 //    SUPABASE_URL
 //    SUPABASE_SERVICE_ROLE_KEY
 //    SITE_URL
 // ═══════════════════════════════════════════════════════════════
 
-const crypto = require('crypto');
-
-// ── Verify this request genuinely came from Twilio
-// Twilio signs every request with HMAC-SHA1 using your Auth Token
-function verifyTwilioSignature(req, rawBody) {
-  const authToken  = process.env.TWILIO_AUTH_TOKEN || '';
-  const signature  = req.headers['x-twilio-signature'] || '';
-  const siteUrl    = (process.env.SITE_URL || '').replace(/\/$/, '');
-  const url        = `${siteUrl}/api/whatsapp-order`;
-
-  // Build the string to sign: URL + sorted POST params
-  const params     = Object.fromEntries(new URLSearchParams(rawBody.toString('utf8')));
-  const sortedKeys = Object.keys(params).sort();
-  const strToSign  = url + sortedKeys.map(k => k + params[k]).join('');
-
-  const expected   = crypto.createHmac('sha1', authToken).update(strToSign).digest('base64');
-  return signature === expected;
-}
-
-// ── Parse URL-encoded body from Twilio
-function parseBody(raw) {
-  const params = new URLSearchParams(raw.toString('utf8'));
-  const obj    = {};
-  for (const [k, v] of params.entries()) obj[k] = v;
-  return obj;
-}
-
-async function readRawBody(req) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    req.on('data',  c => chunks.push(c));
-    req.on('end',   () => resolve(Buffer.concat(chunks)));
-    req.on('error', reject);
-  });
-}
-
-// ── Generate a short unique order ref
 function generateRef() {
   return 'WDG-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase();
 }
 
-// ── Normalise phone to E.164 (+27XXXXXXXXX)
 function normalisePhone(phone) {
   if (!phone) return null;
-  // Strip "whatsapp:" prefix if present (Twilio sends "whatsapp:+27...")
-  phone = phone.replace(/^whatsapp:/i, '').trim();
-  // If starts with 0, replace with +27
+  phone = String(phone).replace(/^whatsapp:/i, '').trim();
   if (phone.startsWith('0') && phone.length === 10) {
     phone = '+27' + phone.slice(1);
   }
   return phone;
 }
 
-// ── Find or create user by phone in Supabase
 async function findUserByPhone(db, phone) {
   const { data } = await db
     .from('profiles')
@@ -74,7 +34,6 @@ async function findUserByPhone(db, phone) {
   return data || null;
 }
 
-// ── Create order in Supabase (linked to profile if found)
 async function createWhatsAppOrder(db, { phone, userId, fullName, productName, productId, price, quantity, deliveryType, address, ref }) {
   const subtotal    = price * quantity;
   const deliveryFee = deliveryType === 'delivery' ? 50 : 0;
@@ -89,10 +48,10 @@ async function createWhatsAppOrder(db, { phone, userId, fullName, productName, p
     phone,
     delivery_type:  deliveryType,
     address:        address || null,
-    payment_method: 'whatsapp_cod',   // WhatsApp orders default to COD; can add YOCO link later
+    payment_method: 'whatsapp_cod',
     payment_status: 'unpaid',
     status:         'pending',
-    order_source:   'whatsapp',       // flag so admin knows it came from WhatsApp
+    order_source:   'whatsapp',
     subtotal,
     delivery_fee:   deliveryFee,
     total,
@@ -107,17 +66,15 @@ async function createWhatsAppOrder(db, { phone, userId, fullName, productName, p
 
   if (orderErr) throw orderErr;
 
-  // Insert order item
   await db.from('order_items').insert({
     order_id:   order.id,
     product_id: productId || null,
     name:       productName,
-    price:      price,
-    quantity:   quantity,
+    price,
+    quantity,
     image:      ''
   });
 
-  // Initial tracking entry
   await db.from('order_tracking').insert({
     order_id: order.id,
     status:   'pending',
@@ -127,48 +84,38 @@ async function createWhatsAppOrder(db, { phone, userId, fullName, productName, p
   return order;
 }
 
-// ── Send a TwiML response back to Twilio Studio
-function twimlResponse(message) {
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Message>${message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</Message>
-</Response>`;
-}
-
 module.exports = async function handler(req, res) {
-  res.setHeader('Content-Type', 'text/xml');
+  res.setHeader('Content-Type', 'application/json');
 
   if (req.method !== 'POST') {
-    return res.status(405).send(twimlResponse('Method not allowed.'));
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const rawBody = await readRawBody(req);
-
-    // Verify the request is from Twilio (skip in sandbox/dev)
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    if (authToken && !verifyTwilioSignature(req, rawBody)) {
-      console.error('Invalid Twilio signature on /api/whatsapp-order');
-      return res.status(403).send(twimlResponse('Unauthorised.'));
+    // Verify call came from your Make.com scenario
+    const makeSecret = process.env.MAKE_WEBHOOK_SECRET || '';
+    const incoming   = req.headers['x-make-secret'] || '';
+    if (makeSecret && incoming !== makeSecret) {
+      console.error('Invalid Make.com webhook secret');
+      return res.status(403).json({ error: 'Unauthorised' });
     }
 
-    const body = parseBody(rawBody);
+    const rawParsed = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    // Sanitise against prototype pollution attacks
+    const body = Object.assign(Object.create(null), rawParsed);
 
-    // Twilio Studio passes variables via the request body
-    // These are set by your Studio Flow widgets
-    const fromPhone   = normalisePhone(body.From || body.from || '');
-    const productName = body.productName  || body.product_name  || 'Unknown Product';
-    const productId   = body.productId    || body.product_id    || null;
-    const price       = Number(body.price || 0);
-    const quantity    = Number(body.quantity || 1);
+    const fromPhone    = normalisePhone(body.phone || body.from || '');
+    const productName  = body.productName  || body.product_name  || 'Unknown Product';
+    const productId    = body.productId    || body.product_id    || null;
+    const price        = Number(body.price    || 0);
+    const quantity     = Number(body.quantity || 1);
     const deliveryType = (body.deliveryType || body.delivery_type || 'pickup').toLowerCase();
-    const address     = body.address || null;
+    const address      = body.address || null;
 
     if (!fromPhone || !price || !quantity) {
-      return res.status(400).send(twimlResponse('Sorry, we could not process your order. Please try again or contact us directly.'));
+      return res.status(400).json({ error: 'Missing required order fields.' });
     }
 
-    // Connect to Supabase using service role key
     const { createClient } = require('@supabase/supabase-js');
     const db = createClient(
       process.env.SUPABASE_URL,
@@ -176,58 +123,49 @@ module.exports = async function handler(req, res) {
       { auth: { persistSession: false } }
     );
 
-    // Try to match this WhatsApp number to an existing account
     const user = await findUserByPhone(db, fromPhone);
     const ref  = generateRef();
 
     const order = await createWhatsAppOrder(db, {
-      phone:        fromPhone,
-      userId:       user ? user.id : null,
-      fullName:     user ? user.full_name : null,
-      productName,
-      productId,
-      price,
-      quantity,
-      deliveryType,
-      address,
-      ref
+      phone: fromPhone,
+      userId:   user ? user.id        : null,
+      fullName: user ? user.full_name : null,
+      productName, productId, price, quantity, deliveryType, address, ref
     });
 
-    const siteUrl = (process.env.SITE_URL || 'https://worthdagive.co.za').replace(/\/$/, '');
-    const trackUrl = `${siteUrl}/track.html?ref=${encodeURIComponent(ref)}`;
-
-    // Build confirmation message
+    const siteUrl  = (process.env.SITE_URL || 'https://worthdagive.co.za').replace(/\/$/, '');
+    const trackUrl = siteUrl + '/track.html?ref=' + encodeURIComponent(ref);
     const subtotal    = price * quantity;
     const deliveryFee = deliveryType === 'delivery' ? 50 : 0;
     const total       = subtotal + deliveryFee;
 
-    const confirmMsg = [
-      `Order confirmed! Thank you${user ? ', ' + user.full_name.split(' ')[0] : ''}`,
-      ``,
-      `Ref: ${ref}`,
-      `${productName} x${quantity} - R${subtotal.toFixed(2)}`,
-      deliveryType === 'delivery' ? `Delivery fee: R${deliveryFee.toFixed(2)}` : `Pickup (free)`,
-      `Total: R${total.toFixed(2)}`,
-      ``,
-      user
-        ? `This order is linked to your WorthDaGive account.`
-        : `Create an account to track all your orders: ${siteUrl}`,
-      ``,
-      `Track your order: ${trackUrl}`,
-      ``,
-      `We will contact you to confirm delivery. Thank you for choosing WorthDaGive!`
-    ].join('\n');
-
-    return res.status(200).send(twimlResponse(confirmMsg));
+    // Return JSON to Make.com — Make.com sends confirmationMessage back to the customer
+    return res.status(200).json({
+      success:         true,
+      ref,
+      orderId:         order.id,
+      linkedToAccount: !!user,
+      confirmationMessage: [
+        'Order confirmed! Thank you' + (user ? ', ' + user.full_name.split(' ')[0] : '') + '!',
+        '',
+        'Ref: ' + ref,
+        productName + ' x' + quantity + ' - R' + subtotal.toFixed(2),
+        deliveryType === 'delivery' ? 'Delivery - R' + deliveryFee.toFixed(2) : 'Pickup - Free',
+        'Total: R' + total.toFixed(2),
+        '',
+        user ? 'This order is linked to your WorthDaGive account.' : 'Create an account: ' + siteUrl,
+        '',
+        'Track your order: ' + trackUrl,
+        '',
+        'We will be in touch to confirm. Thank you for choosing WorthDaGive!'
+      ].join('\n')
+    });
 
   } catch (err) {
     console.error('whatsapp-order error:', err);
-    return res.status(200).send(twimlResponse(
-      'Sorry, something went wrong with your order. Please contact us directly on WhatsApp or visit worthdagive.co.za'
-    ));
+    return res.status(500).json({
+      success: false,
+      confirmationMessage: 'Sorry, something went wrong. Please contact us directly on WhatsApp or visit worthdagive.co.za'
+    });
   }
-};
-
-module.exports.config = {
-  api: { bodyParser: false }
 };
