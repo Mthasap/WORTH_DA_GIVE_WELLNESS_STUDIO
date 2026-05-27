@@ -1,16 +1,63 @@
 {
   "version": 2,
   "rewrites": [
-    { "source": "/api/payfast-create", "destination": "/api/payfast-create.js" },
-    { "source": "/api/payfast-itn",    "destination": "/api/payfast-itn.js" }
+    {
+      "source": "/api/yoco-create",
+      "destination": "/api/yoco-create.js"
+    },
+    {
+      "source": "/api/yoco-webhook",
+      "destination": "/api/yoco-webhook.js"
+    },
+    {
+      "source": "/api/whatsapp-order",
+      "destination": "/api/whatsapp-order.js"
+    },
+    {
+      "source": "/api/google-reviews",
+      "destination": "/api/google-reviews.js"
+    },
+    {
+      "source": "/api/payfast-create",
+      "destination": "/api/payfast-create.js"
+    },
+    {
+      "source": "/api/payfast-itn",
+      "destination": "/api/payfast-itn.js"
+    }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options",        "value": "SAMEORIGIN" },
-        { "key": "Referrer-Policy",        "value": "strict-origin-when-cross-origin" }
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=(self)"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://www.googletagmanager.com https://maps.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://res.cloudinary.com https://maps.googleapis.com https://maps.gstatic.com https://*.googleapis.com https://lh3.googleusercontent.com; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://payments.yoco.com https://sandbox.payfast.co.za https://www.payfast.co.za https://nominatim.openstreetmap.org https://maps.googleapis.com; frame-src https://www.google.com https://maps.google.com; object-src 'none'; base-uri 'self'; form-action 'self' https://www.payfast.co.za https://sandbox.payfast.co.za"
+        },
+        {
+          "key": "X-DNS-Prefetch-Control",
+          "value": "on"
+        }
       ]
     }
   ]
