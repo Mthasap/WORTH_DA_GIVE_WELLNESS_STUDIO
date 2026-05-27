@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Panel — WorthDaGive</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Arial,sans-serif;background:#f0f2f5;color:#333;min-height:100vh}
@@ -457,7 +457,12 @@ var SB;
 
 // ── Init ───────────────────────────────────────────────
 function initSB() {
-  SB = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  if (!window.supabase) {
+    console.error('Supabase SDK not loaded yet');
+    return false;
+  }
+  if (!SB) SB = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  return true;
 }
 
 // ── Login ──────────────────────────────────────────────
@@ -465,31 +470,62 @@ async function doLogin() {
   var email = (document.getElementById('adminEmail').value || '').trim().toLowerCase();
   var pw    = document.getElementById('adminPw').value;
   var errEl = document.getElementById('loginErr');
+  var btn   = document.querySelector('#loginGate .btn-save');
+
   errEl.textContent = '';
+  errEl.style.color = '#c0392b';
 
-  if (!email || !pw) { errEl.textContent = 'Please enter your email and password.'; return; }
+  if (!email || !pw) {
+    errEl.textContent = 'Please enter your email and password.';
+    return;
+  }
 
-  initSB();
+  // Show loading state
+  if (btn) { btn.disabled = true; btn.textContent = 'Checking...'; }
 
-  // ── Primary: hardcoded admin credentials (fast, always works offline)
+  // ── STEP 1: Check hardcoded admin credentials first (no network needed)
   var ADMIN_EMAIL_1 = 'projectsheadway@gmail.com';
   var ADMIN_PASS_1  = 'Worthd26';
 
-  if (email === ADMIN_EMAIL_1.toLowerCase() && pw === ADMIN_PASS_1) {
-    // Also sign into Supabase so RLS works for DB operations
-    try {
-      await SB.auth.signInWithPassword({ email: ADMIN_EMAIL_1, password: ADMIN_PASS_1 });
-    } catch(e) { /* Supabase sign-in optional — DB ops still work via anon key */ }
+  if (email === ADMIN_EMAIL_1 && pw === ADMIN_PASS_1) {
+    // Credential match — grant access immediately
     sessionStorage.setItem('adminIn', '1');
     sessionStorage.setItem('adminEmail', ADMIN_EMAIL_1);
+
+    // Try to also init Supabase in background (for DB operations)
+    if (initSB()) {
+      try { await SB.auth.signInWithPassword({ email: ADMIN_EMAIL_1, password: ADMIN_PASS_1 }); }
+      catch(e) { /* non-fatal — DB works via anon key */ }
+    } else {
+      // SDK not loaded — load it now then init
+      await loadSupabaseSDK();
+      initSB();
+      try { await SB.auth.signInWithPassword({ email: ADMIN_EMAIL_1, password: ADMIN_PASS_1 }); }
+      catch(e) {}
+    }
+
     showAdminPanel();
     return;
   }
 
-  // ── Fallback: Supabase auth for any other admin accounts
+  // ── STEP 2: Supabase auth for other admin accounts
+  if (!initSB()) {
+    await loadSupabaseSDK();
+    initSB();
+  }
+  if (!SB) {
+    errEl.textContent = 'Could not connect. Check your internet connection and try again.';
+    if (btn) { btn.disabled = false; btn.textContent = 'Enter Admin Panel'; }
+    return;
+  }
+
   try {
     var res = await SB.auth.signInWithPassword({ email: email, password: pw });
-    if (res.error) { errEl.textContent = 'Incorrect email or password.'; return; }
+    if (res.error) {
+      errEl.textContent = 'Incorrect email or password.';
+      if (btn) { btn.disabled = false; btn.textContent = 'Enter Admin Panel'; }
+      return;
+    }
 
     var profRes = await SB.from('profiles').select('role,email').eq('id', res.data.user.id).single();
     var isAdmin = (profRes.data && profRes.data.role === 'admin') ||
@@ -498,6 +534,7 @@ async function doLogin() {
     if (!isAdmin) {
       await SB.auth.signOut();
       errEl.textContent = 'Access denied — not an admin account.';
+      if (btn) { btn.disabled = false; btn.textContent = 'Enter Admin Panel'; }
       return;
     }
 
@@ -506,7 +543,20 @@ async function doLogin() {
     showAdminPanel();
   } catch(e) {
     errEl.textContent = 'Login error: ' + (e.message || 'please try again.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Enter Admin Panel'; }
   }
+}
+
+// Load Supabase SDK dynamically if not already present
+function loadSupabaseSDK() {
+  return new Promise(function(resolve) {
+    if (window.supabase) { resolve(); return; }
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+    s.onload  = function() { resolve(); };
+    s.onerror = function() { resolve(); }; // resolve anyway — login still works for hardcoded creds
+    document.head.appendChild(s);
+  });
 }
 
 function showAdminPanel() {
@@ -1313,5 +1363,6 @@ async function deleteReview(reviewId) {
   }
 }
 </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" onload="if(typeof SB==='undefined'&&window.supabase){SB=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY)}"></script>
 </body>
 </html>
