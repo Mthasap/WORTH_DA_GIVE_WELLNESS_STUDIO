@@ -141,7 +141,11 @@
 
                         <div id="deliveryFields">
                             <div class="co-form-row full">
-                                <div class="co-field"><label for="coAddress">Street Address *</label><input type="text" id="coAddress" placeholder="12 Jacaranda Street" autocomplete="street-address"></div>
+                                <div class="co-field" style="position:relative">
+                                    <label for="coAddress">Street Address *</label>
+                                    <input type="text" id="coAddress" placeholder="Start typing your address…" autocomplete="off" oninput="addressSuggest(this)" onkeydown="addressKeydown(event)">
+                                    <div id="addressSuggestions" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #ddd;border-radius:0 0 8px 8px;box-shadow:0 4px 16px rgba(0,0,0,0.1);z-index:999;display:none;max-height:220px;overflow-y:auto"></div>
+                                </div>
                             </div>
                             <div class="co-form-row">
                                 <div class="co-field"><label for="coCity">City / Town *</label><input type="text" id="coCity" placeholder="Johannesburg" autocomplete="address-level2"></div>
@@ -569,6 +573,88 @@
             }
         });
         renderSummary();
+    });
+    </script>
+
+    <script>
+    /* ── Address Suggestions (OpenStreetMap Nominatim — free, no key) ── */
+    var _addrDebounce = null;
+    var _addrSelected = false;
+
+    function addressSuggest(input) {
+        var q = input.value.trim();
+        var box = document.getElementById('addressSuggestions');
+        if (!box) return;
+        _addrSelected = false;
+        if (q.length < 4) { box.style.display = 'none'; return; }
+        clearTimeout(_addrDebounce);
+        _addrDebounce = setTimeout(function() {
+            // Bias to South Africa
+            var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=6&countrycodes=za&q=' + encodeURIComponent(q);
+            fetch(url, { headers: { 'Accept-Language': 'en' } })
+                .then(function(r){ return r.json(); })
+                .then(function(results) {
+                    if (!results.length) { box.style.display='none'; return; }
+                    box.innerHTML = results.map(function(r, i) {
+                        var encoded = encodeURIComponent(r.display_name);
+                        return '<div class="addr-suggestion" data-addr="' + encoded + '" onclick="selectAddress(this.dataset.addr)" style="padding:10px 14px;cursor:pointer;font-size:0.85rem;border-bottom:1px solid #f0f0f0;transition:background 0.15s" onmouseover="this.style.background=\'#f0fff0\'" onmouseout="this.style.background=\'\'">'+
+
+                            '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:5px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' +
+                            r.display_name+'</div>';
+                    }).join('');
+                    box.style.display = 'block';
+                }).catch(function(){ box.style.display='none'; });
+        }, 350);
+    }
+
+    function selectAddress(encodedAddr) {
+        var addr = encodedAddr ? decodeURIComponent(encodedAddr) : '';
+        var box  = document.getElementById('addressSuggestions');
+        var inp  = document.getElementById('coAddress');
+        if (inp) inp.value = addr;
+        if (box) box.style.display = 'none';
+        _addrSelected = true;
+        // Auto-extract city/province from address string
+        var parts = addr.split(',').map(function(p){ return p.trim(); });
+        // Try to set city from parts
+        var cityEl = document.getElementById('coCity');
+        if (cityEl && !cityEl.value && parts.length >= 2) {
+            // Find a part that looks like a city
+            for (var i = 1; i < parts.length; i++) {
+                var p = parts[i];
+                if (p && p.length > 2 && !/^\d+$/.test(p) && p.toLowerCase() !== 'south africa') {
+                    cityEl.value = p;
+                    break;
+                }
+            }
+        }
+        // Try to set province
+        var provinces = ['Gauteng','Western Cape','KwaZulu-Natal','Eastern Cape','Limpopo','Mpumalanga','North West','Northern Cape','Free State'];
+        var provEl = document.getElementById('coProvince');
+        if (provEl && !provEl.value) {
+            var addrLower = addr.toLowerCase();
+            provinces.forEach(function(prov) {
+                if (addrLower.indexOf(prov.toLowerCase()) !== -1) {
+                    provEl.value = prov;
+                    onProvinceChange();
+                }
+            });
+        }
+    }
+
+    function addressKeydown(e) {
+        var box = document.getElementById('addressSuggestions');
+        if (!box || box.style.display === 'none') return;
+        if (e.key === 'Escape') { box.style.display = 'none'; }
+    }
+
+    // Close suggestions on outside click
+    document.addEventListener('click', function(e) {
+        var box = document.getElementById('addressSuggestions');
+        var inp = document.getElementById('coAddress');
+        if (box && inp && !inp.contains(e.target) && !box.contains(e.target)) {
+            box.style.display = 'none';
+        }
     });
     </script>
 </body>
