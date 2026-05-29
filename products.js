@@ -166,13 +166,16 @@ function buildProductCard(p) {
 
     var images = (p.images && p.images.length) ? p.images : (p.image_url ? [p.image_url] : []);
     var imgBadge = images.length > 1
-        ? '<span class="card-img-count">&#128247; ' + images.length + '</span>'
+        ? '<span class="card-img-count"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> ' + images.length + '</span>'
         : '';
 
     card.innerHTML =
         '<div class="product-image" role="button" tabindex="0" aria-label="Quick view ' + p.name + '">' +
             (img ? '<img src="' + img + '" alt="' + p.name + '" loading="lazy" class="card-main-img">' : '<span class="no-image">No image</span>') +
             imgBadge +
+            '<button class="wishlist-btn" data-pid="' + p.id + '" onclick="event.stopPropagation();toggleWishlistBtn(\'' + p.id + '\', this)" aria-label="Add to wishlist" title="Save to wishlist">' +
+                '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
+            '</button>' +
         '</div>' +
         '<div class="product-info">' +
             '<p class="product-category-label">' + (p.category || '') + sub + '</p>' +
@@ -182,7 +185,6 @@ function buildProductCard(p) {
             tag +
             '<div class="product-card-actions">' +
                 '<button class="add-to-cart" onclick="addToCart(\'' + p.id + '\')">Add to Cart</button>' +
-                '<button class="wishlist-heart" data-product-id="' + p.id + '" onclick="toggleWishlistBtn(\'' + p.id + '\', this)" title="Add to Wishlist" style="background:none;border:1px solid #ddd;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:1.1rem;line-height:1;color:#888">&#9825;</button>' +
                 '<button class="quick-view-btn" onclick="openQuickView(\'' + p.id + '\')">View ' + (images.length > 1 ? '(' + images.length + ' photos)' : 'Details') + '</button>' +
             '</div>' +
         '</div>';
@@ -190,6 +192,14 @@ function buildProductCard(p) {
     card.querySelector('.product-image').addEventListener('click', function() {
         openQuickView(p.id);
     });
+
+    // Check wishlist state
+    if (window.WDG && WDG.wishlistIsIn) {
+        WDG.wishlistIsIn(p.id).then(function(isIn) {
+            var btn = card.querySelector('.wishlist-btn');
+            if (btn) btn.classList.toggle('wishlisted', isIn);
+        }).catch(function(){});
+    }
 
     return card;
 }
@@ -563,10 +573,7 @@ async function bootPage() {
 // ─── WISHLIST STATE HELPERS ───────────────────────────
 function setWishlistBtnState(btn, isInWishlist) {
     if (!btn) return;
-
-    btn.innerHTML = isInWishlist ? '&#9829;' : '&#9825;';
-    btn.style.color = isInWishlist ? '#e53935' : '#888';
-    btn.style.borderColor = isInWishlist ? '#e53935' : '#ddd';
+    btn.classList.toggle('wishlisted', isInWishlist);
     btn.title = isInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist';
     btn.setAttribute('aria-pressed', isInWishlist ? 'true' : 'false');
 }
@@ -630,3 +637,21 @@ async function toggleWishlistBtn(productId, btn) {
 }
 
 window.toggleWishlistBtn = toggleWishlistBtn;
+
+// ─── CART & WISHLIST REMINDERS ────────────────────────
+function scheduleProductPageReminders() {
+    if (sessionStorage.getItem('prodRemindersShown')) return;
+    sessionStorage.setItem('prodRemindersShown', '1');
+
+    // Cart reminder after 3 min of browsing
+    setTimeout(function() {
+        try {
+            var cart = JSON.parse(localStorage.getItem('cart')) || [];
+            var count = cart.reduce(function(s,i){ return s + (i.quantity||0); }, 0);
+            if (count > 0 && typeof showToast === 'function') {
+                showToast(count + ' item' + (count>1?'s':'') + ' in your cart — don\'t forget to checkout!');
+            }
+        } catch(e) {}
+    }, 180000);
+}
+window.scheduleProductPageReminders = scheduleProductPageReminders;
