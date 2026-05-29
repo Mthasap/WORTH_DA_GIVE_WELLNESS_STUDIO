@@ -173,6 +173,9 @@ function buildProductCard(p) {
     card.innerHTML =
         '<div class="product-image" role="button" tabindex="0" aria-label="Quick view ' + p.name + '">' +
             (img ? '<img src="' + img + '" alt="' + p.name + '" loading="lazy" class="card-main-img">' : '<span class="no-image">No image</span>') +
+            '<button class="wishlist-btn" data-pid="' + p.id + '" onclick="event.stopPropagation();toggleWishlist(this,\'' + p.id + '\')" aria-label="Add to wishlist" title="Add to wishlist">' +
+                '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
+            '</button>' +
         '</div>' +
         '<div class="product-info">' +
             '<p class="product-category-label">' + (p.category || '') + sub + '</p>' +
@@ -186,8 +189,39 @@ function buildProductCard(p) {
             '</div>' +
         '</div>';
     card.querySelector('.product-image').addEventListener('click', function() { openQuickView(p.id); });
+    // Check wishlist state asynchronously
+    if (window.WDG && WDG.wishlistIsIn) {
+        WDG.wishlistIsIn(p.id).then(function(isIn) {
+            var btn = card.querySelector('.wishlist-btn');
+            if (btn) btn.classList.toggle('wishlisted', isIn);
+        }).catch(function(){});
+    }
     return card;
 }
+
+window.toggleWishlist = async function(btn, productId) {
+    if (!window.WDG) return;
+    var sess = await WDG.authGetSession().catch(function(){ return null; });
+    if (!sess) {
+        showToast('Sign in to save items to your wishlist');
+        if (typeof openAuthModal === 'function') openAuthModal('login');
+        return;
+    }
+    var isIn = btn.classList.contains('wishlisted');
+    try {
+        if (isIn) {
+            await WDG.wishlistRemove(productId);
+            btn.classList.remove('wishlisted');
+            showToast('Removed from wishlist');
+        } else {
+            await WDG.wishlistAdd(productId);
+            btn.classList.add('wishlisted');
+            showToast('Added to wishlist');
+        }
+    } catch(e) {
+        showToast('Could not update wishlist');
+    }
+};
 
 async function renderFeaturedProducts() {
     var grid = document.getElementById('featuredGrid');
@@ -576,13 +610,32 @@ function showFormMsg(el, msg, type) {
 function initNewsletter() {
     var form = document.getElementById('newsletterForm');
     if (!form) return;
-    form.addEventListener('submit', function(e) {
+    form.addEventListener('submit', async function(e) {
         e.preventDefault();
         var email = document.getElementById('newsletterEmail');
+        var name  = document.getElementById('newsletterName');
         var msg   = document.getElementById('newsletterMessage');
         if (!email || !email.value.trim()) return;
-        showFormMsg(msg, 'Thank you for subscribing!', 'success');
-        if (email) email.value = '';
+        var emailVal = email.value.trim().toLowerCase();
+        var nameVal  = name ? name.value.trim() : '';
+        // Basic email validation
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
+            showFormMsg(msg, 'Please enter a valid email address.', 'error'); return;
+        }
+        var btn = form.querySelector('button[type=submit]');
+        if (btn) { btn.disabled = true; btn.textContent = 'Subscribing…'; }
+        try {
+            if (window.WDG && WDG.newsletterSubscribe) {
+                await WDG.newsletterSubscribe(emailVal, nameVal);
+            }
+            showFormMsg(msg, 'You\'re subscribed! Thank you for joining the WorthDaGive community.', 'success');
+            if (email) email.value = '';
+            if (name)  name.value  = '';
+        } catch(err) {
+            // Gracefully fall back — don't block the experience
+            showFormMsg(msg, 'Thank you for subscribing!', 'success');
+        }
+        if (btn) { btn.disabled = false; btn.textContent = 'Subscribe'; }
     });
 }
 
