@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR Code &mdash; WorthDaGive Wellness Studio</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.qr-wrap{max-width:480px;margin:3rem auto;background:#fff;border-radius:16px;padding:2.5rem;box-shadow:0 6px 32px rgba(0,0,0,0.1);text-align:center}
+.qr-wrap h2{color:#2c5530;margin-bottom:0.4rem}
+.qr-wrap p{color:#666;font-size:0.9rem;margin-bottom:1.5rem}
+.qr-canvas-wrap{border:3px solid #e8f5e9;border-radius:12px;padding:16px;display:inline-block;background:#fff;margin-bottom:1.2rem}
+.qr-url{font-size:0.82rem;color:#4CAF50;font-weight:700;word-break:break-all;margin-bottom:1.2rem}
+.qr-btn{display:inline-flex;align-items:center;gap:7px;background:#2c5530;color:#fff;padding:11px 22px;border-radius:8px;border:none;font-size:0.9rem;font-weight:700;cursor:pointer;text-decoration:none;margin:4px}
+.qr-btn:hover{background:#4CAF50}
+.qr-btn-outline{background:#fff;color:#2c5530;border:2px solid #2c5530}
+.qr-btn-outline:hover{background:#e8f5e9}
+</style>
+</head>
+<body style="background:#f8f9fa">
+<header>
+  <div class="container">
+    <div class="logo">
+      <a href="index.html">
+        <img src="https://res.cloudinary.com/dbcfzmxzt/image/upload/v1775733144/main_logo_hm6s6w.png" alt="WorthDaGive" class="logo-img" loading="lazy">
+        <div class="logo-text"><h1>WorthDaGive</h1><span class="tagline">Wellness Studio</span></div>
+      </a>
+    </div>
+  </div>
+</header>
+
+<div class="qr-wrap">
+  <h2>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px;margin-right:6px"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    WorthDaGive QR Code
+  </h2>
+  <p>Scan this QR code to visit our online store, or share it with your friends and family.</p>
+
+  <div class="qr-canvas-wrap">
+    <canvas id="qrCanvas" width="220" height="220"></canvas>
+  </div>
+  <p class="qr-url" id="qrUrlText">worthdagive.co.za</p>
+
+  <div>
+    <button class="qr-btn" onclick="downloadQR()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download PNG
+    </button>
+    <a href="index.html" class="qr-btn qr-btn-outline">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Back to Home
+    </a>
+  </div>
+
+  <p style="font-size:0.78rem;color:#aaa;margin-top:1.5rem">Print this QR code and display it at your store, on packaging, or on marketing materials to quickly direct customers to your online shop.</p>
+</div>
+
+<!-- QR code library (pure JS, no external API, fully offline) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+var SITE_URL = 'https://worthdagive.co.za';
+document.getElementById('qrUrlText').textContent = SITE_URL;
+
+// Generate QR code on canvas using qrcodejs
+var qr = new QRCode(document.createElement('div'), {
+    text: SITE_URL,
+    width: 220,
+    height: 220,
+    colorDark: '#1a3a1e',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.H
+});
+
+// Wait for QR to generate then draw on our canvas
+setTimeout(function() {
+    var qrImg = qr._el.querySelector('img') || qr._el.querySelector('canvas');
+    var canvas = document.getElementById('qrCanvas');
+    var ctx = canvas.getContext('2d');
+
+    if (qrImg && qrImg.tagName === 'IMG') {
+        var img = new Image();
+        img.onload = function() {
+            ctx.drawImage(img, 0, 0, 220, 220);
+        };
+        img.src = qrImg.src;
+    } else if (qrImg && qrImg.tagName === 'CANVAS') {
+        ctx.drawImage(qrImg, 0, 0, 220, 220);
+    } else {
+        // Fallback: show URL as text QR placeholder
+        ctx.fillStyle = '#f5f5f5';
+        ctx.fillRect(0, 0, 220, 220);
+        ctx.fillStyle = '#2c5530';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('QR Code for', 110, 100);
+        ctx.fillText(SITE_URL, 110, 120);
+    }
+}, 300);
+
+function downloadQR() {
+    var canvas = document.getElementById('qrCanvas');
+    var link = document.createElement('a');
+    link.download = 'worthdagive-qr-code.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+}
+</script>
+</body>
+</html>
