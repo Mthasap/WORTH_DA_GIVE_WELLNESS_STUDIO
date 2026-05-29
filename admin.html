@@ -353,6 +353,12 @@ hr.div{border:none;border-top:1px solid #eee;margin:1.5rem 0}
       <button class="tab" onclick="showTab('reviews')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Reviews
       </button>
+      <button class="tab" onclick="showTab('analytics')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics
+      </button>
+      <button class="tab" onclick="showTab('newsletter')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Newsletter
+      </button>
     </div>
 
     <!-- ═══════════════════════════════════
@@ -504,6 +510,40 @@ hr.div{border:none;border-top:1px solid #eee;margin:1.5rem 0}
 </div><!-- /adminPanel -->
 
 <script>
+// Add analytics and newsletter tabs
+var TABS = ['orders','products','categories','banners','reviews','analytics','newsletter'];
+
+// Analytics panel HTML — inject it
+(function() {
+  var wrap = document.querySelector('.wrap');
+  if (!wrap) return;
+
+  var aPanel = document.createElement('div');
+  aPanel.id = 'tab-analytics';
+  aPanel.className = 'panel hidden';
+  aPanel.innerHTML = '<h2>Site Analytics</h2>' +
+    '<p class="sub">Free, privacy-first analytics powered by Supabase. No third-party trackers. Page view data stored in your own database.</p>' +
+    '<div style="display:flex;gap:10px;margin-bottom:1.2rem;flex-wrap:wrap">' +
+      '<button class="btn-save" style="padding:8px 18px;font-size:0.84rem" onclick="loadAnalytics(7)">Last 7 Days</button>' +
+      '<button class="btn-clear" style="padding:8px 18px;font-size:0.84rem" onclick="loadAnalytics(30)">Last 30 Days</button>' +
+      '<button class="btn-clear" style="padding:8px 18px;font-size:0.84rem" onclick="loadAnalytics(90)">Last 90 Days</button>' +
+    '</div>' +
+    '<div id="analyticsStats" class="orders-stats"></div>' +
+    '<div id="analyticsList"></div>';
+  wrap.appendChild(aPanel);
+
+  var nPanel = document.createElement('div');
+  nPanel.id = 'tab-newsletter';
+  nPanel.className = 'panel hidden';
+  nPanel.innerHTML = '<h2>Newsletter Subscribers</h2>' +
+    '<p class="sub">All subscribers who opted in via the homepage newsletter form. Compliant with POPIA.</p>' +
+    '<button class="btn-save" style="padding:8px 18px;font-size:0.84rem;margin-bottom:1.2rem" onclick="loadNewsletterSubs()">Refresh List</button>' +
+    '<div id="newsletterSubsList"></div>';
+  wrap.appendChild(nPanel);
+})();
+</script>
+
+<script>
 var SUPABASE_URL = "https://tndsmvsuowqdmhtatmie.supabase.co";
 var SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRuZHNtdnN1b3dxZG1odGF0bWllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMzM0MjAsImV4cCI6MjA5MDkwOTQyMH0.KLd3B-MQI1BBJSg98lfFugnqPDqeBBBGuM-cRbI0Eyw";
 // ADMIN_EMAILS: list of email addresses that have admin access.
@@ -653,14 +693,19 @@ if (sessionStorage.getItem('adminIn') === '1') {
 }
 
 // ── Tabs ──────────────────────────────────────────────
-var TABS = ['orders','products','categories','banners','reviews'];
+var TABS = ['orders','products','categories','banners','reviews','analytics','newsletter'];
 function showTab(name) {
   TABS.forEach(function(t) {
-    document.getElementById('tab-' + t).classList.toggle('hidden', t !== name);
+    var el = document.getElementById('tab-' + t);
+    if (el) el.classList.toggle('hidden', t !== name);
   });
   document.querySelectorAll('.tab').forEach(function(btn, i) {
     btn.classList.toggle('active', TABS[i] === name);
   });
+  // Lazy-load analytics on first open
+  if (name === 'analytics' && !window._analyticsLoaded) { window._analyticsLoaded = true; loadAnalytics(30); }
+  if (name === 'newsletter' && !window._newsletterLoaded) { window._newsletterLoaded = true; loadNewsletterSubs(); }
+  if (name === 'reviews' && !window._reviewsLoaded) { window._reviewsLoaded = true; loadReviews('all'); }
 }
 
 function loadAll() {
@@ -668,6 +713,7 @@ function loadAll() {
   loadCategories();
   loadProducts();
   loadBanners();
+  // Reviews, analytics, newsletter load lazily on tab open
 }
 
 // ════════════════════════════════════
@@ -820,14 +866,19 @@ function buildOrderCard(o) {
 }
 
 function buildStatusUpdatePanel(o) {
+  var oid  = String(o.id).replace(/'/g, "\\'");
+  var oref = String(o.ref || '').replace(/'/g, "\\'");
+
   // For unpaid orders: allow force-paid option (COD/cash/EFT), then status updates
   if (o.payment_status !== 'paid') {
-    return '<div style="margin-top:12px;padding:12px;background:#fff8e1;border-radius:8px;font-size:0.84rem;color:#e65100">' +
-      '<strong>Payment not yet confirmed.</strong> If the customer paid via cash, EFT, or COD, you can mark it as paid manually:' +
-      '<br><div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">' +
-      '<button class="force-paid-btn" onclick="forcePaidStatus('' + o.id + '','' + (o.ref||'') + '','cash')">Mark as Paid — Cash</button>' +
-      '<button class="force-paid-btn" onclick="forcePaidStatus('' + o.id + '','' + (o.ref||'') + '','eft')">Mark as Paid — EFT</button>' +
-      '<button class="force-paid-btn" onclick="forcePaidStatus('' + o.id + '','' + (o.ref||'') + '','cod')">Mark as Paid — COD</button>' +
+    return '<div style="margin-top:12px;padding:14px;background:#fff8e1;border-radius:10px;border:1px solid #ffe082">' +
+      '<strong style="color:#e65100;font-size:0.88rem">Payment Not Confirmed</strong>' +
+      '<p style="font-size:0.83rem;color:#555;margin:6px 0 10px">If the customer paid via cash, EFT, COD or another manual method, mark it as paid:</p>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+      '<button class="force-paid-btn" onclick="forcePaidStatus(\'' + oid + '\',\'' + oref + '\',\'cash\')">Mark Paid &#8212; Cash</button>' +
+      '<button class="force-paid-btn" onclick="forcePaidStatus(\'' + oid + '\',\'' + oref + '\',\'eft\')">Mark Paid &#8212; EFT</button>' +
+      '<button class="force-paid-btn" onclick="forcePaidStatus(\'' + oid + '\',\'' + oref + '\',\'cod\')">Mark Paid &#8212; COD</button>' +
+      '<button class="force-paid-btn" onclick="forcePaidStatus(\'' + oid + '\',\'' + oref + '\',\'other\')">Mark Paid &#8212; Other</button>' +
       '</div>' +
       '</div>';
   }
@@ -1364,10 +1415,10 @@ async function loadReviews(filter) {
           '<textarea id="resp-' + r.id + '" placeholder="Write your response as WorthDaGive Wellness Studio…">' + escHtml(r.response || '') + '</textarea>' +
         '</div>' +
         '<div class="review-actions">' +
-          (!r.approved ? '<button class="review-btn review-btn-approve" onclick="approveReview('' + r.id + '',true)">Approve</button>' : '') +
-          (r.approved  ? '<button class="review-btn review-btn-reject"  onclick="approveReview('' + r.id + '',false)">Unapprove</button>' : '') +
-          '<button class="review-btn review-btn-respond" onclick="respondToReview('' + r.id + '')">Save Response</button>' +
-          '<button class="review-btn" style="background:#eee;color:#555" onclick="deleteReview('' + r.id + '')">Delete</button>' +
+          (!r.approved ? '<button class="review-btn review-btn-approve" onclick="approveReview(\'' + r.id + '\',true)">Approve</button>' : '') +
+          (r.approved  ? '<button class="review-btn review-btn-reject"  onclick="approveReview(\'' + r.id + '\',false)">Unapprove</button>' : '') +
+          '<button class="review-btn review-btn-respond" onclick="respondToReview(\'' + r.id + '\')">Save Response</button>' +
+          '<button class="review-btn" style="background:#eee;color:#555" onclick="deleteReview(\'' + r.id + '\')">Delete</button>' +
         '</div>' +
       '</div>';
     }).join('');
@@ -1415,6 +1466,61 @@ async function deleteReview(reviewId) {
     await loadReviews('all');
   } catch(e) {
     showMsg('reviewsMsg', 'Error: ' + e.message, 'err');
+  }
+}
+
+/* =================================================================
+   ANALYTICS
+================================================================= */
+async function loadAnalytics(days) {
+  var statsEl = document.getElementById('analyticsStats');
+  var listEl  = document.getElementById('analyticsList');
+  if (!statsEl || !listEl) return;
+  listEl.innerHTML = '<p style="color:#999;font-size:0.9rem;padding:1rem 0">Loading analytics…</p>';
+  try {
+    var since = new Date(Date.now() - (days||30) * 86400000).toISOString();
+    var res = await SB.from('analytics_events')
+      .select('*').gte('created_at', since).order('created_at', { ascending: false });
+    var rows = res.data || [];
+    var pageCount = {};
+    rows.forEach(function(r){ var p = r.page||'unknown'; pageCount[p]=(pageCount[p]||0)+1; });
+    var uniqueDays = {};
+    rows.forEach(function(r){ if(r.created_at) uniqueDays[r.created_at.slice(0,10)]=true; });
+    statsEl.innerHTML =
+      '<div class="stat-card"><div class="stat-num">'+rows.length+'</div><div class="stat-label">Page Views</div></div>'+
+      '<div class="stat-card"><div class="stat-num">'+Object.keys(uniqueDays).length+'</div><div class="stat-label">Active Days</div></div>'+
+      '<div class="stat-card"><div class="stat-num">'+Object.keys(pageCount).length+'</div><div class="stat-label">Unique Pages</div></div>';
+    if (!rows.length) { listEl.innerHTML='<p style="color:#aaa;font-size:0.88rem">No analytics data yet. Tracking begins automatically as visitors browse the site.</p>'; return; }
+    var pages = Object.entries(pageCount).sort(function(a,b){return b[1]-a[1];});
+    var tRows = pages.map(function(p){ return '<tr><td>'+escHtml(p[0])+'</td><td style="text-align:right;font-weight:700;color:#2c5530">'+p[1]+'</td></tr>'; }).join('');
+    listEl.innerHTML = '<h3 style="color:#2c5530;margin-bottom:1rem">Top Pages (last '+days+' days)</h3>'+
+      '<table class="items-table"><thead><tr><th>Page</th><th style="text-align:right">Views</th></tr></thead><tbody>'+tRows+'</tbody></table>'+
+      '<p style="font-size:0.75rem;color:#aaa;margin-top:1rem">Privacy-first analytics — no personal data, no cookies, stored in your Supabase database only.</p>';
+  } catch(e) {
+    listEl.innerHTML='<p style="color:#c62828">Error: '+e.message+'. Ensure the analytics_events table exists (see SQL setup guide).</p>';
+  }
+}
+
+/* =================================================================
+   NEWSLETTER SUBSCRIBERS
+================================================================= */
+async function loadNewsletterSubs() {
+  var el = document.getElementById('newsletterSubsList');
+  if (!el) return;
+  el.innerHTML = '<p style="color:#999;font-size:0.9rem;padding:1rem 0">Loading…</p>';
+  try {
+    var res = await SB.from('newsletter_subscribers').select('*').eq('subscribed', true).order('created_at', { ascending: false });
+    var subs = res.data || [];
+    if (!subs.length) { el.innerHTML='<p style="color:#aaa">No subscribers yet.</p>'; return; }
+    var rows = subs.map(function(s){
+      return '<tr><td>'+escHtml(s.name||'—')+'</td><td>'+escHtml(s.email)+'</td>'+
+        '<td style="color:#aaa;font-size:0.78rem">'+(s.created_at?new Date(s.created_at).toLocaleDateString('en-ZA'):'')+' </td></tr>';
+    }).join('');
+    el.innerHTML = '<p style="margin-bottom:1rem;color:#555;font-size:0.88rem"><strong>'+subs.length+'</strong> active subscriber'+(subs.length!==1?'s':'')+'</p>'+
+      '<table class="items-table"><thead><tr><th>Name</th><th>Email</th><th>Date</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+      '<p style="font-size:0.75rem;color:#aaa;margin-top:1rem">All subscribers opted in. Compliant with POPIA.</p>';
+  } catch(e) {
+    el.innerHTML='<p style="color:#c62828">Error: '+e.message+'</p>';
   }
 }
 </script>
