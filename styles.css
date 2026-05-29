@@ -1491,3 +1491,110 @@ footer { background:#2c5530; color:#fff; padding:3rem 0 2rem; text-align:center;
     .helpline-contacts { flex-direction: column; }
     .profile-2col { grid-template-columns: 1fr; }
 }
+
+/* ── Wishlist Button ─────────────────────────────── */
+.wishlist-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(255,255,255,0.92);
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #bbb;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    transition: color 0.2s, transform 0.15s, background 0.2s;
+    z-index: 2;
+    padding: 0;
+    flex-shrink: 0;
+}
+.wishlist-btn:hover { color: #e91e63; transform: scale(1.12); background: #fff; }
+.wishlist-btn.wishlisted { color: #e91e63; }
+.wishlist-btn.wishlisted svg { fill: #e91e63; stroke: #e91e63; }
+
+/* ── About Location Grid ─────────────────────────── */
+.about-location-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 2rem;
+    margin-top: 2rem;
+    align-items: start;
+}
+@media(max-width:768px) { .about-location-grid { grid-template-columns: 1fr; } }
+.about-location-info h3 { color: #2c5530; margin-bottom: 1rem; font-size: 1.1rem; }
+.about-hours { margin: 1rem 0; }
+.about-hours p { font-size: 0.88rem; color: #555; margin-bottom: 6px; }
+.btn-map-directions {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: #2c5530;
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.88rem;
+    margin-top: 1rem;
+    transition: background 0.2s;
+}
+.btn-map-directions:hover { background: #4CAF50; }
+.about-map-embed { border-radius: 10px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+
+/* ── Contact Cards ───────────────────────────────── */
+.contact-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.2rem;
+    margin-top: 1.5rem;
+}
+.contact-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.2rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    font-size: 0.88rem;
+    color: #555;
+    line-height: 1.6;
+}
+.contact-card a { color: #4CAF50; text-decoration: none; }
+.contact-card a:hover { text-decoration: underline; }
+.contact-card strong { display: block; color: #2c5530; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+
+/* ── Footer Grid ─────────────────────────────────── */
+.footer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+.footer-col h3 { color: #fff; font-size: 0.95rem; margin-bottom: 1rem; }
+.footer-links { list-style: none; padding: 0; }
+.footer-links li { margin-bottom: 6px; }
+.footer-links a { color: #aaa; text-decoration: none; font-size: 0.85rem; transition: color 0.2s; }
+.footer-links a:hover { color: #4CAF50; }
+.social-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: none;
+    margin: 0 4px 6px 0;
+    transition: opacity 0.2s;
+}
+.social-btn:hover { opacity: 0.85; }
+.social-btn-facebook  { background: #1877f2; color: #fff; }
+.social-btn-instagram { background: linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); color: #fff; }
+.social-btn-twitter   { background: #000; color: #fff; }
+.social-btn-tiktok    { background: #010101; color: #fff; }
