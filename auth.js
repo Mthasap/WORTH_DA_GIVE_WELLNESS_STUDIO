@@ -310,10 +310,14 @@ function injectAuthModal() {
                         </div>
                     </div>
 
-                    <!-- Phone (optional, for SMS OTP) -->
+                    <!-- WhatsApp Number (for order notifications & WhatsApp ordering) -->
                     <div class="auth-field">
-                        <label>📱 Mobile Number <span style="font-size:0.75rem;color:#888;font-weight:400">(optional — for SMS updates)</span></label>
+                        <label>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            WhatsApp Number <span style="font-size:0.75rem;color:#888;font-weight:400">(recommended — for order updates &amp; WhatsApp ordering)</span>
+                        </label>
                         <input type="tel" id="regPhone" placeholder="+27 81 234 5678" autocomplete="tel">
+                        <p style="font-size:0.75rem;color:#4CAF50;margin-top:3px;">Adding your WhatsApp number links any WhatsApp orders to this account automatically.</p>
                     </div>
 
                     <!-- Date of birth -->
@@ -500,8 +504,8 @@ async function handleRegister(e) {
 
     setSubmitting('authRegBtn', true);
     try {
-        await WDG.authRegister(email, password, fullName, dob);
         const phone = (document.getElementById('regPhone') || {}).value || '';
+        await WDG.authRegister(email, password, fullName, dob, phone);
         document.getElementById('authVerifyEmail').textContent = email;
 
         // If phone number provided, send SMS OTP
