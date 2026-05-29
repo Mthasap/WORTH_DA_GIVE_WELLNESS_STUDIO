@@ -68,7 +68,7 @@ async function authUpdatePhone(phone) {
     return res.data;
 }
 
-async function authRegister(email, password, fullName, dob) {
+async function authRegister(email, password, fullName, dob, whatsappNumber) {
     var db = await getDB();
     var res = await db.auth.signUp({
         email: email, password: password,
@@ -76,14 +76,24 @@ async function authRegister(email, password, fullName, dob) {
     });
     if (res.error) throw res.error;
     if (res.data.user) {
-        await db.from('profiles').upsert({
+        var profileRow = {
             id: res.data.user.id,
             full_name: fullName,
             dob: dob,
             email: email
-        });
+        };
+        if (whatsappNumber) profileRow.whatsapp_number = normaliseWhatsApp(whatsappNumber);
+        await db.from('profiles').upsert(profileRow);
     }
     return res.data;
+}
+
+function normaliseWhatsApp(num) {
+    if (!num) return null;
+    num = String(num).replace(/\s+/g,'').replace(/[^+\d]/g,'');
+    if (num.startsWith('0') && num.length === 10) num = '+27' + num.slice(1);
+    if (!num.startsWith('+')) num = '+27' + num;
+    return num;
 }
 
 async function authLogin(email, password) {
@@ -456,4 +466,60 @@ Object.assign(window.WDG, {
     supportGetMine:     dbGetMyTickets,
     supportGetAll:      dbGetAllTicketsAdmin,
     supportUpdateStatus:dbUpdateTicketStatus
+});
+
+// ─── NEWSLETTER ───────────────────────────────────────
+
+async function dbSubscribeNewsletter(email, name) {
+    var db = await getDB();
+    // Upsert so re-subscribing doesn't error
+    var res = await db.from('newsletter_subscribers')
+        .upsert({ email: email, name: name || '', subscribed: true, updated_at: new Date().toISOString() },
+                 { onConflict: 'email' })
+        .select().single();
+    if (res.error) throw res.error;
+    return res.data;
+}
+
+async function dbGetNewsletterSubscribers() {
+    var db = await getDB();
+    var res = await db.from('newsletter_subscribers')
+        .select('*').eq('subscribed', true).order('created_at', { ascending: false });
+    if (res.error) return [];
+    return res.data || [];
+}
+
+// ─── ANALYTICS (free, privacy-first, Supabase-stored) ─
+
+async function dbTrackPageView(page) {
+    try {
+        var db = await getDB();
+        await db.from('analytics_events').insert({
+            event_type: 'page_view',
+            page: page,
+            referrer: document.referrer || null,
+            user_agent: navigator.userAgent ? navigator.userAgent.slice(0, 200) : null,
+            created_at: new Date().toISOString()
+        });
+    } catch(e) { /* non-critical */ }
+}
+
+async function dbGetAnalytics(days) {
+    var db = await getDB();
+    var since = new Date(Date.now() - (days || 30) * 86400000).toISOString();
+    var res = await db.from('analytics_events')
+        .select('*')
+        .gte('created_at', since)
+        .order('created_at', { ascending: false });
+    if (res.error) return [];
+    return res.data || [];
+}
+
+// Extend WDG with newsletter + analytics
+Object.assign(window.WDG, {
+    newsletterSubscribe: dbSubscribeNewsletter,
+    newsletterGetAll:    dbGetNewsletterSubscribers,
+    analyticsTrack:      dbTrackPageView,
+    analyticsGet:        dbGetAnalytics,
+    normaliseWhatsApp:   normaliseWhatsApp
 });
