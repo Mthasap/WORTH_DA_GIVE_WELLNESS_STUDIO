@@ -111,6 +111,13 @@
 <script src="supabase.js"></script>
 <script src="auth.js"></script>
 <script src="products.js"></script>
+<script>
+// Track page view and schedule reminders
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.WDG && WDG.analyticsTrack) WDG.analyticsTrack('products').catch(function(){});
+    setTimeout(function() { if (typeof scheduleProductPageReminders === 'function') scheduleProductPageReminders(); }, 500);
+});
+</script>
 <script src="cookie-consent.js"></script>
 </body>
 </html>
