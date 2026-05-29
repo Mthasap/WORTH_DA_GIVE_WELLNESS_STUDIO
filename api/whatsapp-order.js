@@ -26,12 +26,20 @@ function normalisePhone(phone) {
 }
 
 async function findUserByPhone(db, phone) {
-  const { data } = await db
+  // Try phone column first, then whatsapp_number column
+  var { data: byPhone } = await db
     .from('profiles')
     .select('id, full_name, email')
     .eq('phone', phone)
     .maybeSingle();
-  return data || null;
+  if (byPhone) return byPhone;
+
+  var { data: byWa } = await db
+    .from('profiles')
+    .select('id, full_name, email')
+    .eq('whatsapp_number', phone)
+    .maybeSingle();
+  return byWa || null;
 }
 
 async function createWhatsAppOrder(db, { phone, userId, fullName, productName, productId, price, quantity, deliveryType, address, ref }) {
