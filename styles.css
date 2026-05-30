@@ -202,6 +202,22 @@ header .container {
 .main-nav a.active { color:#4CAF50; }
 .nav-icon-link { display:inline-flex !important; align-items:center; gap:5px; }
 
+/* ── Account dropdown — must override .main-nav a white color ── */
+.account-dropdown a,
+.account-dropdown-item {
+    color: #333 !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+    min-height: unset !important;
+    display: flex !important;
+}
+.account-dropdown a:hover,
+.account-dropdown-item:hover { color: #2c5530 !important; background: #f0f7f0; }
+.account-dropdown-logout,
+.account-dropdown a.account-dropdown-logout { color: #c0392b !important; }
+.account-dropdown-logout:hover,
+.account-dropdown a.account-dropdown-logout:hover { background: #fff0f0 !important; color: #c0392b !important; }
+
 /* ── Hamburger ── */
 .hamburger {
     display:none; flex-direction:column;
@@ -1598,3 +1614,26 @@ footer { background:#2c5530; color:#fff; padding:3rem 0 2rem; text-align:center;
 .social-btn-instagram { background: linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); color: #fff; }
 .social-btn-twitter   { background: #000; color: #fff; }
 .social-btn-tiktok    { background: #010101; color: #fff; }
+
+/* ── Reminder Toast Animation ───────────────────────── */
+@keyframes slideUp {
+    from { opacity:0; transform:translateX(-50%) translateY(20px); }
+    to   { opacity:1; transform:translateX(-50%) translateY(0); }
+}
+#wdg-reminder-toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fff;
+    border-radius: 14px;
+    padding: 16px 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    z-index: 99990;
+    max-width: 340px;
+    width: 90%;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    animation: slideUp 0.3s ease;
+}
