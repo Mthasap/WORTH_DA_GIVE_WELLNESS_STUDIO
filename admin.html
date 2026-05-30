@@ -491,7 +491,10 @@ CREATE POLICY "allow authenticated full access banners" ON banners FOR ALL TO au
 
 ALTER TABLE newsletter_subscribers ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "allow anon insert newsletter" ON newsletter_subscribers;
+DROP POLICY IF EXISTS "allow anon update newsletter" ON newsletter_subscribers;
 DROP POLICY IF EXISTS "allow authenticated full access newsletter" ON newsletter_subscribers;
+DROP POLICY IF EXISTS "allow admin all newsletter" ON newsletter_subscribers;
+DROP POLICY IF EXISTS "allow anon upsert newsletter" ON newsletter_subscribers;
 CREATE POLICY "allow anon insert newsletter" ON newsletter_subscribers FOR INSERT TO anon WITH CHECK (true);
 CREATE POLICY "allow anon update newsletter" ON newsletter_subscribers FOR UPDATE TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "allow authenticated full access newsletter" ON newsletter_subscribers FOR ALL TO authenticated USING (true) WITH CHECK (true);
