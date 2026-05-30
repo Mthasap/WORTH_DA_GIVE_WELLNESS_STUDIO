@@ -152,6 +152,25 @@ function updateNavAuth() {
     const existingDropdown = document.getElementById('accountDropdown');
     if (existingDropdown) existingDropdown.remove();
 
+    // Always set onclick dynamically so it reflects current state at click time
+    // This prevents stale closures from showing login modal when already logged in
+    loginBtn.onclick = function(e) {
+        e.preventDefault();
+        // Re-check session at click time — never stale
+        if (_currentSession && _currentProfile) {
+            toggleAccountDropdown(loginBtn);
+        } else if (_currentSession && !_currentProfile) {
+            // Session exists but profile not loaded yet — load it then show dropdown
+            WDG.authGetProfile().then(function(profile) {
+                _currentProfile = profile;
+                updateNavAuth();
+                setTimeout(function(){ toggleAccountDropdown(document.getElementById('loginBtn')); }, 50);
+            }).catch(function(){ openAuthModal('login'); });
+        } else {
+            openAuthModal('login');
+        }
+    };
+
     if (_currentSession && _currentProfile) {
         // Use full_name, fall back to email prefix, then 'Account'
         const rawName   = (_currentProfile && _currentProfile.full_name) ? _currentProfile.full_name : '';
@@ -162,7 +181,6 @@ function updateNavAuth() {
         var safeFirst = firstName.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
         loginBtn.innerHTML = ICONS.user + ' ' + safeFirst + ' <span style="font-size:0.7rem;opacity:0.7">▾</span>';
         loginBtn.href = '#';
-        loginBtn.onclick = (e) => { e.preventDefault(); toggleAccountDropdown(loginBtn); };
 
         // Inject dropdown menu
         const dropdown = document.createElement('div');
@@ -203,7 +221,6 @@ function updateNavAuth() {
     } else {
         loginBtn.innerHTML = ICONS.user + ' Login';
         loginBtn.href = '#';
-        loginBtn.onclick = (e) => { e.preventDefault(); openAuthModal('login'); };
     }
 }
 
