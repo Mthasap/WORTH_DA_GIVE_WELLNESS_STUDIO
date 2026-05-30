@@ -358,12 +358,11 @@ function initModals() {
     var cartBtn   = document.getElementById('cartBtn');
     var cartModal = document.getElementById('cartModal');
 
-    if (loginBtn) {
-        loginBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            if (typeof openAuthModal === 'function') openAuthModal('login');
-        });
-    }
+    // Login/account nav is owned entirely by auth.js via updateNavAuth().
+    // DO NOT bind loginBtn here — auth.js sets onclick directly on the element.
+    // Adding an addEventListener here would fire BOTH the dropdown AND the login
+    // modal simultaneously when a logged-in user clicks their name.
+    // loginBtn is intentionally left unbound in this file.
 
     if (cartBtn) {
         cartBtn.addEventListener('click', function(e) {
