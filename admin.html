@@ -467,6 +467,42 @@ hr.div{border:none;border-top:1px solid #eee;margin:1.5rem 0}
     <div id="tab-banners" class="panel hidden">
       <h2>Promotions &amp; Announcements</h2>
       <p class="sub">The active banner shows at the top of ALL pages for ALL visitors immediately. If no active banner is set, the bar is hidden.</p>
+
+      <!-- One-time Supabase setup notice -->
+      <div id="bannerRlsNotice" style="background:#fff8e1;border:1px solid #ffe082;border-radius:10px;padding:14px 18px;margin-bottom:1.2rem;font-size:0.88rem;color:#555">
+        <strong style="color:#e65100;display:block;margin-bottom:6px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e65100" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          One-time setup required if you see a permission error below
+        </strong>
+        If you get a "row-level security" error when activating a banner, you need to run the database permission fix once in Supabase. It takes 30 seconds:
+        <ol style="margin:8px 0 10px 1.2rem;line-height:2">
+          <li>Open <a href="https://app.supabase.com" target="_blank" rel="noopener" style="color:#4CAF50;font-weight:700">app.supabase.com</a> → your project</li>
+          <li>Click <strong>SQL Editor</strong> in the left sidebar</li>
+          <li>Click <strong>New query</strong></li>
+          <li>Paste and run the SQL below:</li>
+        </ol>
+        <details style="margin-bottom:8px">
+          <summary style="cursor:pointer;color:#2c5530;font-weight:700;user-select:none">▶ Click to show the SQL to copy</summary>
+          <pre id="rlsSqlBlock" style="background:#1e1e1e;color:#d4d4d4;padding:12px;border-radius:8px;font-size:0.78rem;overflow-x:auto;margin-top:8px;white-space:pre-wrap;line-height:1.5">ALTER TABLE banners ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "allow anon read active banners" ON banners;
+DROP POLICY IF EXISTS "allow authenticated full access banners" ON banners;
+CREATE POLICY "allow anon read active banners" ON banners FOR SELECT TO anon USING (active = true);
+CREATE POLICY "allow authenticated full access banners" ON banners FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+ALTER TABLE newsletter_subscribers ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "allow anon insert newsletter" ON newsletter_subscribers;
+DROP POLICY IF EXISTS "allow authenticated full access newsletter" ON newsletter_subscribers;
+CREATE POLICY "allow anon insert newsletter" ON newsletter_subscribers FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "allow anon update newsletter" ON newsletter_subscribers FOR UPDATE TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "allow authenticated full access newsletter" ON newsletter_subscribers FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "allow authenticated read all profiles" ON profiles;
+CREATE POLICY "allow authenticated read all profiles" ON profiles FOR SELECT TO authenticated USING (true);</pre>
+          <button onclick="copyRlsSql()" style="margin-top:6px;padding:7px 16px;background:#4CAF50;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.82rem">Copy SQL</button>
+        </details>
+        <button onclick="document.getElementById('bannerRlsNotice').style.display='none'" style="background:none;border:none;color:#aaa;font-size:0.78rem;cursor:pointer;text-decoration:underline;padding:0">Dismiss this notice</button>
+      </div>
+
       <div class="form-grid triple">
         <div class="fg full"><label>Banner Message *</label><input type="text" id="bannerText" placeholder="e.g. Weekend Sale — 20% off Disposables this Saturday!"></div>
         <div class="fg">
@@ -1272,6 +1308,24 @@ async function loadBanners() {
   }).join('');
 }
 
+function copyRlsSql() {
+  var el = document.getElementById('rlsSqlBlock');
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(function() {
+    showMsg('bannerMsg', 'SQL copied! Now paste it in Supabase → SQL Editor → Run.', 'ok');
+  }).catch(function() {
+    // Fallback for older browsers
+    var range = document.createRange();
+    range.selectNodeContents(el);
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    document.execCommand('copy');
+    sel.removeAllRanges();
+    showMsg('bannerMsg', 'SQL copied! Now paste it in Supabase → SQL Editor → Run.', 'ok');
+  });
+}
+
 async function activateBanner() {
   var text   = document.getElementById('bannerText').value.trim();
   var type   = document.getElementById('bannerType').value;
@@ -1288,7 +1342,18 @@ async function activateBanner() {
         delete row.expires_at;
         res = await SB.from('banners').insert([row]).select();
       }
-      if (res.error) { showMsg('bannerMsg', 'Error: ' + res.error.message, 'err'); return; }
+      if (res.error) {
+        // Detect RLS policy error and give admin a clear fix
+        if (res.error.message && res.error.message.indexOf('row-level security') !== -1) {
+          showMsg('bannerMsg',
+            '⚠ Database permission error. You need to run the RLS fix SQL once in Supabase. ' +
+            'Go to: app.supabase.com → your project → SQL Editor → paste and run the SUPABASE_RLS_FIX.sql file provided. ' +
+            'This is a one-time setup step.', 'err');
+        } else {
+          showMsg('bannerMsg', 'Error: ' + res.error.message, 'err');
+        }
+        return;
+      }
     }
     document.getElementById('bannerText').value = '';
     document.getElementById('bannerExpiry').value = '';
