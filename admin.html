@@ -1509,21 +1509,50 @@ async function loadNewsletterSubs() {
   if (!el) return;
   el.innerHTML = '<p style="color:#999;font-size:0.9rem;padding:1rem 0">Loading…</p>';
   try {
-    var res = await SB.from('newsletter_subscribers').select('*').eq('subscribed', true).order('created_at', { ascending: false });
-    var subs = res.data || [];
-    if (!subs.length) { el.innerHTML='<p style="color:#aaa">No subscribers yet.</p>'; return; }
-    var rows = subs.map(function(s){
-      return '<tr><td>'+escHtml(s.name||'—')+'</td><td>'+escHtml(s.email)+'</td>'+
-        '<td style="color:#aaa;font-size:0.78rem">'+(s.created_at?new Date(s.created_at).toLocaleDateString('en-ZA'):'')+' </td></tr>';
-    }).join('');
-    el.innerHTML = '<p style="margin-bottom:1rem;color:#555;font-size:0.88rem"><strong>'+subs.length+'</strong> active subscriber'+(subs.length!==1?'s':'')+'</p>'+
-      '<table class="items-table"><thead><tr><th>Name</th><th>Email</th><th>Date</th></tr></thead><tbody>'+rows+'</tbody></table>'+
-      '<p style="font-size:0.75rem;color:#aaa;margin-top:1rem">All subscribers opted in. Compliant with POPIA.</p>';
+    var [subsRes, profilesRes] = await Promise.all([
+      SB.from('newsletter_subscribers').select('*').eq('subscribed', true).order('created_at', { ascending: false }),
+      SB.from('profiles').select('id, full_name, email, created_at, whatsapp_number').order('created_at', { ascending: false })
+    ]);
+
+    var subs     = subsRes.data     || [];
+    var profiles = profilesRes.data || [];
+
+    // Registered accounts section
+    var accountsHtml = '';
+    if (profiles.length) {
+      var pRows = profiles.map(function(p) {
+        return '<tr><td>' + escHtml(p.full_name || '—') + '</td>' +
+          '<td>' + escHtml(p.email || '—') + '</td>' +
+          '<td>' + escHtml(p.whatsapp_number || '—') + '</td>' +
+          '<td style="color:#aaa;font-size:0.78rem">' + (p.created_at ? new Date(p.created_at).toLocaleDateString('en-ZA') : '') + '</td></tr>';
+      }).join('');
+      accountsHtml = '<h3 style="color:#2c5530;margin:0 0 0.8rem;font-size:1rem">Registered Accounts (' + profiles.length + ')</h3>' +
+        '<table class="items-table" style="margin-bottom:2rem"><thead><tr><th>Name</th><th>Email</th><th>WhatsApp</th><th>Joined</th></tr></thead><tbody>' + pRows + '</tbody></table>';
+    } else {
+      accountsHtml = '<p style="color:#aaa;font-size:0.88rem;margin-bottom:2rem">No registered accounts yet.</p>';
+    }
+
+    // Newsletter subscribers section
+    var newsletterHtml = '';
+    if (subs.length) {
+      var nRows = subs.map(function(s) {
+        return '<tr><td>' + escHtml(s.name || '—') + '</td><td>' + escHtml(s.email) + '</td>' +
+          '<td style="color:#aaa;font-size:0.78rem">' + (s.created_at ? new Date(s.created_at).toLocaleDateString('en-ZA') : '') + '</td></tr>';
+      }).join('');
+      newsletterHtml = '<h3 style="color:#2c5530;margin:0 0 0.8rem;font-size:1rem">Newsletter Subscribers (' + subs.length + ')</h3>' +
+        '<p style="font-size:0.8rem;color:#888;margin-bottom:0.8rem">These users subscribed via the newsletter form on the homepage.</p>' +
+        '<table class="items-table"><thead><tr><th>Name</th><th>Email</th><th>Subscribed</th></tr></thead><tbody>' + nRows + '</tbody></table>';
+    } else {
+      newsletterHtml = '<h3 style="color:#2c5530;margin:0 0 0.8rem;font-size:1rem">Newsletter Subscribers</h3>' +
+        '<p style="color:#aaa;font-size:0.88rem">No newsletter form subscribers yet. These appear when users submit the newsletter form on the homepage (separate from creating an account).</p>';
+    }
+
+    el.innerHTML = accountsHtml + newsletterHtml;
+
   } catch(e) {
-    el.innerHTML='<p style="color:#c62828">Error: '+e.message+'</p>';
+    el.innerHTML = '<p style="color:#c62828">Error: ' + e.message + '</p>';
   }
-}
-</script>
+}</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" onload="if(typeof SB==='undefined'&&window.supabase){SB=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY)}"></script>
 </body>
 </html>
