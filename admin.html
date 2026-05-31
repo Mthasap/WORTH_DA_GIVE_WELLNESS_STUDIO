@@ -500,7 +500,17 @@ CREATE POLICY "allow anon update newsletter" ON newsletter_subscribers FOR UPDAT
 CREATE POLICY "allow authenticated full access newsletter" ON newsletter_subscribers FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "allow authenticated read all profiles" ON profiles;
-CREATE POLICY "allow authenticated read all profiles" ON profiles FOR SELECT TO authenticated USING (true);</pre>
+CREATE POLICY "allow authenticated read all profiles" ON profiles FOR SELECT TO authenticated USING (true);
+
+-- ── ORDERS TABLE — Add missing columns ───────────────────────────
+-- Run this if you see: "Could not find the 'paid_at' column"
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS paid_at TIMESTAMPTZ;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_gateway TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_gateway_ref TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS order_source TEXT DEFAULT 'website';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS whatsapp_number TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS phone TEXT;</pre>
           <button onclick="copyRlsSql()" style="margin-top:6px;padding:7px 16px;background:#4CAF50;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.82rem">Copy SQL</button>
         </details>
         <button onclick="document.getElementById('bannerRlsNotice').style.display='none'" style="background:none;border:none;color:#aaa;font-size:0.78rem;cursor:pointer;text-decoration:underline;padding:0">Dismiss this notice</button>
@@ -765,6 +775,29 @@ async function loadOrders() {
     var res = await SB.from('orders')
       .select('*, order_items(*), order_tracking(*)')
       .order('created_at', { ascending: false });
+    if (res.error) {
+      // Detect missing column errors and guide admin
+      if (res.error.message && (
+          res.error.message.indexOf('paid_at') !== -1 ||
+          res.error.message.indexOf('payment_gateway') !== -1 ||
+          res.error.message.indexOf('schema cache') !== -1
+      )) {
+        showMsg('ordersMsg',
+          '\u26a0 Database column missing: ' + res.error.message + '. ' +
+          'Fix: Go to the Banners tab \u2192 copy and run the SQL shown there in Supabase \u2192 SQL Editor. ' +
+          'Orders will load correctly after running it.',
+          'err');
+        // Try loading with minimal columns as fallback so orders still display
+        var fallback = await SB.from('orders')
+          .select('id, ref, status, payment_status, payment_method, total, subtotal, delivery_fee, delivery_type, first_name, last_name, email, phone, address, created_at, order_items(*), order_tracking(*)')
+          .order('created_at', { ascending: false });
+        allOrders = fallback.data || [];
+        updateOrderStats();
+        renderOrders();
+        return;
+      }
+      throw res.error;
+    }
     allOrders = res.data || [];
     updateOrderStats();
     renderOrders();
@@ -1414,19 +1447,35 @@ function revealField(el) {
 async function forcePaidStatus(orderId, ref, method) {
   if (!confirm('Mark order ' + ref + ' as PAID via ' + method.toUpperCase() + '?')) return;
   try {
-    var res = await SB.from('orders').update({
+    // First do a basic update with columns guaranteed to exist
+    var basicRes = await SB.from('orders').update({
       payment_status: 'paid',
-      payment_gateway: method,
-      status: 'payment_received',
-      paid_at: new Date().toISOString()
+      status: 'payment_received'
     }).eq('id', orderId);
-    if (res.error) throw res.error;
+    if (basicRes.error) throw basicRes.error;
+
+    // Then try extended columns (paid_at, payment_gateway) — these require the SQL migration
+    // If they don't exist yet, this silently fails without breaking the basic update above
+    await SB.from('orders').update({
+      payment_gateway: method,
+      paid_at: new Date().toISOString()
+    }).eq('id', orderId).then(function(r){
+      if (r.error && r.error.message && r.error.message.indexOf('paid_at') !== -1) {
+        // Column missing — show SQL reminder but don't block the operation
+        showMsg('ordersMsg',
+          'Order ' + ref + ' marked as PAID (' + method.toUpperCase() + '). ' +
+          '⚠ Run the SQL migration to also track paid_at & payment_gateway columns. ' +
+          'Copy it from the Banners tab notice.', 'ok');
+      }
+    });
+
     await SB.from('order_tracking').insert({
       order_id: orderId,
       status: 'payment_received',
       note: 'Payment confirmed manually by admin (' + method.toUpperCase() + ').'
     });
-    showMsg('ordersMsg', 'Order ' + ref + ' marked as paid (' + method.toUpperCase() + ').', 'ok');
+
+    showMsg('ordersMsg', 'Order ' + ref + ' marked as PAID (' + method.toUpperCase() + ').', 'ok');
     await loadOrders();
   } catch(e) {
     showMsg('ordersMsg', 'Error: ' + e.message, 'err');
