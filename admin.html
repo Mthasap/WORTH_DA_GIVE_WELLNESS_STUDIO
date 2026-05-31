@@ -486,6 +486,7 @@ hr.div{border:none;border-top:1px solid #eee;margin:1.5rem 0}
           <pre id="rlsSqlBlock" style="background:#1e1e1e;color:#d4d4d4;padding:12px;border-radius:8px;font-size:0.78rem;overflow-x:auto;margin-top:8px;white-space:pre-wrap;line-height:1.5">ALTER TABLE banners ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "allow anon read active banners" ON banners;
 DROP POLICY IF EXISTS "allow authenticated full access banners" ON banners;
+DROP POLICY IF EXISTS "allow authenticated delete banners" ON banners;
 CREATE POLICY "allow anon read active banners" ON banners FOR SELECT TO anon USING (active = true);
 CREATE POLICY "allow authenticated full access banners" ON banners FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
@@ -1415,9 +1416,22 @@ async function reactivateBanner(id) {
 }
 
 async function deleteBanner(id) {
-  if (!confirm('Delete this banner?')) return;
-  await SB.from('banners').delete().eq('id', id);
-  loadBanners();
+  if (!confirm('Delete this banner permanently?')) return;
+  try {
+    var res = await SB.from('banners').delete().eq('id', id);
+    if (res.error) {
+      if (res.error.message && res.error.message.indexOf('row-level security') !== -1) {
+        showMsg('bannerMsg', 'Permission error — run the RLS fix SQL first (see the yellow notice above).', 'err');
+      } else {
+        showMsg('bannerMsg', 'Delete error: ' + res.error.message, 'err');
+      }
+      return;
+    }
+    showMsg('bannerMsg', 'Banner deleted.', 'ok');
+    loadBanners();
+  } catch(e) {
+    showMsg('bannerMsg', 'Delete error: ' + e.message, 'err');
+  }
 }
 
 // ── Helpers ────────────────────────────────────────────
@@ -1446,39 +1460,49 @@ function revealField(el) {
 ═══════════════════════════════════════════ */
 async function forcePaidStatus(orderId, ref, method) {
   if (!confirm('Mark order ' + ref + ' as PAID via ' + method.toUpperCase() + '?')) return;
+
+  var btn = document.querySelector('[onclick*="forcePaidStatus"][onclick*="' + orderId + '"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Updating…'; }
+
   try {
-    // First do a basic update with columns guaranteed to exist
-    var basicRes = await SB.from('orders').update({
+    // Single update — basic columns first (always exist)
+    var payload = {
       payment_status: 'paid',
-      status: 'payment_received'
-    }).eq('id', orderId);
-    if (basicRes.error) throw basicRes.error;
+      status: 'payment_received',
+      payment_method: method
+    };
 
-    // Then try extended columns (paid_at, payment_gateway) — these require the SQL migration
-    // If they don't exist yet, this silently fails without breaking the basic update above
-    await SB.from('orders').update({
-      payment_gateway: method,
-      paid_at: new Date().toISOString()
-    }).eq('id', orderId).then(function(r){
-      if (r.error && r.error.message && r.error.message.indexOf('paid_at') !== -1) {
-        // Column missing — show SQL reminder but don't block the operation
-        showMsg('ordersMsg',
-          'Order ' + ref + ' marked as PAID (' + method.toUpperCase() + '). ' +
-          '⚠ Run the SQL migration to also track paid_at & payment_gateway columns. ' +
-          'Copy it from the Banners tab notice.', 'ok');
-      }
-    });
+    var res = await SB.from('orders').update(payload).eq('id', orderId);
+    if (res.error) throw res.error;
 
+    // Try to also set paid_at + payment_gateway (requires SQL migration)
+    // These are non-critical — order is already marked paid above
+    try {
+      await SB.from('orders').update({
+        paid_at: new Date().toISOString(),
+        payment_gateway: method
+      }).eq('id', orderId);
+    } catch(extErr) {
+      // Column doesn't exist yet — harmless, order is still marked paid
+    }
+
+    // Add tracking entry
     await SB.from('order_tracking').insert({
       order_id: orderId,
       status: 'payment_received',
-      note: 'Payment confirmed manually by admin (' + method.toUpperCase() + ').'
+      note: 'Payment confirmed manually by admin — ' + method.toUpperCase() + '.'
     });
 
-    showMsg('ordersMsg', 'Order ' + ref + ' marked as PAID (' + method.toUpperCase() + ').', 'ok');
-    await loadOrders();
+    showMsg('ordersMsg', '✓ Order ' + ref + ' marked as PAID (' + method.toUpperCase() + '). Page refreshing…', 'ok');
+
+    // Wait briefly then reload so DB write is committed
+    setTimeout(async function() {
+      await loadOrders();
+    }, 800);
+
   } catch(e) {
-    showMsg('ordersMsg', 'Error: ' + e.message, 'err');
+    showMsg('ordersMsg', 'Error marking as paid: ' + e.message, 'err');
+    if (btn) { btn.disabled = false; btn.textContent = btn.getAttribute('data-label') || 'Mark Paid'; }
   }
 }
 
