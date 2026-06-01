@@ -171,13 +171,21 @@
                             </div>
                         </div>
 
+                        <!-- Delivery rate info — always visible when delivery selected -->
+                        <div id="deliveryRateInfo" class="delivery-rate-info" style="margin-top:10px;padding:11px 14px;background:#e8f5e9;border-radius:8px;font-size:0.82rem;color:#2c5530;line-height:1.8;border:1px solid #c8e6c9">
+                            <strong>Delivery rates:</strong><br>
+                            <span>Gauteng (within ~10km of store): <strong>R50</strong> &nbsp;&bull;&nbsp; <strong>FREE</strong> on orders over <strong>R500</strong></span><br>
+                            <span>All other provinces: <strong>R100</strong> flat rate</span><br>
+                            <span style="color:#888;font-size:0.78rem">International delivery not available yet. Select your province above to see your rate.</span>
+                        </div>
+
                         <div id="pickupInfo" class="hidden" style="background:#f0f7f0;border-radius:8px;padding:1rem;border:1px solid #c8e6c9;">
                             <p style="font-weight:700;color:#2c5530;margin-bottom:6px;display:flex;align-items:center;gap:6px;">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2c5530" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                                 Collection Address
                             </p>
-                            <p style="color:#555;font-size:0.9rem;line-height:1.7;">WorthDaGive Wellness Studio<br>[Your Address Here]<br>Mon–Fri: 09:00–18:00 &nbsp;|&nbsp; Sat: 09:00–14:00</p>
-                            <p style="color:#888;font-size:0.8rem;margin-top:8px;">You will be notified when your order is ready for collection.</p>
+                            <p style="color:#555;font-size:0.9rem;line-height:1.7;">WorthDaGive Wellness Studio<br>Shop 9 Constantia Square, Corner Jim Fouche &amp; Antelope Turn<br>Constantia Kloof, Johannesburg, 1709<br>Mon–Fri: 09:00–18:00 &nbsp;|&nbsp; Sat: 09:00–14:00</p>
+                            <p style="color:#888;font-size:0.8rem;margin-top:8px;">You will be notified when your order is ready for collection. Collection is <strong>free</strong>.</p>
                         </div>
                     </div>
 
@@ -282,17 +290,21 @@
     if (localStorage.getItem('ageVerified') !== 'true') window.location.replace('index.html');
 
     /* ── Zone-based delivery fees (R) ── */
-    const DELIVERY_ZONES = {
-        'Gauteng':       65,
-        'Western Cape':  110,
-        'KwaZulu-Natal': 95,
-        'Eastern Cape':  120,
-        'Limpopo':       130,
-        'Mpumalanga':    120,
-        'North West':    120,
-        'Northern Cape': 150,
-        'Free State':    115
-    };
+    // ── DELIVERY RATES ──────────────────────────────────────────────
+    // Within 10km radius (Constantia Kloof area = Gauteng local):
+    //   R50 flat | FREE if order subtotal >= R500
+    // Outside 10km (other Gauteng / rest of SA):
+    //   R100 flat (national rate)
+    // International: not enabled yet
+    const LOCAL_AREA_THRESHOLD_KM = 10; // km radius from store
+    const LOCAL_FEE        = 50;  // R50 within 10km
+    const LOCAL_FREE_ABOVE = 500; // Free local delivery if order >= R500
+    const NATIONAL_FEE     = 100; // R100 for all other SA provinces
+
+    // Provinces considered "local zone" (same metro area as store)
+    // Gauteng orders get R50/free tier; all other provinces get R100
+    const LOCAL_PROVINCES = ['Gauteng'];
+
     const COD_FEE = 20;
 
     let CHECKOUT_PRODUCTS = [];
@@ -315,15 +327,33 @@
     let currentDeliveryFee = 0;
 
     /* ── Province change → zone fee ── */
+    function calcDeliveryFee(prov, subtotal) {
+        if (!prov) return 0;
+        if (LOCAL_PROVINCES.indexOf(prov) !== -1) {
+            // Gauteng (local zone): free if subtotal >= R500, else R50
+            return subtotal >= LOCAL_FREE_ABOVE ? 0 : LOCAL_FEE;
+        }
+        // All other SA provinces: R100 flat
+        return NATIONAL_FEE;
+    }
+
     function onProvinceChange() {
-        const prov = document.getElementById('coProvince').value;
-        currentDeliveryFee = prov ? (DELIVERY_ZONES[prov] || 80) : 0;
-        const badge = document.getElementById('zoneFeeLabel');
+        const prov     = document.getElementById('coProvince').value;
+        const subtotal = getCart().reduce(function(s, item) {
+            var p = getProductById(item.id);
+            return s + (p ? p.price * item.quantity : 0);
+        }, 0);
+        currentDeliveryFee = prov ? calcDeliveryFee(prov, subtotal) : 0;
+
+        const badge  = document.getElementById('zoneFeeLabel');
         const zoneEl = document.getElementById('coDeliveryZone');
         if (prov) {
-            badge.textContent = 'R' + currentDeliveryFee;
+            var isLocal = LOCAL_PROVINCES.indexOf(prov) !== -1;
+            var isFree  = isLocal && subtotal >= LOCAL_FREE_ABOVE;
+            badge.textContent  = isFree ? 'FREE delivery!' : 'R' + currentDeliveryFee;
             badge.style.display = 'inline-block';
-            if (zoneEl) zoneEl.textContent = '(' + prov + ')';
+            badge.style.background = isFree ? '#4CAF50' : '#2c5530';
+            if (zoneEl) zoneEl.textContent = isLocal ? '(local — within 10km)' : '(national)';
         } else {
             badge.style.display = 'none';
             if (zoneEl) zoneEl.textContent = '';
@@ -336,6 +366,8 @@
         isDelivery = radio.value === 'delivery';
         document.getElementById('deliveryFields').classList.toggle('hidden', !isDelivery);
         document.getElementById('pickupInfo').classList.toggle('hidden', isDelivery);
+        var rateInfo = document.getElementById('deliveryRateInfo');
+        if (rateInfo) rateInfo.style.display = isDelivery ? '' : 'none';
         if (!isDelivery) {
             currentDeliveryFee = 0;
             document.getElementById('zoneFeeLabel').style.display = 'none';
@@ -392,6 +424,20 @@
                 '<span class="co-item-price">R' + line.toFixed(2) + '</span></div>';
         }).join('');
 
+        // Recalculate delivery fee in case subtotal crossed the R500 free threshold
+        if (isDelivery) {
+            const provEl = document.getElementById('coProvince');
+            if (provEl && provEl.value) {
+                currentDeliveryFee = calcDeliveryFee(provEl.value, subtotal);
+                // Update the badge to reflect free delivery if threshold crossed
+                const badge = document.getElementById('zoneFeeLabel');
+                if (badge && badge.style.display !== 'none') {
+                    var isLocal2 = LOCAL_PROVINCES.indexOf(provEl.value) !== -1;
+                    badge.textContent = (isLocal2 && subtotal >= LOCAL_FREE_ABOVE) ? 'FREE delivery!' : 'R' + currentDeliveryFee;
+                    badge.style.background = (isLocal2 && subtotal >= LOCAL_FREE_ABOVE) ? '#4CAF50' : '#2c5530';
+                }
+            }
+        }
         const deliveryFee = isDelivery ? currentDeliveryFee : 0;
         const codFee      = selectedPayment === 'cod' ? COD_FEE : 0;
         const grand       = subtotal + deliveryFee + codFee;
@@ -475,6 +521,20 @@
 
         const cart        = getCart();
         const session     = currentSession ? currentSession() : null;
+        // Recalculate delivery fee in case subtotal crossed the R500 free threshold
+        if (isDelivery) {
+            const provEl = document.getElementById('coProvince');
+            if (provEl && provEl.value) {
+                currentDeliveryFee = calcDeliveryFee(provEl.value, subtotal);
+                // Update the badge to reflect free delivery if threshold crossed
+                const badge = document.getElementById('zoneFeeLabel');
+                if (badge && badge.style.display !== 'none') {
+                    var isLocal2 = LOCAL_PROVINCES.indexOf(provEl.value) !== -1;
+                    badge.textContent = (isLocal2 && subtotal >= LOCAL_FREE_ABOVE) ? 'FREE delivery!' : 'R' + currentDeliveryFee;
+                    badge.style.background = (isLocal2 && subtotal >= LOCAL_FREE_ABOVE) ? '#4CAF50' : '#2c5530';
+                }
+            }
+        }
         const deliveryFee = isDelivery ? currentDeliveryFee : 0;
         const codFee      = selectedPayment === 'cod' ? COD_FEE : 0;
         const subtotal    = cart.reduce((s, item) => {
