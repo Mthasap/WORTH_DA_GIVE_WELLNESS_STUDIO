@@ -601,7 +601,7 @@ async function doLogin() {
           'Fix (takes 30 seconds):<br>' +
           '1. Go to <a href="https://app.supabase.com" target="_blank" style="color:#c0392b">app.supabase.com</a> ' +
           '→ your project → <strong>SQL Editor</strong> → New Query<br>' +
-          '2. Paste and run: <code style="background:#f5f5f5;padding:2px 6px;border-radius:4px;font-size:0.9em">NOTIFY pgrst, 'reload schema';</code><br>' +
+          '2. Paste and run: <code style="background:#f5f5f5;padding:2px 6px;border-radius:4px;font-size:0.9em">NOTIFY pgrst, &#39;reload schema&#39;;</code><br>' +
           '3. Wait 10 seconds then try logging in again.';
       } else if (msgLower.indexOf('invalid') !== -1 || msgLower.indexOf('credentials') !== -1) {
         errEl.innerHTML = 'Incorrect email or password.';
