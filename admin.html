@@ -261,59 +261,10 @@ hr.div{border:none;border-top:1px solid #eee;margin:1.5rem 0}
 </div>
 
 <script>
-// ── SELF-CONTAINED LOGIN — runs before any external SDK ──
-(function() {
-    var ADMIN_EMAIL = 'projectsheadway@gmail.com';
-    var ADMIN_PASS  = 'Worthd26';
-
-    function attempt() {
-        var email = (document.getElementById('adminEmail').value || '').trim().toLowerCase();
-        var pw    = document.getElementById('adminPw').value || '';
-        var err   = document.getElementById('loginErr');
-        var btn   = document.getElementById('loginBtn');
-
-        err.textContent = '';
-
-        if (!email || !pw) {
-            err.textContent = 'Please enter your email and password.';
-            return;
-        }
-
-        btn.textContent = 'Checking...';
-        btn.disabled    = true;
-
-        // Pure credential check — no network, no SDK needed
-        if (email === ADMIN_EMAIL.toLowerCase() && pw === ADMIN_PASS) {
-            sessionStorage.setItem('adminIn', '1');
-            sessionStorage.setItem('adminEmail', ADMIN_EMAIL);
-            document.getElementById('loginGate').style.display = 'none';
-            document.getElementById('adminPanel').classList.remove('hidden');
-            // loadAll() will be called once SDK is ready
-            if (typeof loadAll === 'function') {
-                loadAll();
-            } else {
-                // SDK still loading — wait for it
-                var t = setInterval(function() {
-                    if (typeof loadAll === 'function') {
-                        clearInterval(t);
-                        loadAll();
-                    }
-                }, 100);
-            }
-            return;
-        }
-
-        err.textContent = 'Incorrect email or password. Try: projectsheadway@gmail.com / Worthd26';
-        btn.textContent = 'Enter Admin Panel';
-        btn.disabled    = false;
-    }
-
-    // Wire up button and Enter key immediately — no DOMContentLoaded needed
-    // because this script is inline right after the elements
-    document.getElementById('loginBtn').onclick    = attempt;
-    document.getElementById('adminPw').onkeydown   = function(e) { if (e.key === 'Enter') attempt(); };
-    document.getElementById('adminEmail').onkeydown = function(e) { if (e.key === 'Enter') attempt(); };
-})();
+// Wire login button and Enter key — actual auth handled by doLogin() below
+document.getElementById('loginBtn').onclick     = function() { doLogin(); };
+document.getElementById('adminPw').onkeydown    = function(e) { if (e.key === 'Enter') doLogin(); };
+document.getElementById('adminEmail').onkeydown = function(e) { if (e.key === 'Enter') doLogin(); };
 </script>
 
 <!-- ADMIN PANEL -->
@@ -598,7 +549,7 @@ var SUPABASE_URL = "https://tndsmvsuowqdmhtatmie.supabase.co";
 var SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRuZHNtdnN1b3dxZG1odGF0bWllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMzM0MjAsImV4cCI6MjA5MDkwOTQyMH0.KLd3B-MQI1BBJSg98lfFugnqPDqeBBBGuM-cRbI0Eyw";
 // ADMIN_EMAILS: list of email addresses that have admin access.
 // In production, use Supabase RLS + a role column in the profiles table.
-var ADMIN_EMAILS = ['projectsheadway@gmail.com', 'admin@worthdagive.com', 'owner@worthdagive.co.za'];
+var ADMIN_EMAILS = ['projectsheadway@gmail.com'];
 var SB;
 
 // ── Init ───────────────────────────────────────────────
@@ -653,11 +604,8 @@ async function doLogin() {
     }
 
     // Verify this is an admin email
-    var ADMIN_EMAILS_LIST = [
-      'projectsheadway@gmail.com',
-      'admin@worthdagive.com',
-      'owner@worthdagive.co.za'
-    ];
+    // Only this email is allowed admin access
+    var ADMIN_EMAILS_LIST = ['projectsheadway@gmail.com'];
     var loggedInEmail = authRes.data.user.email.toLowerCase();
     if (ADMIN_EMAILS_LIST.indexOf(loggedInEmail) === -1) {
       await SB.auth.signOut();
@@ -708,39 +656,48 @@ function doLogout() {
 }
 
 if (sessionStorage.getItem('adminIn') === '1') {
-  // Page was reloaded — restore the admin panel only if Supabase session is still valid
+  // Page reloaded — show panel immediately (prevents flash)
   document.getElementById('loginGate').style.display = 'none';
   document.getElementById('adminPanel').classList.remove('hidden');
+
+  // After page fully loads, verify Supabase session is still valid
   window.addEventListener('load', function() {
-    if (!window.supabase) {
-      // SDK not yet loaded — wait for it via the cdn script onload
-      return;
-    }
-    initSB();
-    SB.auth.getSession().then(function(r) {
-      if (!r.data || !r.data.session) {
-        // Supabase session expired — force full re-login so we never run as anon
+    // SDK is loaded via the script tag at the bottom of the page — wait for it
+    var attempts = 0;
+    var checkReady = setInterval(function() {
+      attempts++;
+      if (window.supabase && initSB()) {
+        clearInterval(checkReady);
+        SB.auth.getSession().then(function(r) {
+          if (!r.data || !r.data.session) {
+            // Session expired — force full re-login (never run as anon)
+            sessionStorage.removeItem('adminIn');
+            sessionStorage.removeItem('adminEmail');
+            sessionStorage.removeItem('adminAuthOk');
+            document.getElementById('adminPanel').classList.add('hidden');
+            document.getElementById('loginGate').style.display = '';
+            var errEl = document.getElementById('loginErr');
+            if (errEl) {
+              errEl.style.color = '#e65100';
+              errEl.textContent = 'Your session expired. Please log in again.';
+            }
+          } else {
+            sessionStorage.setItem('adminAuthOk', '1');
+            loadAll();
+          }
+        }).catch(function() {
+          sessionStorage.removeItem('adminIn');
+          document.getElementById('adminPanel').classList.add('hidden');
+          document.getElementById('loginGate').style.display = '';
+        });
+      } else if (attempts > 50) {
+        // SDK never loaded after 5 seconds — force re-login
+        clearInterval(checkReady);
         sessionStorage.removeItem('adminIn');
-        sessionStorage.removeItem('adminEmail');
-        sessionStorage.removeItem('adminAuthOk');
         document.getElementById('adminPanel').classList.add('hidden');
         document.getElementById('loginGate').style.display = '';
-        var errEl = document.getElementById('loginErr');
-        if (errEl) {
-          errEl.style.color = '#e65100';
-          errEl.textContent = 'Your session expired. Please log in again.';
-        }
-      } else {
-        // Session still valid — mark auth as confirmed
-        sessionStorage.setItem('adminAuthOk', '1');
-        loadAll();
       }
-    }).catch(function() {
-      // Network error on session check — force re-login to be safe
-      sessionStorage.removeItem('adminIn');
-      document.getElementById('adminPanel').classList.add('hidden');
-      document.getElementById('loginGate').style.display = '';
-    });
+    }, 100);
   });
 }
 
@@ -1486,7 +1443,7 @@ async function forcePaidStatus(orderId, ref, method) {
         'Update was blocked — your Supabase session may have expired. ' +
         'Please log out and log back in, then try again. ' +
         'If the problem persists, go to app.supabase.com → Authentication → Users → ' +
-        'find projectsheadway@gmail.com → Edit → set password to Worthd26.'
+        'go to Supabase → Authentication → Users → find your email → Edit → update password.'
       );
     }
 
