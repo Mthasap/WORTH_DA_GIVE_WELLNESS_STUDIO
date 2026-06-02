@@ -620,90 +620,58 @@ async function doLogin() {
 
   errEl.textContent = '';
   errEl.style.color = '#c0392b';
+  if (!email || !pw) { errEl.textContent = 'Please enter your email and password.'; return; }
 
-  if (!email || !pw) {
-    errEl.textContent = 'Please enter your email and password.';
-    return;
-  }
+  if (btn) { btn.disabled = true; btn.textContent = 'Connecting…'; }
 
-  // Show loading state
-  if (btn) { btn.disabled = true; btn.textContent = 'Checking...'; }
-
-  // ── STEP 1: Check hardcoded admin credentials first (no network needed)
-  var ADMIN_EMAIL_1 = 'projectsheadway@gmail.com';
-  var ADMIN_PASS_1  = 'Worthd26';
-
-  if (email === ADMIN_EMAIL_1 && pw === ADMIN_PASS_1) {
-    // Credential match — grant admin panel access
-    if (btn) { btn.textContent = 'Connecting to database…'; }
-
-    // Ensure SDK is loaded
-    if (!window.supabase) await loadSupabaseSDK();
-    initSB();
-
-    // Sign into Supabase Auth so SB client has 'authenticated' role for all DB writes
-    // This is required for RLS-protected tables (orders, products, etc.)
-    var authRes = await SB.auth.signInWithPassword({
-      email:    ADMIN_EMAIL_1,
-      password: ADMIN_PASS_1
-    });
-
-    if (authRes.error) {
-      // Supabase auth failed — this means the password in Supabase doesn't match
-      // Show a one-time setup warning but still allow panel access
-      // Admin will have limited write access until Supabase password is synced
-      errEl.style.color = '#e65100';
-      errEl.innerHTML =
-        '<strong>Warning:</strong> Supabase authentication failed (' + authRes.error.message + '). ' +
-        'Some admin writes may fail. To fix permanently: go to ' +
-        '<a href="https://app.supabase.com" target="_blank" style="color:#e65100">app.supabase.com</a> ' +
-        '→ Authentication → Users → find projectsheadway@gmail.com → change password to <strong>Worthd26</strong>. ' +
-        'Entering admin panel anyway…';
-      // Still proceed — banners has RLS disabled so basic ops will work
-    }
-
-    sessionStorage.setItem('adminIn', '1');
-    sessionStorage.setItem('adminEmail', ADMIN_EMAIL_1);
-    // Store auth state so we know if Supabase session is live
-    sessionStorage.setItem('adminAuthOk', authRes.error ? '0' : '1');
-
-    showAdminPanel();
-    return;
-  }
-
-  // ── STEP 2: Supabase auth for other admin accounts
+  // Ensure Supabase SDK is loaded
+  if (!window.supabase) await loadSupabaseSDK();
   if (!initSB()) {
-    await loadSupabaseSDK();
-    initSB();
-  }
-  if (!SB) {
-    errEl.textContent = 'Could not connect. Check your internet connection and try again.';
+    errEl.textContent = 'Could not load the database library. Check your internet connection.';
     if (btn) { btn.disabled = false; btn.textContent = 'Enter Admin Panel'; }
     return;
   }
 
+  // ── SINGLE AUTH PATH: All logins go through Supabase ──────────
+  // This guarantees the SB client always has 'authenticated' role.
+  // The hardcoded credentials must match the Supabase user password exactly.
   try {
-    var res = await SB.auth.signInWithPassword({ email: email, password: pw });
-    if (res.error) {
-      errEl.textContent = 'Incorrect email or password.';
+    var authRes = await SB.auth.signInWithPassword({ email: email, password: pw });
+
+    if (authRes.error) {
+      // Wrong credentials OR Supabase password doesn't match the hardcoded one
+      if (authRes.error.message.toLowerCase().indexOf('invalid') !== -1 ||
+          authRes.error.message.toLowerCase().indexOf('credentials') !== -1) {
+        errEl.innerHTML = 'Incorrect email or password.';
+      } else {
+        errEl.innerHTML =
+          '<strong>Login failed:</strong> ' + authRes.error.message + '<br>' +
+          'If you recently changed your password, make sure it matches in both the admin panel and Supabase.' ;
+      }
       if (btn) { btn.disabled = false; btn.textContent = 'Enter Admin Panel'; }
       return;
     }
 
-    var profRes = await SB.from('profiles').select('role,email').eq('id', res.data.user.id).single();
-    var isAdmin = (profRes.data && profRes.data.role === 'admin') ||
-                  ADMIN_EMAILS.indexOf(res.data.user.email.toLowerCase()) > -1;
-
-    if (!isAdmin) {
+    // Verify this is an admin email
+    var ADMIN_EMAILS_LIST = [
+      'projectsheadway@gmail.com',
+      'admin@worthdagive.com',
+      'owner@worthdagive.co.za'
+    ];
+    var loggedInEmail = authRes.data.user.email.toLowerCase();
+    if (ADMIN_EMAILS_LIST.indexOf(loggedInEmail) === -1) {
       await SB.auth.signOut();
-      errEl.textContent = 'Access denied — not an admin account.';
+      errEl.textContent = 'Access denied — this account does not have admin privileges.';
       if (btn) { btn.disabled = false; btn.textContent = 'Enter Admin Panel'; }
       return;
     }
 
-    sessionStorage.setItem('adminIn', '1');
-    sessionStorage.setItem('adminEmail', res.data.user.email);
+    // ── SUCCESS: Supabase session confirmed ──
+    sessionStorage.setItem('adminIn',     '1');
+    sessionStorage.setItem('adminEmail',  loggedInEmail);
+    sessionStorage.setItem('adminAuthOk', '1');
     showAdminPanel();
+
   } catch(e) {
     errEl.textContent = 'Login error: ' + (e.message || 'please try again.');
     if (btn) { btn.disabled = false; btn.textContent = 'Enter Admin Panel'; }
@@ -725,26 +693,6 @@ function loadSupabaseSDK() {
 function showAdminPanel() {
   document.getElementById('loginGate').style.display = 'none';
   document.getElementById('adminPanel').classList.remove('hidden');
-
-  // Show a persistent warning if Supabase auth isn't confirmed
-  // This only happens when the Supabase password doesn't match the hardcoded one
-  if (sessionStorage.getItem('adminAuthOk') === '0') {
-    var warn = document.getElementById('adminAuthWarning');
-    if (!warn) {
-      warn = document.createElement('div');
-      warn.id = 'adminAuthWarning';
-      warn.style.cssText = 'background:#fff3e0;border-left:4px solid #e65100;padding:12px 18px;margin-bottom:1rem;border-radius:0 8px 8px 0;font-size:0.85rem;color:#555;';
-      warn.innerHTML =
-        '<strong style="color:#e65100">⚠ Supabase session not active</strong> — Some write operations may fail. ' +
-        'Fix: go to <a href="https://app.supabase.com" target="_blank" style="color:#e65100;font-weight:700">app.supabase.com</a> ' +
-        '→ Authentication → Users → find <strong>projectsheadway@gmail.com</strong> → Edit → set password to <strong>Worthd26</strong> → Save. ' +
-        'Then log out and back in. ' +
-        '<button onclick="this.parentNode.style.display=\'none\'" style="float:right;background:none;border:none;cursor:pointer;color:#aaa;font-size:1.1rem;line-height:1">&times;</button>';
-      var wrap = document.querySelector('.wrap');
-      if (wrap) wrap.insertBefore(warn, wrap.firstChild);
-    }
-  }
-
   loadAll();
 }
 // keydown listeners handled in login gate script
@@ -760,22 +708,39 @@ function doLogout() {
 }
 
 if (sessionStorage.getItem('adminIn') === '1') {
+  // Page was reloaded — restore the admin panel only if Supabase session is still valid
   document.getElementById('loginGate').style.display = 'none';
   document.getElementById('adminPanel').classList.remove('hidden');
   window.addEventListener('load', function() {
+    if (!window.supabase) {
+      // SDK not yet loaded — wait for it via the cdn script onload
+      return;
+    }
     initSB();
-    // Restore Supabase session — no hardcoded credentials
-    // If session expired, admin must log in again
     SB.auth.getSession().then(function(r) {
       if (!r.data || !r.data.session) {
-        // Session expired — redirect to login
+        // Supabase session expired — force full re-login so we never run as anon
         sessionStorage.removeItem('adminIn');
         sessionStorage.removeItem('adminEmail');
+        sessionStorage.removeItem('adminAuthOk');
         document.getElementById('adminPanel').classList.add('hidden');
         document.getElementById('loginGate').style.display = '';
+        var errEl = document.getElementById('loginErr');
+        if (errEl) {
+          errEl.style.color = '#e65100';
+          errEl.textContent = 'Your session expired. Please log in again.';
+        }
+      } else {
+        // Session still valid — mark auth as confirmed
+        sessionStorage.setItem('adminAuthOk', '1');
+        loadAll();
       }
-    }).catch(function() {});
-    loadAll();
+    }).catch(function() {
+      // Network error on session check — force re-login to be safe
+      sessionStorage.removeItem('adminIn');
+      document.getElementById('adminPanel').classList.add('hidden');
+      document.getElementById('loginGate').style.display = '';
+    });
   });
 }
 
@@ -1502,41 +1467,45 @@ function revealField(el) {
 async function forcePaidStatus(orderId, ref, method) {
   if (!confirm('Mark order ' + ref + ' as PAID via ' + method.toUpperCase() + '?')) return;
 
-  // Disable all force-paid buttons for this order while updating
   var btns = document.querySelectorAll('.force-paid-btn');
   btns.forEach(function(b) { b.disabled = true; });
 
   try {
-    // Update core payment columns — these always exist
-    var coreRes = await SB.from('orders').update({
-      payment_status: 'paid',
-      status:         'payment_received'
-    }).eq('id', orderId);
-    if (coreRes.error) throw coreRes.error;
+    // Use .select() so we can verify the row was actually updated
+    // (Supabase returns 0 rows silently when RLS blocks an update — no error thrown)
+    var coreRes = await SB.from('orders')
+      .update({ payment_status: 'paid', status: 'payment_received' })
+      .eq('id', orderId)
+      .select('id, payment_status');
 
-    // Try to update extended tracking columns (may not exist yet — non-fatal)
-    var extPayload = { payment_method: method };
-    try { extPayload.paid_at = new Date().toISOString(); } catch(e){}
-    try { extPayload.payment_gateway = method; } catch(e){}
-    await SB.from('orders').update(extPayload).eq('id', orderId);
-    // ^ We ignore any error here — core update above already succeeded
+    if (coreRes.error) throw new Error('DB error: ' + coreRes.error.message);
 
-    // Add tracking history entry
+    // If 0 rows returned, RLS blocked the update silently
+    if (!coreRes.data || coreRes.data.length === 0) {
+      throw new Error(
+        'Update was blocked — your Supabase session may have expired. ' +
+        'Please log out and log back in, then try again. ' +
+        'If the problem persists, go to app.supabase.com → Authentication → Users → ' +
+        'find projectsheadway@gmail.com → Edit → set password to Worthd26.'
+      );
+    }
+
+    // Extended columns — non-fatal if they don't exist yet
+    var ext = { payment_method: method, paid_at: new Date().toISOString(), payment_gateway: method };
+    await SB.from('orders').update(ext).eq('id', orderId);
+
+    // Add tracking entry
     await SB.from('order_tracking').insert({
       order_id: orderId,
       status:   'payment_received',
-      note:     'Payment confirmed by admin — ' + method.toUpperCase()
+      note:     'Payment confirmed manually by admin — ' + method.toUpperCase()
     });
 
-    showMsg('ordersMsg',
-      '✓ Order ' + ref + ' marked as PAID (' + method.toUpperCase() + '). Refreshing…',
-      'ok');
-
-    // Reload after 600ms so Supabase has time to commit
+    showMsg('ordersMsg', '✓ Order ' + ref + ' marked as PAID (' + method.toUpperCase() + ').', 'ok');
     setTimeout(function() { loadOrders(); }, 600);
 
   } catch(e) {
-    showMsg('ordersMsg', 'Error updating order: ' + e.message, 'err');
+    showMsg('ordersMsg', 'Error: ' + e.message, 'err');
     btns.forEach(function(b) { b.disabled = false; });
   }
 }
@@ -1581,20 +1550,24 @@ async function loadReviews(filter) {
       var responseHtml = r.response
         ? '<div class="review-response"><strong>WorthDaGive:</strong> ' + escHtml(r.response) + '</div>'
         : '';
+      // Normalise column names — handle both old (name/text) and new (reviewer_name/review_text)
+      var rName = r.reviewer_name || r.name || 'Anonymous';
+      var rText = r.review_text   || r.text || r.comment || '';
+      var rDate = r.created_at    || r.date || '';
       return '<div class="review-card" id="review-card-' + r.id + '">' +
         '<div class="review-card-header">' +
           '<div>' +
-            '<span class="review-author">' + escHtml(r.reviewer_name || 'Anonymous') + '</span>' +
+            '<span class="review-author">' + escHtml(rName) + '</span>' +
             '<span class="review-stars" style="margin-left:8px">' + stars + '</span>' +
           '</div>' +
           '<div style="display:flex;align-items:center;gap:8px">' +
             '<span class="review-status-badge ' + (r.approved ? 'review-status-approved' : 'review-status-pending') + '">' +
               (r.approved ? 'Approved' : 'Pending') +
             '</span>' +
-            '<span class="review-date">' + new Date(r.created_at).toLocaleDateString('en-ZA') + '</span>' +
+            '<span class="review-date">' + (rDate ? new Date(rDate).toLocaleDateString('en-ZA') : '') + '</span>' +
           '</div>' +
         '</div>' +
-        '<div class="review-text">' + escHtml(r.review_text || r.comment || '') + '</div>' +
+        '<div class="review-text">' + escHtml(rText) + '</div>' +
         responseHtml +
         '<div class="review-response-form">' +
           '<textarea id="resp-' + r.id + '" placeholder="Write your response as WorthDaGive Wellness Studio…">' + escHtml(r.response || '') + '</textarea>' +
