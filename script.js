@@ -570,10 +570,16 @@ function initReviews() {
             if (!text)         { showFormMsg(msgEl, 'Please write your review.', 'error'); return; }
 
             var review = {
-                name: name.trim(), rating: rating, text: text,
-                date: new Date().toISOString().slice(0,10),
-                approved: false, // admin must approve
-                source: 'site'
+                // Consistent column names used throughout admin + frontend
+                reviewer_name: name.trim(),
+                name:          name.trim(),       // backwards compat
+                review_text:   text,
+                text:          text,              // backwards compat
+                rating:        rating,
+                date:          new Date().toISOString().slice(0,10),
+                created_at:    new Date().toISOString(),
+                approved:      false,             // admin must approve before showing
+                source:        'site'
             };
 
             // Try to save to Supabase
