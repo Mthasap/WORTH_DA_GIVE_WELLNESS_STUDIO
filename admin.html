@@ -590,14 +590,26 @@ async function doLogin() {
     var authRes = await SB.auth.signInWithPassword({ email: email, password: pw });
 
     if (authRes.error) {
-      // Wrong credentials OR Supabase password doesn't match the hardcoded one
-      if (authRes.error.message.toLowerCase().indexOf('invalid') !== -1 ||
-          authRes.error.message.toLowerCase().indexOf('credentials') !== -1) {
-        errEl.innerHTML = 'Incorrect email or password.';
-      } else {
+      var msg = authRes.error.message || '';
+      var msgLower = msg.toLowerCase();
+
+      if (msgLower.indexOf('schema') !== -1 || msgLower.indexOf('database error') !== -1) {
+        // Schema cache issue — user exists, password correct, but PostgREST cache stale
+        // Fix: run NOTIFY pgrst.reload in Supabase SQL Editor
         errEl.innerHTML =
-          '<strong>Login failed:</strong> ' + authRes.error.message + '<br>' +
-          'If you recently changed your password, make sure it matches in both the admin panel and Supabase.' ;
+          '<strong>Database schema error.</strong> Your password is correct but Supabase needs a cache refresh.<br><br>' +
+          'Fix (takes 30 seconds):<br>' +
+          '1. Go to <a href="https://app.supabase.com" target="_blank" style="color:#c0392b">app.supabase.com</a> ' +
+          '→ your project → <strong>SQL Editor</strong> → New Query<br>' +
+          '2. Paste and run: <code style="background:#f5f5f5;padding:2px 6px;border-radius:4px;font-size:0.9em">NOTIFY pgrst, 'reload schema';</code><br>' +
+          '3. Wait 10 seconds then try logging in again.';
+      } else if (msgLower.indexOf('invalid') !== -1 || msgLower.indexOf('credentials') !== -1) {
+        errEl.innerHTML = 'Incorrect email or password.';
+      } else if (msgLower.indexOf('not found') !== -1 || msgLower.indexOf('does not exist') !== -1) {
+        errEl.innerHTML =
+          'Account not found in Supabase. Run the <strong>ADMIN_PASSWORD_SYNC.sql</strong> file first.';
+      } else {
+        errEl.innerHTML = '<strong>Login failed:</strong> ' + msg;
       }
       if (btn) { btn.disabled = false; btn.textContent = 'Enter Admin Panel'; }
       return;
